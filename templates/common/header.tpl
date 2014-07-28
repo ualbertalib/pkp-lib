@@ -130,6 +130,15 @@
 	{$additionalHeadData}
 </head>
 <body>
+<div id="common-header">
+	<div id="black-line"></div>
+	<div id="logo-wrap">
+		<div id="ualogo">
+		
+			<a href="http://ejournals.library.ualberta.ca"><img src="http://library.ualberta.ca/2012assets/ualogo.png" /></a>
+		</div>
+	</div>
+</div>
 <div id="container">
 
 <div id="header">

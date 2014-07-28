@@ -1,2 +1,5 @@
 te_ST/
 lib/tinymce/jscripts/tiny_mce/*.gz
+LIBPKPpatch2.4.2/
+*.bak
+*.orig
