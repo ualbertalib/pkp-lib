@@ -448,3 +448,36 @@ div.separator {
 	font-size: 0.5em;
 	line-height: 25%;
 }
+#common-header{
+	width: 100%;
+	position: absolute;
+	top:0;
+}
+#black-line{
+	height: 3px;
+	background: #000;
+	width: 100%;
+}
+#logo-wrap{
+	width: 950px;
+	margin: auto;
+}
+#ualogo{
+	width:200px;
+	float: right;
+	background: transparent;
+	position: absolute;
+	margin-left: 750px;
+z-index: 50000;
+}
+#ualogo img{
+	width:200px;
+	border: none;
+}
+#ualogo a{
+	border: none;
+}
+#ualogo a:hover{
+	background-color:transparent;
+	border: none;
+}
