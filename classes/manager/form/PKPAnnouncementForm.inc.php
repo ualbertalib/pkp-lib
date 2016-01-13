@@ -3,7 +3,8 @@
 /**
  * @file classes/manager/form/AnnouncementForm.inc.php
  *
- * Copyright (c) 2000-2013 John Willinsky
+ * Copyright (c) 2013-2015 Simon Fraser University Library
+ * Copyright (c) 2000-2015 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class AnnouncementForm
@@ -80,7 +81,7 @@ class PKPAnnouncementForm extends Form {
 	 */
 	function getLocaleFieldNames() {
 		$announcementDao =& DAORegistry::getDAO('AnnouncementDAO');
-		return $announcementDao->getLocaleFieldNames();
+		return parent::getLocaleFieldNames() + $announcementDao->getLocaleFieldNames();
 	}
 
 	/**
@@ -96,6 +97,7 @@ class PKPAnnouncementForm extends Form {
 		list($assocType, $assocId) = $this->_getAnnouncementTypesAssocId();
 		$announcementTypes =& $announcementTypeDao->getByAssoc($assocType, $assocId);
 		$templateMgr->assign('announcementTypes', $announcementTypes);
+		$templateMgr->assign('notificationToggle', $this->getData('notificationToggle'));
 
 		parent::display();
 	}
@@ -116,11 +118,19 @@ class PKPAnnouncementForm extends Form {
 					'title' => $announcement->getTitle(null), // Localized
 					'descriptionShort' => $announcement->getDescriptionShort(null), // Localized
 					'description' => $announcement->getDescription(null), // Localized
-					'dateExpire' => $announcement->getDateExpire()
+					'datePosted' => $announcement->getDatePosted(),
+					'dateExpire' => $announcement->getDateExpire(),
+					'notificationToggle' => false,
 				);
 			} else {
 				$this->announcementId = null;
+				$this->_data = array(
+					'datePosted' => Core::getCurrentDate(),
+					'notificationToggle' => true,
+				);
 			}
+		} else {
+			$this->_data['notificationToggle'] = true;
 		}
 	}
 
@@ -128,8 +138,8 @@ class PKPAnnouncementForm extends Form {
 	 * Assign form data to user-submitted data.
 	 */
 	function readInputData() {
-		$this->readUserVars(array('typeId', 'title', 'descriptionShort', 'description', 'dateExpireYear', 'dateExpireMonth', 'dateExpireDay'));
-		$this->_data['dateExpire'] = Request::getUserDateVar('dateExpire');
+		$this->readUserVars(array('typeId', 'title', 'descriptionShort', 'description', 'notificationToggle'));
+		$this->readUserDateVars(array('dateExpire', 'datePosted'));
 	}
 
 	/**
@@ -160,14 +170,11 @@ class PKPAnnouncementForm extends Form {
 		}
 
 		// Give the parent class a chance to set the dateExpire.
-		$dateExpireSetted = $this->setDateExpire($announcement);
-		if (!$dateExpireSetted) {
-			if ($this->getData('dateExpireYear') != null) {
-				$announcement->setDateExpire($this->getData('dateExpire'));
-			} else {
-				$announcement->setDateExpire(null);
-			}
+		$dateExpireSet = $this->setDateExpire($announcement);
+		if (!$dateExpireSet) {
+			$announcement->setDateExpire($this->getData('dateExpire'));
 		}
+		$announcement->setDatetimePosted($this->getData('datePosted'));
 
 		// Update or insert announcement
 		if ($announcement->getId() != null) {

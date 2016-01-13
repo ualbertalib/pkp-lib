@@ -3,7 +3,8 @@
 /**
  * @file classes/core/DataObject.inc.php
  *
- * Copyright (c) 2000-2013 John Willinsky
+ * Copyright (c) 2013-2015 Simon Fraser University Library
+ * Copyright (c) 2000-2015 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class DataObject
@@ -59,7 +60,9 @@ class DataObject {
 
 		// Fallback: Get the first available piece of data.
 		$data =& $this->getData($key, null);
-		if (!empty($data)) {
+		if (is_string($data)) {
+			return $data;
+		} else if (is_array($data)) {
 			// WARNING: Collapsing the following into a single line causes PHP 5.0.5 to die.
 			$locales = array_keys($data);
 			$firstLocale = array_shift($locales);

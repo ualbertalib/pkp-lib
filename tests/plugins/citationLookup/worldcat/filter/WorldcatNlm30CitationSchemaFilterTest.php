@@ -7,7 +7,8 @@
 /**
  * @file tests/plugins/citationLookup/worldcat/filter/WorldcatNlm30CitationSchemaFilterTest.inc.php
  *
- * Copyright (c) 2000-2013 John Willinsky
+ * Copyright (c) 2013-2015 Simon Fraser University Library
+ * Copyright (c) 2000-2015 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class WorldcatNlm30CitationSchemaFilterTest
@@ -54,7 +55,10 @@ class WorldcatNlm30CitationSchemaFilterTest extends Nlm30CitationSchemaFilterTes
 		$citationFilterTests = array($testWithApiKey);
 
 		// Execute the tests with API key
-		self::assertEquals(80, strlen(Config::getVar('debug', 'worldcat_apikey')), 'It seems that the WorldCat API key has not been configured.');
+		if (strlen(Config::getVar('debug', 'worldcat_apikey')) != 80) {
+			$this->markTestSkipped('It seems that the WorldCat API key has not been configured.');
+		}
+
 		$filter = new WorldcatNlm30CitationSchemaFilter(PersistableFilter::tempGroup(
 				'metadata::lib.pkp.plugins.metadata.nlm30.schema.Nlm30CitationSchema(CITATION)',
 				'metadata::lib.pkp.plugins.metadata.nlm30.schema.Nlm30CitationSchema(CITATION)'));

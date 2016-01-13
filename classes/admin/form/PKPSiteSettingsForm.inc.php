@@ -6,7 +6,8 @@
 /**
  * @file classes/admin/form/PKPSiteSettingsForm.inc.php
  *
- * Copyright (c) 2000-2013 John Willinsky
+ * Copyright (c) 2013-2015 Simon Fraser University Library
+ * Copyright (c) 2000-2015 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class SiteSettingsForm
@@ -78,7 +79,8 @@ class PKPSiteSettingsForm extends Form {
 			'contactEmail' => $site->getSetting('contactEmail'), // Localized
 			'minPasswordLength' => $site->getMinPasswordLength(),
 			'pageHeaderTitleType' => $site->getSetting('pageHeaderTitleType'), // Localized
-			'siteTheme' => $site->getSetting('siteTheme')
+			'siteTheme' => $site->getSetting('siteTheme'),
+			'oneStepReset' => $site->getSetting('oneStepReset') ? true : false,
 		);
 
 		foreach ($data as $key => $value) {
@@ -87,7 +89,7 @@ class PKPSiteSettingsForm extends Form {
 	}
 
 	function getLocaleFieldNames() {
-		return array('title', 'pageHeaderTitleType', 'intro', 'about', 'contactName', 'contactEmail');
+		return array_merge(parent::getLocaleFieldNames(), array('title', 'pageHeaderTitleType', 'intro', 'about', 'contactName', 'contactEmail'));
 	}
 
 	/**
@@ -95,7 +97,7 @@ class PKPSiteSettingsForm extends Form {
 	 */
 	function readInputData() {
 		$this->readUserVars(
-			array('pageHeaderTitleType', 'title', 'intro', 'about', 'redirect', 'contactName', 'contactEmail', 'minPasswordLength', 'pageHeaderTitleImageAltText', 'showThumbnail', 'showTitle', 'showDescription', 'siteTheme')
+			array('pageHeaderTitleType', 'title', 'intro', 'about', 'redirect', 'contactName', 'contactEmail', 'minPasswordLength', 'oneStepReset', 'pageHeaderTitleImageAltText', 'showThumbnail', 'showTitle', 'showDescription', 'siteTheme')
 		);
 	}
 
@@ -124,9 +126,10 @@ class PKPSiteSettingsForm extends Form {
 			$site->updateSetting('pageHeaderTitleImage', $setting, 'object', true);
 		}
 
-		$site->updateSetting('showThumbnail', $this->getData('showThumbnail'), bool);
-		$site->updateSetting('showTitle', $this->getData('showTitle'), bool);
-		$site->updateSetting('showDescription', $this->getData('showDescription'), bool);
+		$site->updateSetting('showThumbnail', $this->getData('showThumbnail'), 'bool');
+		$site->updateSetting('showTitle', $this->getData('showTitle'), 'bool');
+		$site->updateSetting('showDescription', $this->getData('showDescription'), 'bool');
+		$site->updateSetting('oneStepReset', $this->getData('oneStepReset'), 'bool');
 
 		$siteDao->updateObject($site);
 		return true;

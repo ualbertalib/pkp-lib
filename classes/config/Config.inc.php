@@ -7,7 +7,8 @@
 /**
  * @file classes/config/Config.inc.php
  *
- * Copyright (c) 2000-2013 John Willinsky
+ * Copyright (c) 2013-2015 Simon Fraser University Library
+ * Copyright (c) 2000-2015 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class Config
@@ -83,6 +84,29 @@ class Config {
 	 */
 	function getConfigFileName() {
 		return Registry::get('configFile', true, CONFIG_FILE);
+	}
+
+	/**
+	 * Get context base urls from config file.
+	 * @return array Empty array if none is set.
+	 */
+	function &getContextBaseUrls() {
+		$contextBaseUrls =& Registry::get('contextBaseUrls'); //Reference required.
+
+		if (is_null($contextBaseUrls)) {
+			$contextBaseUrls = array();
+			$configData =& Config::getData();
+			// Filter the settings.
+			foreach ($configData['general'] as $settingName => $settingValue) {
+				$matches = null;
+				if (preg_match('/base_url\[(.*)\]/', $settingName, $matches)) {
+					$workingContextPath = $matches[1];
+					$contextBaseUrls[$workingContextPath] = $settingValue;
+				}
+			}
+		}
+
+		return $contextBaseUrls;
 	}
 }
 

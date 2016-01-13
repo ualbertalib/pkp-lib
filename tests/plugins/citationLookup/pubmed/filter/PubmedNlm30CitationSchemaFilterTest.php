@@ -7,7 +7,8 @@
 /**
  * @file tests/plugins/citationLookup/pubmed/filter/PubmedNlm30CitationSchemaFilterTest.inc.php
  *
- * Copyright (c) 2000-2013 John Willinsky
+ * Copyright (c) 2013-2015 Simon Fraser University Library
+ * Copyright (c) 2000-2015 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class PubmedNlm30CitationSchemaFilterTest
@@ -103,7 +104,7 @@ class PubmedNlm30CitationSchemaFilterTest extends Nlm30CitationSchemaFilterTestC
 			'date' => '2002-07-25',
 			'[@publication-type]' => 'journal',
 			'pub-id[@pub-id-type="doi"]' => '10.1056/NEJMsb020632',
-			'uri' => 'http://www.nlm.nih.gov/medlineplus/organtransplantation.html'
+			'uri' => 'http://www.scholaruniverse.com/ncbi-linkout?id=12140307'
 		);
 		return $testOutput;
 	}

@@ -4,10 +4,11 @@
 <!--
   * locale/de_DE/grid.xml
   *
-  * Copyright (c) 2000-2013 John Willinsky
+  * Copyright (c) 2013-2015 Simon Fraser University Library
+  * Copyright (c) 2000-2015 John Willinsky
   * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
-  *
   * Localization strings for the de_DE (Deutsch (Deutschland)) locale.
+  * Please contact Marco Tullney, marco.tullney@fu-berlin.de, with any questions regarding this translation.
   *
   -->
 
@@ -27,13 +28,13 @@
 	<message key="grid.action.edit">Bearbeiten</message>
 	<message key="grid.action.approve">Akzeptieren</message>
 	<message key="grid.action.moreInformation">Mehr Informationen</message>
-	<message key="grid.action.restoreDefaults">Standard wiederherstellen</message>
+	<message key="grid.action.restoreDefaults">Standardeinstellungen wiederherstellen</message>
 	<message key="grid.action.addAuthor">Autor/in hinzufügen</message>
 	<message key="grid.action.editAuthor">Autor/in bearbeiten</message>
 	<message key="grid.action.deleteAuthor">Autor/in löschen</message>
 	<message key="grid.action.addAuditor">Prüfer/in hinzufügen</message>
 	<message key="grid.action.upgrade">Upgrade</message>
-	<message key="grid.action.order">Bestellen</message>
+	<message key="grid.action.order">Sortieren</message>
 	<message key="grid.action.cancelOrdering">Bestellung abbrechen</message>
 	<message key="grid.action.extendAll">Alles ausdehnen</message>
 	<message key="grid.action.collapse">Einklappen</message>
@@ -56,7 +57,6 @@
 	<message key="grid.action.sendToProduction">Diese Einreichung in die Produktion schicken</message>
 	<message key="grid.action.settings">Einstellungen</message>
 	<message key="grid.action.importexport">Inhalte oder Einstellungen importieren oder exportieren</message>
-	<message key="grid.action.restoreDefaults">Standardeinstellungen wiederherstellen</message>
 	<message key="grid.action.orderItems">Sortiermodus aktivieren</message>
 	<message key="grid.action.editSubmissionChecklist">Dieses Element der Checkliste bearbeiten</message>
 	<message key="grid.action.deleteSubmissionChecklist">Dieses Element der Checkliste löschen</message>
@@ -92,7 +92,7 @@
 	<message key="grid.action.mergeUser">Benutzer/in zusammenführen</message>
 	<message key="grid.action.unassignUser">Zuweisung an Benutzer/in zurücknehmen</message>
 	<message key="grid.action.history">Verlauf ansehen</message>
-	<message key="grid.action.unconsiderReview">Dieses Gutachten ist komplett, aber sie können es unberücksichtigt lassen.</message>
+	<message key="grid.action.unconsiderReview">Dieses Gutachten ist komplett, aber Sie können es unberücksichtigt lassen.</message>
 	
 	<!--  grid task status -->
 	<message key="grid.task.status.completed">Diese Aufgabe ist erledigt.</message>

@@ -3,7 +3,8 @@
 /**
  * @file tests/classes/validation/ValidatorISSNTest.inc.php
  *
- * Copyright (c) 2000-2013 John Willinsky
+ * Copyright (c) 2013-2015 Simon Fraser University Library
+ * Copyright (c) 2000-2015 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class ValidatorISSNTest
@@ -27,6 +28,8 @@ class ValidatorISSNTest extends PKPTestCase {
 		self::assertTrue($validator->isValid('0378-5955')); // Valid
 		self::assertFalse($validator->isValid('03785955')); // Missing dash
 		self::assertFalse($validator->isValid('1234-5678')); // Wrong check digit
+		self::assertTrue($validator->isValid('0031-790X')); // Check digit is X
+		self::assertTrue($validator->isValid('1945-2020')); // Check digit is 0
 	}
 }
 

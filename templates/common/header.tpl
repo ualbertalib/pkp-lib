@@ -1,7 +1,8 @@
 {**
  * header.tpl
  *
- * Copyright (c) 2000-2013 John Willinsky
+ * Copyright (c) 2013-2015 Simon Fraser University Library
+ * Copyright (c) 2000-2015 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * Common site header.
@@ -16,7 +17,7 @@
 {/strip}
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
 	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="{$currentLocale|replace:"_":"-"}" xml:lang="{$currentLocale|replace:"_":"-"}">
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset={$defaultCharset|escape}" />
 	<title>{$pageTitleTranslated}</title>
@@ -70,15 +71,6 @@
 		{include file="common/minifiedScripts.tpl"}
 	{/if}
 
-	<!-- Add javascript required for font sizer -->
-	<script type="text/javascript">{literal}
-		<!--
-		$(function(){
-			fontSize("#sizer", "body", 9, 16, 32, "{/literal}{$basePath|escape:"javascript"}{literal}"); // Initialize the font sizer
-		});
-		// -->
-	{/literal}</script>
-
 	<!-- Form validation -->
 	<script type="text/javascript" src="{$baseUrl}/lib/pkp/js/lib/jquery/plugins/validate/jquery.validate.js"></script>
 	<script type="text/javascript">
@@ -117,7 +109,6 @@
 						if (notifications && notifications.general) {ldelim}
 							$.each(notifications.general, function(notificationLevel, notificationList) {ldelim}
 								$.each(notificationList, function(notificationId, notification) {ldelim}
-									console.log(notification);
 									$.pnotify(notification);
 								{rdelim});
 							{rdelim});
@@ -129,13 +120,13 @@
 
 	{$additionalHeadData}
 </head>
-<body>
+<body id="pkp-{$pageTitle|replace:'.':'-'}">
 <div id="common-header">
 	<div id="black-line"></div>
 	<div id="logo-wrap">
 		<div id="ualogo">
 		
-			<a href="http://ejournals.library.ualberta.ca"><img src="http://library.ualberta.ca/2012assets/ualogo.png" /></a>
+			<a href="http://ejournals.library.ualberta.ca"><img src="/templates/images/custom/ualogo.png" /></a>
 		</div>
 	</div>
 </div>

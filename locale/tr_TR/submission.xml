@@ -1,12 +1,13 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE locale SYSTEM "../../dtd/locale.dtd">
 
 <!--
   * locale/tr_TR/submission.xml
   *
-  * Copyright (c) 2000-2013 John Willinsky
+  * Copyright (c) 2013-2015 Simon Fraser University Library
+  * Copyright (c) 2000-2015 John Willinsky
   * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
-  * Localization strings for the tr_TR (Türkiye Türkçesi) locale.
+  * Localization strings for the tr_TR (Türkçe) locale.
   -->
 
 <locale name="tr_TR" full_name = "Türkiye Türkçesi">
@@ -19,7 +20,7 @@
 	<message key="metadata.filters.crossref.settings.email.validationMessage">Lütfen geçerli bir CrossRef e-postas adresi kaydediniz. E-postanızı CrossRef web sayfasında ücretsiz olarak kayıt edebilirsiniz.</message>
 	<message key="metadata.filters.isbndb.settings.apiKey.displayName">ISBNdb API Anahtarı</message>
 	<message key="metadata.filters.isbndb.settings.apiKey.validationMessage">Lütfen ISBNdb API anahtarınız giriniz. Henüz bir anahtarınız yok ise ISBNdb projesinden ücretsiz olarak talep edebilirsiniz.</message>
-	<message key="metadata.filters.pubmed.settings.email.displayName">PubMed kayıt e-postası</message>
+	<message key="metadata.filters.pubmed.settings.email.displayName">PubMed Kayıt e-Postası</message>
 	<message key="metadata.filters.pubmed.settings.email.validationMessage">Eğer varsa geçerli bir PubMed kayıt e-postası giriniz.</message>
 	<message key="metadata.filters.worldcat.settings.apiKey.displayName">WorldCat API Anahtarı</message>
 	<message key="metadata.filters.worldcat.settings.apiKey.validationMessage">Eğer varsa geçerli bir WorldCat API anahtarı giriniz.</message>
@@ -323,7 +324,7 @@
 	<message key="submissions.submitted">Gönderildi</message>
 	<message key="submission.start">Başla</message>
 	<message key="submission.submissionHistory">Başvuru Geçmişi</message>
-	<message key="submission.submissionManuscript">Gönderi Mizanpajı</message>
+	<message key="submission.submissionManuscript">Değerlendirilecek Makale:</message>
 	<message key="submission.submissionReview">Gönderi Değerlendirme</message>
 	<message key="submission.submitter">Gönderici</message>
 	<message key="submission.summary">Özet</message>
@@ -378,7 +379,7 @@
 		<p>The Citation Markup Assistant will attempt to identify and extract individual citations from the author's list of references. You can systematically check each citation extraction attempt for accuracy against a number of external databases; edit incorrect citation information and add new information; approve or delete citations; and add new citations.</p>
 		<p>All final citations for a submission must be approved before they can be exported.</p></li>
 		<li><p><strong>Exporting Citations</strong></p>
- 		<p>Citations can be exported as XML or text. XML export options currently include <a href="http://dtd.nlm.nih.gov/publishing/">NLM Journal Publishing</a> 2.3 and 3.0 <a href="http://www.ncbi.nlm.nih.gov/pmc/pmcdoc/tagging-guidelines/article/tags.html#el-reflist">ref-list XML</a>. Selecting one of these options outputs an XML-encoded ref-list snippet that can be copied and pasted into an NLM XML galley.</p>
+		<p>Citations can be exported as XML or text. XML export options currently include <a href="http://dtd.nlm.nih.gov/publishing/">NLM Journal Publishing</a> 2.3 and 3.0 <a href="http://www.ncbi.nlm.nih.gov/pmc/pmcdoc/tagging-guidelines/article/tags.html#el-reflist">ref-list XML</a>. Selecting one of these options outputs an XML-encoded ref-list snippet that can be copied and pasted into an NLM XML galley.</p>
 		<p>Experimental text export options include ABNT, APA, MLA and Vancouver citation output styles. These options provide a text output that can be copied and pasted into a text-based article galley (for example into Microsoft Word or OpenOffice; Adobe InDesign; etc.). Each citation includes an embedded link to automatically search for that citation in Google Scholar.</p></li>
 	</ul>]]></message>
 	<message key="submission.citations.editor.php5Required">Atıf düzenleme XML ve XSL desteği gerektiriyor, detsek sadece PHP 5.0.0 ve üstü sürümlerde kullanılabilir. Kurulumunuz PHP'nin daha eski bir sürümü olarak görünüyor. Daha yüksek bir sürümü yüklemeden önce atıf işaretleme servisini kullanamazsınız.</message>

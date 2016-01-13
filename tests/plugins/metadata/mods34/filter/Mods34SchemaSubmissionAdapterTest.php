@@ -3,7 +3,8 @@
 /**
  * @file tests/plugins/metadata/mods34/filter/Mods34SchemaSubmissionAdapterTest.inc.php
  *
- * Copyright (c) 2000-2013 John Willinsky
+ * Copyright (c) 2013-2015 Simon Fraser University Library
+ * Copyright (c) 2000-2015 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class Mods34SchemaSubmissionAdapterTest
@@ -29,8 +30,9 @@ class Mods34SchemaSubmissionAdapterTest extends Mods34DescriptionTestCase {
 	/**
 	 * @covers Mods34SchemaSubmissionAdapter
 	 */
-	/* FIXME: This test is currently broken (see #5231).
 	public function testMods34SchemaSubmissionAdapter() {
+		$this->markTestSkipped('This test is currently broken (bug #5231)');
+
 		// Test constructor.
 		$adapter = new Mods34SchemaSubmissionAdapter(PersistableFilter::tempGroup(
 				'metadata::plugins.metadata.mods34.schema.Mods34Schema(CITATION)',
@@ -108,6 +110,6 @@ class Mods34SchemaSubmissionAdapterTest extends Mods34DescriptionTestCase {
 			$submissionDescription->removeStatement($missingMapping);
 		}
 		self::assertEquals($submissionDescription, $extractedDescription);
-	} */
+	}
 }
 ?>

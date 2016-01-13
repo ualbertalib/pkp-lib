@@ -1,7 +1,8 @@
 {**
  * templates/controllers/grid/listbuilderGridCell.tpl
  *
- * Copyright (c) 2000-2013 John Willinsky
+ * Copyright (c) 2013-2015 Simon Fraser University Library
+ * Copyright (c) 2000-2015 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * a regular listbuilder grid cell (with or without actions)
@@ -21,7 +22,7 @@
 			{if $column->getFlag('sourceType') === $smarty.const.LISTBUILDER_SOURCE_TYPE_SELECT}
 				{**
 				 * Include a hidden element containing the current key.
-			 	 * Used e.g. to match the currently selected value.
+				 * Used e.g. to match the currently selected value.
 				 *}
 				<input type="hidden" value="{$labelKey|escape}" />
 			{/if}

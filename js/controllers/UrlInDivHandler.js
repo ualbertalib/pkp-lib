@@ -1,7 +1,8 @@
 /**
  * @file js/controllers/UrlInDivHandler.js
  *
- * Copyright (c) 2000-2013 John Willinsky
+ * Copyright (c) 2013-2015 Simon Fraser University Library
+ * Copyright (c) 2000-2015 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class UrlInDivHandler
@@ -67,6 +68,7 @@
 	 * @return {boolean} Message handling result.
 	 * @private
 	 */
+	/*jslint unparam: true*/
 	$.pkp.controllers.UrlInDivHandler.prototype.handleLoadedContent_ =
 			function(ajaxContext, jsonData) {
 
@@ -80,6 +82,7 @@
 
 		return false;
 	};
+	/*jslint unparam: false*/
 
 /** @param {jQuery} $ jQuery closure. */
 }(jQuery));

@@ -4,7 +4,8 @@
 /**
  * @file js/controllers/form/FormHandler.js
  *
- * Copyright (c) 2000-2013 John Willinsky
+ * Copyright (c) 2013-2015 Simon Fraser University Library
+ * Copyright (c) 2000-2015 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class FormHandler
@@ -55,7 +56,7 @@
 
 		// disable submission controls on certain forms.
 		if (options.disableControlsOnSubmit) {
-			this.disableControlsOnSubmit_ = options.disableControlsOnSubmit;
+			this.disableControlsOnSubmit = options.disableControlsOnSubmit;
 		}
 
 		if (options.enableDisablePairs) {
@@ -144,10 +145,10 @@
 	/**
 	 * If true, the FormHandler will disable the submit button if the form
 	 * successfully validates and is submitted.
-	 * @private
+	 * @protected
 	 * @type {boolean}
 	 */
-	$.pkp.controllers.form.FormHandler.prototype.disableControlsOnSubmit_ = false;
+	$.pkp.controllers.form.FormHandler.prototype.disableControlsOnSubmit = false;
 
 
 	/**
@@ -170,6 +171,7 @@
 	 * @param {Array} errorList An array with objects that contains
 	 *  error messages and the corresponding HTMLElements.
 	 */
+	/*jslint unparam: true*/
 	$.pkp.controllers.form.FormHandler.prototype.showErrors =
 			function(validator, errorMap, errorList) {
 
@@ -192,6 +194,7 @@
 			this.enableFormControls();
 		}
 	};
+	/*jslint unparam: false*/
 
 
 	/**
@@ -200,6 +203,7 @@
 	 * @param {HTMLElement} formElement The form element that generated the event.
 	 * @param {Event} event The formChange event.
 	 */
+	/*jslint unparam: true*/
 	$.pkp.controllers.form.FormHandler.prototype.formChange =
 			function(formElement, event) {
 
@@ -208,6 +212,7 @@
 			this.formChangesTracked = true;
 		}
 	};
+	/*jslint unparam: false*/
 
 
 	//
@@ -225,7 +230,7 @@
 
 		// We have made it to submission, disable the form control if
 		// necessary, submit the form.
-		if (this.disableControlsOnSubmit_) {
+		if (this.disableControlsOnSubmit) {
 			this.getHtmlElement().find(':submit').attr('disabled', 'disabled').
 					addClass('ui-state-disabled');
 		}
@@ -257,6 +262,7 @@
 	 *  cancel button.
 	 * @return {boolean} false.
 	 */
+	/*jslint unparam: true*/
 	$.pkp.controllers.form.FormHandler.prototype.cancelForm =
 			function(cancelButton, event) {
 
@@ -266,6 +272,7 @@
 		this.trigger('formCanceled');
 		return false;
 	};
+	/*jslint unparam: false*/
 
 
 	/**
@@ -276,6 +283,7 @@
 	 *  reset button.
 	 * @return {boolean} false.
 	 */
+	/*jslint unparam: true*/
 	$.pkp.controllers.form.FormHandler.prototype.resetForm =
 			function(resetButton, event) {
 
@@ -290,6 +298,7 @@
 
 		return false;
 	};
+	/*jslint unparam: false*/
 
 
 	/**
@@ -336,7 +345,7 @@
 			setTimeout(function() {
 				// re-select the original element, to prevent closure memory leaks
 				// in (older?) versions of IE.
-				$('#' + elementId).find('.richContent').each(function(index) {
+				$('#' + elementId).find('.richContent').each(function() {
 					tinyMCE.execCommand('mceAddControl', false,
 							$(this).attr('id').toString());
 				});
@@ -389,15 +398,11 @@
 	 * Internal callback called to push TinyMCE changes back to fields
 	 * so they can be validated.
 	 *
-	 * @param {HTMLElement} submitButton The submit button.
-	 * @param {Event} event The event that triggered the
-	 *  submit button.
 	 * @return {boolean} true.
 	 * @private
 	 */
 	$.pkp.controllers.form.FormHandler.prototype.pushTinyMCEChanges_ =
-			function(submitButton, event) {
-
+			function() {
 		// ensure that rich content elements have their
 		// values stored before validation.
 		if (typeof tinyMCE !== 'undefined') {
@@ -430,12 +435,11 @@
 	 * Enables or disables the item which depends on the state of source of the
 	 * Event.
 	 * @param {HTMLElement} sourceElement The element which generated the event.
-	 * @param {Event} event The event.
 	 * @return {boolean} true.
 	 * @private
 	 */
 	$.pkp.controllers.form.FormHandler.prototype.toggleDependentElement_ =
-			function(sourceElement, event) {
+			function(sourceElement) {
 		var formElement, elementId, targetElement;
 
 		formElement = this.getHtmlElement();

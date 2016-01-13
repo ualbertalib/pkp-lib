@@ -3,7 +3,8 @@
 /**
  * @file classes/core/PKPRequest.inc.php
  *
- * Copyright (c) 2000-2013 John Willinsky
+ * Copyright (c) 2013-2015 Simon Fraser University Library
+ * Copyright (c) 2000-2015 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class PKPRequest
@@ -12,7 +13,6 @@
  * @brief Class providing operations associated with HTTP requests.
  */
 
-define('USER_AGENTS_FILE', Core::getBaseDir() . DIRECTORY_SEPARATOR . 'lib' . DIRECTORY_SEPARATOR . 'pkp' . DIRECTORY_SEPARATOR . 'registry' . DIRECTORY_SEPARATOR . 'botAgents.txt');
 
 class PKPRequest {
 	//
@@ -105,8 +105,10 @@ class PKPRequest {
 	function redirectSSL() {
 		$_this =& PKPRequest::_checkThis();
 
-		$url = 'https://' . $_this->getServerHost() . $_this->getRequestPath();
-		$queryString = $_this->getQueryString();
+		// Note that we are intentionally skipping PKP processing of REQUEST_URI and QUERY_STRING for a protocol redirect
+		// This processing is deferred to the redirected (target) URI
+		$url = 'https://' . $_this->getServerHost() . $_SERVER['REQUEST_URI'];
+		$queryString = $_SERVER['QUERY_STRING'];
 		if (!empty($queryString)) $url .= "?$queryString";
 		$_this->redirectUrl($url);
 	}
@@ -117,8 +119,10 @@ class PKPRequest {
 	function redirectNonSSL() {
 		$_this =& PKPRequest::_checkThis();
 
-		$url = 'http://' . $_this->getServerHost() . $_this->getRequestPath();
-		$queryString = $_this->getQueryString();
+		// Note that we are intentionally skipping PKP processing of REQUEST_URI and QUERY_STRING for a protocol redirect
+		// This processing is deferred to the redirected (target) URI
+		$url = 'http://' . $_this->getServerHost() . $_SERVER['REQUEST_URI'];
+		$queryString = $_SERVER['QUERY_STRING'];
 		if (!empty($queryString)) $url .= "?$queryString";
 		$_this->redirectUrl($url);
 	}
@@ -140,8 +144,8 @@ class PKPRequest {
 		$_this =& PKPRequest::_checkThis();
 
 		if (!isset($_this->_baseUrl)) {
-			$serverHost = $_this->getServerHost(null);
-			if ($serverHost !== null) {
+			$serverHost = $_this->getServerHost(false);
+			if ($serverHost !== false) {
 				// Auto-detection worked.
 				$_this->_baseUrl = $_this->getProtocol() . '://' . $_this->getServerHost() . $_this->getBasePath();
 			} else {
@@ -162,7 +166,18 @@ class PKPRequest {
 		$_this =& PKPRequest::_checkThis();
 
 		if (!isset($_this->_basePath)) {
-			$_this->_basePath = dirname($_SERVER['SCRIPT_NAME']);
+			$path = preg_replace('#/[^/]*$#', '', $_SERVER['SCRIPT_NAME']);
+
+			// Encode charcters which need to be encoded in a URL.
+			// Simply using rawurlencode() doesn't work because it
+			// also encodes characters which are valid in a URL (i.e. @, $).
+			$parts = explode('/', $path);
+			foreach ($parts as $i => $part) {
+				$pieces = array_map(array($this, 'encodeBasePathFragment'), str_split($part));
+				$parts[$i] = implode('', $pieces);
+			}
+			$_this->_basePath = implode('/', $parts);
+
 			if ($_this->_basePath == '/' || $_this->_basePath == '\\') {
 				$_this->_basePath = '';
 			}
@@ -170,6 +185,19 @@ class PKPRequest {
 		}
 
 		return $_this->_basePath;
+	}
+
+	/**
+	 * Callback function for getBasePath() to correctly encode (or not encode)
+	 * a basepath fragment.
+	 * @param string $fragment
+	 * @return string
+	 */
+	function encodeBasePathFragment($fragment) {
+		if (!preg_match('/[A-Za-z0-9-._~!$&\'()*+,;=:@]/', $fragment)) {
+			return rawurlencode($fragment);
+		}
+		return $fragment;
 	}
 
 	/**
@@ -244,7 +272,9 @@ class PKPRequest {
 	}
 
 	/**
-	 * Get the complete set of URL parameters to the current request as an associative array.
+	 * Get the complete set of URL parameters to the current request as an
+	 * associative array. (Excludes reserved parameters, such as "path",
+	 * which are used by disable_path_info mode.)
 	 * @return array
 	 */
 	function getQueryArray() {
@@ -255,6 +285,11 @@ class PKPRequest {
 
 		if (isset($queryString)) {
 			parse_str($queryString, $queryArray);
+		}
+
+		// Filter out disable_path_info reserved parameters
+		foreach (array_merge(Application::getContextList(), array('path', 'page', 'op')) as $varName) {
+			if (isset($queryArray[$varName])) unset($queryArray[$varName]);
 		}
 
 		return $queryArray;
@@ -283,21 +318,33 @@ class PKPRequest {
 	}
 
 	/**
-	 * Get the server hostname in the request. May optionally include the
-	 * port number if non-standard.
+	 * Get the server hostname in the request.
+	 * @param $default string Default hostname (defaults to localhost)
+	 * @param $includePort boolean Whether to include non-standard port number; default true
 	 * @return string
 	 */
-	function getServerHost($default = 'localhost') {
+	function getServerHost($default = null, $includePort = true) {
+		if ($default === null) $default = 'localhost';
+
 		$_this =& PKPRequest::_checkThis();
 
 		if (!isset($_this->_serverHost)) {
 			$_this->_serverHost = isset($_SERVER['HTTP_X_FORWARDED_HOST']) ? $_SERVER['HTTP_X_FORWARDED_HOST']
 				: (isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST']
 				: (isset($_SERVER['HOSTNAME']) ? $_SERVER['HOSTNAME']
-				: $default));
-			HookRegistry::call('Request::getServerHost', array(&$_this->_serverHost));
+				: null));
+
+			HookRegistry::call('Request::getServerHost', array(&$_this->_serverHost, &$default, &$includePort));
 		}
-		return $_this->_serverHost;
+
+		$host = $_this->_serverHost === null ? $default : $_this->_serverHost;
+
+		if (!$includePort) {
+			// Strip the port number, if one is included. (#3912)
+			return preg_replace("/:\d*$/", '', $host);
+		}
+
+		return $host;
 	}
 
 	/**
@@ -352,9 +399,10 @@ class PKPRequest {
 	function getRemoteAddr() {
 		PKPRequest::_checkThis();
 
-		static $ipaddr;
-		if (!isset($ipaddr)) {
+		$ipaddr =& Registry::get('remoteIpAddr'); // Reference required.
+		if (is_null($ipaddr)) {
 			if (isset($_SERVER['HTTP_X_FORWARDED_FOR']) &&
+				Config::getVar('general', 'trust_x_forwarded_for', true) &&
 				preg_match_all('/([0-9.a-fA-F:]+)/', $_SERVER['HTTP_X_FORWARDED_FOR'], $matches)) {
 			} else if (isset($_SERVER['REMOTE_ADDR']) &&
 				preg_match_all('/([0-9.a-fA-F:]+)/', $_SERVER['REMOTE_ADDR'], $matches)) {
@@ -412,8 +460,8 @@ class PKPRequest {
 	}
 
 	/**
-	 * Determine whether a user agent is a bot or not using an external
-	 * list of regular expressions.
+	 * Determine whether the user agent is a bot or not.
+	 * @return boolean
 	 */
 	function isBot() {
 		$_this =& PKPRequest::_checkThis();
@@ -421,14 +469,7 @@ class PKPRequest {
 		static $isBot;
 		if (!isset($isBot)) {
 			$userAgent = $_this->getUserAgent();
-			$isBot = false;
-			$regexps = array_filter(file(USER_AGENTS_FILE), create_function('&$a', 'return ($a = trim($a)) && !empty($a) && $a[0] != \'#\';'));
-			foreach ($regexps as $regexp) {
-				if (String::regexp_match($regexp, $userAgent)) {
-					$isBot = true;
-					return $isBot;
-				}
-			}
+			$isBot = Core::isUserAgentBot($userAgent);
 		}
 		return $isBot;
 	}
@@ -624,11 +665,15 @@ class PKPRequest {
 	 * Set a cookie variable.
 	 * @param $key string
 	 * @param $value mixed
+	 * @param $expire int (optional)
 	 */
-	function setCookieVar($key, $value) {
+	function setCookieVar($key, $value, $expire = 0) {
 		$_this =& PKPRequest::_checkThis();
 
-		setcookie($key, $value, 0, $_this->getBasePath());
+		$basePath = $_this->getBasePath();
+		if (!$basePath) $basePath = '/';
+
+		setcookie($key, $value, $expire, $basePath);
 		$_COOKIE[$key] = $value;
 	}
 

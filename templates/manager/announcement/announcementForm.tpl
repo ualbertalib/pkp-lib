@@ -1,7 +1,8 @@
 {**
  * templates/manager/announcement/announcementForm.tpl
  *
- * Copyright (c) 2000-2013 John Willinsky
+ * Copyright (c) 2013-2015 Simon Fraser University Library
+ * Copyright (c) 2000-2015 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * Announcement form under management.
@@ -72,6 +73,12 @@
 	</td>
 </tr>
 <tr valign="top">
+	<td class="label">{fieldLabel name="datePosted" key="manager.announcements.datePublish"}</td>
+	<td class="value">
+		{html_select_date prefix="datePosted" all_extra="class=\"selectMenu\"" end_year="$yearOffsetFuture" year_empty="" month_empty="" day_empty="" time="$datePosted"}
+	</td>
+</tr>
+<tr valign="top">
 	<td class="label">{fieldLabel name="dateExpire" key="manager.announcements.form.dateExpire"}</td>
 	<td class="value">
 		{if $dateExpire != null}
@@ -84,6 +91,12 @@
 		<input type="hidden" name="dateExpireSecond" value="59" />
 		<br />
 		<span class="instruct">{translate key="manager.announcements.form.dateExpireInstructions"}</span>
+	</td>
+</tr>
+<tr valign="top">
+	<td class="label">{fieldLabel name="notificationToggle" key="manager.announcements.form.notificationToggle"}</td>
+		<td class="value">
+		<input type="checkbox" name="notificationToggle" id="notificationToggle" value="1" {if $notificationToggle} checked="checked"{/if} />{translate key="manager.announcements.form.notificationToggleInstructions"}
 	</td>
 </tr>
 </table>

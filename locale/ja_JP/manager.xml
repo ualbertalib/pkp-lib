@@ -4,7 +4,8 @@
 <!--
   * locale/ja_JP/manager.xml
   *
-  * Copyright (c) 2000-2013 John Willinsky
+  * Copyright (c) 2013-2015 Simon Fraser University Library
+  * Copyright (c) 2000-2015 John Willinsky
   * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
   *
   * Localization strings for the ja_JP (日本語) locale.
@@ -31,6 +32,8 @@
 	<message key="manager.announcements.form.descriptionShortInstructions">見出しと共に表示する簡潔な記述。</message>
 	<message key="manager.announcements.form.descriptionShortRequired">簡単なお知らせ内容は必須です。</message>
 	<message key="manager.announcements.form.descriptionShort">簡潔な記述</message>
+	<message key="manager.announcements.form.notificationToggle">通知を送信します</message>
+	<message key="manager.announcements.form.notificationToggleInstructions">この発表を保存するときに新しい通知を作成します</message>
 	<message key="manager.announcements.form.saveAndCreateAnother">保存して新規作成</message>
 	<message key="manager.announcements.form.titleRequired">お知らせ見出しは必須です。</message>
 	<message key="manager.announcements.form.title">見出し</message>
@@ -198,9 +201,9 @@
 	<message key="manager.setup.filter.parser.grid.title">引用抽出サービス</message>
 	<message key="manager.setup.filter.pleaseSelect">選択してください...</message>
 	<message key="manager.setup.filter.lookup.grid.description.iSBNdb"><![CDATA[<p>このフィルタでは <a href="http://isbndb.com/" target="_blank">ISBNdb.com</a> の book and ISBN database に接続できます。</p>
-	<p>ISBNdb API key の取得が必要です。key 作成の詳細については <a href="http://isbndb.com/docs/api/30-keys.html" target="_blank">online documentation</a> を参照してください。</p>]]></message>
+	<p>ISBNdb API key の取得が必要です。key 作成の詳細については <a href="http://isbndb.com/api/v1/docs/keys" target="_blank">online documentation</a> を参照してください。</p>]]></message>
 	<message key="manager.setup.filter.lookup.grid.description.worldCat"><![CDATA[<p>このフィルタでは，OCLCが提供する <a href="http://www.worldcat.org/affiliate/webservices/xisbn/app.jsp" target="_blank">xISBN</a> と <a href="http://www.worldcat.org/" target="_blank">Worldcat</a> (オプション)に接続します。</p>
-	<p>既に Worldcat <a href="http://www.worldcat.org/devnet/wiki/SearchAPIWhoCanUse" target="_blank">API key</a> を持っている場合は下記にkey を入力することで Worldcat にアクセスできます。</p>]]></message>
+	<p>既に Worldcat <a href="http://oclc.org/developer/develop/web-services.html" target="_blank">API key</a> を持っている場合は下記にkey を入力することで Worldcat にアクセスできます。</p>]]></message>
 	<message key="manager.setup.filter.lookup.grid.loadMessage">引用データベースの設定を読み込むまでお待ちください。</message>
 	<message key="manager.setup.filter.parser.grid.description.freeCite"><![CDATA[<p>この抽出フィルタでは <a href="http://freecite.library.brown.edu/" target="_blank">FreeCite</a> のWebサービスに接続します。</p>]]></message>
 	<message key="manager.setup.filter.parser.grid.description.parsCit"><![CDATA[<p>この抽出フィルタでは <a href="http://aye.comp.nus.edu.sg/parsCit/" target="_blank">ParsCit</a> のWebサービスに接続します。</p>]]></message>

@@ -3,7 +3,8 @@
 /**
  * @file classes/filter/FilterDAO.inc.php
  *
- * Copyright (c) 2000-2013 John Willinsky
+ * Copyright (c) 2013-2015 Simon Fraser University Library
+ * Copyright (c) 2000-2015 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class FilterDAO
@@ -430,7 +431,7 @@ class FilterDAO extends DAO {
 	 */
 	function getAdditionalFieldNames() {
 		assert(is_array($this->additionalFieldNames));
-		return $this->additionalFieldNames;
+		return parent::getAdditionalFieldNames() + $this->additionalFieldNames;
 	}
 
 	/**
@@ -438,7 +439,7 @@ class FilterDAO extends DAO {
 	 */
 	function getLocaleFieldNames() {
 		assert(is_array($this->localeFieldNames));
-		return $this->localeFieldNames;
+		return parent::getLocaleFieldNames() + $this->localeFieldNames;
 	}
 
 

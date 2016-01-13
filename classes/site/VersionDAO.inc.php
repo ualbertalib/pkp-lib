@@ -3,7 +3,8 @@
 /**
  * @file classes/site/VersionDAO.inc.php
  *
- * Copyright (c) 2000-2013 John Willinsky
+ * Copyright (c) 2013-2015 Simon Fraser University Library
+ * Copyright (c) 2000-2015 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class VersionDAO
@@ -53,6 +54,7 @@ class VersionDAO extends DAO {
 				$oldVersion =& $this->_returnVersionFromRow($result->GetRowAssoc(false));
 				if (isset($oldVersion)) $returner =& $oldVersion;
 			}
+			$result->Close();
 		}
 
 		if (!$returner) {

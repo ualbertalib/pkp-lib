@@ -4,7 +4,8 @@
 <!--
   * common.xml
   *
-  * Copyright (c) 2000-2013 John Willinsky
+  * Copyright (c) 2013-2015 Simon Fraser University Library
+  * Copyright (c) 2000-2015 John Willinsky
   * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
   *
   * Common elements of the PKP database schema in XML.
@@ -157,7 +158,7 @@
 		<field name="username" type="C2" size="32">
 			<NOTNULL/>
 		</field>
-		<field name="password" type="C2" size="40">
+		<field name="password" type="C2" size="255">
 			<NOTNULL/>
 		</field>
 		<field name="salutation" type="C2" size="40"/>
@@ -257,7 +258,7 @@
 	  *
 	  -->
 	<table name="sessions">
-		<field name="session_id" type="C2" size="40">
+		<field name="session_id" type="C2" size="128">
 			<NOTNULL/>
 		</field>
 		<field name="user_id" type="I8"/>
@@ -281,6 +282,7 @@
 			<NOTNULL/>
 			<DEFAULT VALUE=""/>
 		</field>
+		<field name="domain" type="C2" size="255"/>
 		<descr>Browser/user sessions and session data.</descr>
 		<index name="sessions_user_id">
 			<col>user_id</col>

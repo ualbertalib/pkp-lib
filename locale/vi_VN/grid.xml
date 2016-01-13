@@ -4,7 +4,8 @@
 <!--
   * locale/vi_VN/grid.xml
   *
-  * Copyright (c) 2000-2013 John Willinsky
+  * Copyright (c) 2013-2015 Simon Fraser University Library
+  * Copyright (c) 2000-2015 John Willinsky
   * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
   *
   * Localization strings.
@@ -57,7 +58,6 @@
 	<message key="grid.action.sendToProduction">Gửi bài nộp này đi chế bản</message>
 	<message key="grid.action.settings">Thiết lập</message>
 	<message key="grid.action.importexport">Nhập hoặc xuất nội dung hoặc dữ liệu website</message>
-	<message key="grid.action.restoreDefaults">Restore defaults</message>
 	<message key="grid.action.orderItems">Kích hoạt chế độ sắp thứ tự</message>
 	<message key="grid.action.editSubmissionChecklist">Sửa mục này trong danh sách kiểm</message>
 	<message key="grid.action.deleteSubmissionChecklist">Xóa học này trong danh sách kiểm</message>

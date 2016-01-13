@@ -3,7 +3,8 @@
 /**
  * @file pages/login/PKPLoginHandler.inc.php
  *
- * Copyright (c) 2000-2013 John Willinsky
+ * Copyright (c) 2013-2015 Simon Fraser University Library
+ * Copyright (c) 2000-2015 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class PKPLoginHandler
@@ -223,6 +224,8 @@ class PKPLoginHandler extends Handler {
 	function resetPassword($args, &$request) {
 		$this->validate();
 		$this->setupTemplate($request);
+		$site =& $request->getSite();
+		$oneStepReset = $site->getSetting('oneStepReset') ? true : false;
 
 		$username = isset($args[0]) ? $args[0] : null;
 		$userDao =& DAORegistry::getDAO('UserDAO');
@@ -234,14 +237,13 @@ class PKPLoginHandler extends Handler {
 
 		$templateMgr =& TemplateManager::getManager();
 
-		$hash = Validation::generatePasswordResetHash($user->getId());
-		if ($hash == false || $confirmHash != $hash) {
+		if (!Validation::verifyPasswordResetHash($user->getId(), $confirmHash)) {
 			$templateMgr->assign('errorMsg', 'user.login.lostPassword.invalidHash');
 			$templateMgr->assign('backLink', $request->url(null, null, 'lostPassword'));
 			$templateMgr->assign('backLinkLabel',  'user.login.resetPassword');
 			$templateMgr->display('common/error.tpl');
 
-		} else {
+		} else if (!$oneStepReset) {
 			// Reset password
 			$newPassword = Validation::generatePassword();
 
@@ -261,7 +263,6 @@ class PKPLoginHandler extends Handler {
 			$userDao->updateObject($user);
 
 			// Send email with new password
-			$site =& $request->getSite();
 			import('classes.mail.MailTemplate');
 			$mail = new MailTemplate('PASSWORD_RESET');
 			$this->_setMailFrom($request, $mail, $site);
@@ -277,6 +278,15 @@ class PKPLoginHandler extends Handler {
 			$templateMgr->assign('backLink', $request->url(null, $request->getRequestedPage()));
 			$templateMgr->assign('backLinkLabel',  'user.login');
 			$templateMgr->display('common/message.tpl');
+		} else {
+			import('classes.user.form.LoginChangePasswordForm');
+
+			$passwordForm = new LoginChangePasswordForm($confirmHash);
+			$passwordForm->initData();
+			if (isset($args[0])) {
+				$passwordForm->setData('username', $username);
+			}
+			$passwordForm->display();
 		}
 	}
 
@@ -304,10 +314,15 @@ class PKPLoginHandler extends Handler {
 	function savePassword($args, &$request) {
 		$this->validate();
 		$this->setupTemplate($request);
-
+		$site = $request->getSite();
+		$oneStepReset = $site->getSetting('oneStepReset') ? true : false;
+		$confirmHash = null;
+		if ($oneStepReset) {
+			$confirmHash = $request->getUserVar('confirmHash');
+		}
 		import('classes.user.form.LoginChangePasswordForm');
 
-		$passwordForm = new LoginChangePasswordForm();
+		$passwordForm = new LoginChangePasswordForm($confirmHash);
 		$passwordForm->readInputData();
 
 		if ($passwordForm->validate()) {
@@ -329,7 +344,7 @@ class PKPLoginHandler extends Handler {
 	 * @param $site Site
 	 */
 	function _setMailFrom($request, &$mail, &$site) {
-		$mail->setFrom($site->getLocalizedContactEmail(), $site->getLocalizedContactName());
+		$mail->setReplyTo($site->getLocalizedContactEmail(), $site->getLocalizedContactName());
 		return true;
 	}
 }

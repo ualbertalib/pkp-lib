@@ -3,7 +3,8 @@
 /**
  * @file classes/session/SessionDAO.inc.php
  *
- * Copyright (c) 2000-2013 John Willinsky
+ * Copyright (c) 2013-2015 Simon Fraser University Library
+ * Copyright (c) 2000-2015 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class SessionDAO
@@ -55,6 +56,7 @@ class SessionDAO extends DAO {
 			$session->setSecondsLastUsed($row['last_used']);
 			$session->setRemember($row['remember']);
 			$session->setSessionData($row['data']);
+			$session->setDomain($row['domain']);
 		}
 
 		$result->Close();
@@ -70,9 +72,9 @@ class SessionDAO extends DAO {
 	function insertSession(&$session) {
 		return $this->update(
 			'INSERT INTO sessions
-				(session_id, ip_address, user_agent, created, last_used, remember, data)
+				(session_id, ip_address, user_agent, created, last_used, remember, data, domain)
 				VALUES
-				(?, ?, ?, ?, ?, ?, ?)',
+				(?, ?, ?, ?, ?, ?, ?, ?)',
 			array(
 				$session->getId(),
 				$session->getIpAddress(),
@@ -80,7 +82,8 @@ class SessionDAO extends DAO {
 				(int) $session->getSecondsCreated(),
 				(int) $session->getSecondsLastUsed(),
 				$session->getRemember() ? 1 : 0,
-				$session->getSessionData()
+				$session->getSessionData(),
+				$session->getDomain()
 			)
 		);
 	}
@@ -99,7 +102,8 @@ class SessionDAO extends DAO {
 					created = ?,
 					last_used = ?,
 					remember = ?,
-					data = ?
+					data = ?,
+					domain = ?
 				WHERE session_id = ?',
 			array(
 				$session->getUserId()==''?null:(int) $session->getUserId(),
@@ -109,6 +113,7 @@ class SessionDAO extends DAO {
 				(int) $session->getSecondsLastUsed(),
 				$session->getRemember() ? 1 : 0,
 				$session->getSessionData(),
+				$session->getDomain(),
 				$session->getId()
 			)
 		);

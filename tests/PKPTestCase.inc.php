@@ -6,7 +6,8 @@
 /**
  * @file tests/PKPTestCase.inc.php
  *
- * Copyright (c) 2000-2013 John Willinsky
+ * Copyright (c) 2013-2015 Simon Fraser University Library
+ * Copyright (c) 2000-2015 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class PKPTestCase
@@ -18,12 +19,9 @@
  */
 
 // Include PHPUnit
-require_once('PHPUnit/Extensions/OutputTestCase.php');
 import('lib.pkp.tests.PKPTestHelper');
 
-// FIXME: PHPUnit_Extensions_OutputTestCase is now deprecated but we have to
-// use it until we upgrade our test server from phpunit 3.4 to at least 3.6.
-abstract class PKPTestCase extends PHPUnit_Extensions_OutputTestCase {
+abstract class PKPTestCase extends PHPUnit_Framework_TestCase {
 	private $daoBackup = array(), $registryBackup = array();
 
 	/**

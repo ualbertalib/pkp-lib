@@ -4,7 +4,8 @@
 /**
  * @file js/controllers/grid/GridHandler.js
  *
- * Copyright (c) 2000-2013 John Willinsky
+ * Copyright (c) 2013-2015 Simon Fraser University Library
+ * Copyright (c) 2000-2015 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class GridHandler
@@ -177,9 +178,9 @@
 		if ($element.hasClass('gridRow')) {
 			var $container = $element.parents('tbody:first');
 			return $('.gridRow', $container);
-		} else {
-			return null;
 		}
+
+		return null;
 	};
 
 
@@ -194,9 +195,9 @@
 			// Return the rows empty element placeholder.
 			var $container = $element.parents('tbody:first');
 			return $container.next('.empty');
-		} else {
-			return null;
 		}
+
+		return null;
 	};
 
 
@@ -205,10 +206,9 @@
 	 *
 	 * @param {HTMLElement} sourceElement The element that
 	 *  issued the event.
-	 * @param {Event} event The triggering event.
 	 */
 	$.pkp.controllers.grid.GridHandler.prototype.toggleRowActions =
-			function(sourceElement, event) {
+			function(sourceElement) {
 
 		// Toggle the row actions.
 		var $controlRow = $(sourceElement).parents('tr').next('.row_controls');
@@ -403,6 +403,7 @@
 	 *  @param {Boolean=} opt_fetchedAlready Flag that subclasses can send
 	 *  telling that a fetch operation was already handled there.
 	 */
+	/*jslint unparam: true*/
 	$.pkp.controllers.grid.GridHandler.prototype.refreshGridHandler =
 			function(sourceElement, event, opt_elementId, opt_fetchedAlready) {
 
@@ -423,6 +424,7 @@
 		this.trigger('gridRefreshRequested');
 		this.publishChangeEvents();
 	};
+	/*jslint unparam: false*/
 
 
 	/**
@@ -552,6 +554,7 @@
 	 * @param {Event} event A "formSubmitted" event.
 	 * @param {string} filterData Serialized filter data.
 	 */
+	/*jslint unparam: true*/
 	$.pkp.controllers.grid.GridHandler.prototype.refreshGridWithFilterHandler_ =
 			function(filterForm, event, filterData) {
 
@@ -560,6 +563,7 @@
 		$.post(this.fetchGridUrl_, filterData,
 				this.callbackWrapper(this.replaceGridResponseHandler_), 'json');
 	};
+	/*jslint unparam: false*/
 
 
 	/**
@@ -573,6 +577,7 @@
 	 * @param {Object} params The request parameters to use to generate
 	 *  the new row.
 	 */
+	/*jslint unparam: true*/
 	$.pkp.controllers.grid.GridHandler.prototype.addRowHandler_ =
 			function(sourceElement, event, params) {
 
@@ -580,6 +585,7 @@
 		$.get(this.fetchRowUrl_, params,
 				this.callbackWrapper(this.replaceElementResponseHandler_), 'json');
 	};
+	/*jslint unparam: false*/
 
 
 	/**
@@ -592,6 +598,7 @@
 	 * @param {Object} jsonData A parsed JSON response object.
 	 * @return {boolean|undefined} Return false when no replace action is taken.
 	 */
+	/*jslint unparam: true*/
 	$.pkp.controllers.grid.GridHandler.prototype.replaceElementResponseHandler_ =
 			function(ajaxContext, jsonData) {
 		var elementId, $element, handledJsonData;
@@ -624,6 +631,7 @@
 			}
 		}
 	};
+	/*jslint unparam: false*/
 
 
 	/**
@@ -634,6 +642,7 @@
 	 * @param {Object} ajaxContext The AJAX request context.
 	 * @param {Object} jsonData A parsed JSON response object.
 	 */
+	/*jslint unparam: true*/
 	$.pkp.controllers.grid.GridHandler.prototype.replaceGridResponseHandler_ =
 			function(ajaxContext, jsonData) {
 		var handledJsonData, $grid;
@@ -650,6 +659,7 @@
 			this.activateRowActions_();
 		}
 	};
+	/*jslint unparam: false*/
 
 
 	/**
@@ -751,7 +761,7 @@
 	 */
 	$.pkp.controllers.grid.GridHandler.prototype.applyToggleRowActionEffect_ =
 			function($controlRow) {
-		var delay, $row, timeoutId;
+		var delay, $row;
 
 		// FIXME #7582: IE8 and Safari don't work well with delay to show
 		// or hide the control grid rows.
@@ -760,7 +770,7 @@
 		$row = $controlRow.prev().find('td:not(.indent_row)');
 		$row = $row.add($controlRow.prev());
 		if ($controlRow.is(':visible')) {
-			timeoutId = setTimeout(function() {
+			setTimeout(function() {
 				$row.removeClass('no_border');
 			}, delay);
 			$controlRow.hide(delay);

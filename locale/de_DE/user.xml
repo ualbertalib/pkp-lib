@@ -4,10 +4,11 @@
 <!--
   * locale/de_DE/user.xml
   *
-  * Copyright (c) 2000-2013 John Willinsky
+  * Copyright (c) 2013-2015 Simon Fraser University Library
+  * Copyright (c) 2000-2015 John Willinsky
   * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
-  *
   * Localization strings for the de_DE (Deutsch (Deutschland)) locale.
+  * Please contact Marco Tullney, marco.tullney@fu-berlin.de, with any questions regarding this translation.
   -->
 
 <locale name="de_DE" full_name = "Deutsch (Deutschland)">
@@ -45,12 +46,14 @@
 	<message key="user.group">Benutzer/innen-Gruppe</message>
 	<message key="user.lastName">Familienname</message>
 	<message key="user.profile.form.profileImageInvalid">Ungültiges oder zu großes Bildformat für das Nutzer/innenprofil. Gültige Formate sind .gif, .jpg oder .png, und das Bild darf eine Größe von 150x150 Pixel nicht überschreiten.</message>
+	<message key="user.profile.form.hashInvalid">Der Hashwert zum Zurücksetzen des Passworts, den Sie benutzen wollten, ist nicht gültig.</message>
 	<message key="user.login.accountDisabledWithReason">Ihr Konto wurde aus folgenden Gründen deaktiviert: {$reason}</message>
 	<message key="user.login.accountDisabled">Ihr Konto wurde deaktiviert. Für nähere Informationen setzen Sie sich bitte mit der/dem Website-Administrator/in in Verbindung.</message>
 	<message key="user.login.accountNotValidated">Ihre E-Mail-Adresse konnte nicht verifiziert werden. Rufen Sie bitte Ihre E-Mails ab und befolgen Sie die Anweisungen, die Ihnen übermittelt wurden. Sollten Sie keine E-Mail erhalten haben, müssen Sie eventuell die/den Website-Administrator/in kontaktieren.</message>
 	<message key="user.login.activate">Aktiviere Konto</message>
 	<message key="user.login.activated">Danke, dass Sie Ihr Konto aktiviert haben. Sie können sich nun unter Verwendung der von Ihnen bei der Erstellung Ihres Kontos gemachten Angaben einloggen.</message>
 	<message key="user.login.changePasswordInstructions"><![CDATA[Damit Sie sich auf dieser Seite einloggen können, müssen Sie ein neues Passwort auswählen.<br /><br />Sie ändern das Passwort für Ihr Konto, indem Sie unten Ihren Benutzer/innennamen und das aktuelle sowie das neue Passwort eintragen.]]></message>
+	<message key="user.login.changePasswordInstructionsOneStep"><![CDATA[Sie müssen ein neues Passwort wählen, bevor Sie sich bei dieser Website einloggen können.<br /><br />Bitte geben Sie Ihren Benutzer/innennamen und Ihr neues Passwort unten ein, um das Passwort für Ihr Konto zu ändern.]]></message>
 	<message key="user.login.forgotPassword">Passwort vergessen?</message>
 	<message key="user.login.loginError">Benutzer/innen-Name oder Passwort ungültig. Versuchen Sie es erneut.</message>
 	<message key="user.login">Einloggen</message>
@@ -88,8 +91,8 @@
 	<message key="user.profile.form.profileImage">Profilbild</message>
 	<message key="user.profile.form.publishedNotifications">E-Mail-Benachrichtigung: Neue Ausgabe erschienen</message>
 	<message key="user.profile.form.urlInvalid">Die angegebene URL ist ungültig. Bitte überprüfen Sie die URL nochmals und versuchen es erneut. (Hinweis: Fügen Sie http:// an den Anfang der URL an.)</message>
-	<message key="user.profile.form.usergroupRequired">Eine Benutzer/innen-Gruppe ist notwendig.</message>
-	<message key="user.profile.form.usernameRequired">Ein Benutzer/innen-Name ist erforderlich.</message>
+	<message key="user.profile.form.usergroupRequired">Die Angabe einer Benutzer/innen-Gruppe ist erforderlich.</message>
+	<message key="user.profile.form.usernameRequired">Die Angabe eines Benutzer/innen-Namens ist erforderlich.</message>
 	<message key="user.profile.leavePasswordBlank">Wenn Sie Ihr aktuelles Passwort beibehalten wollen, lassen Sie die Passwortfelder frei.</message>
 	<message key="user.profile.newPassword">Neues Passwort</message>
 	<message key="user.profile.oldPassword">Aktuelles Passwort</message>

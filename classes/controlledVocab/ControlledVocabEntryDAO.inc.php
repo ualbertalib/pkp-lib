@@ -3,7 +3,8 @@
 /**
  * @file classes/controlledVocab/ControlledVocabEntryDAO.inc.php
  *
- * Copyright (c) 2000-2013 John Willinsky
+ * Copyright (c) 2013-2015 Simon Fraser University Library
+ * Copyright (c) 2000-2015 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class ControlledVocabEntryDAO
@@ -111,7 +112,7 @@ class ControlledVocabEntryDAO extends DAO {
 	 * @return array
 	 */
 	function getLocaleFieldNames() {
-		return array('name');
+		return array_merge(parent::getLocaleFieldNames(), array('name'));
 	}
 
 	/**

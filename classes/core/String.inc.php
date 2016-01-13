@@ -3,7 +3,8 @@
 /**
  * @file classes/core/String.inc.php
  *
- * Copyright (c) 2000-2013 John Willinsky
+ * Copyright (c) 2013-2015 Simon Fraser University Library
+ * Copyright (c) 2000-2015 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class String
@@ -371,7 +372,8 @@ class String {
 	/**
 	 * @see http://ca.php.net/manual/en/function.mime_content_type.php
 	 */
-	function mime_content_type($filename) {
+	function mime_content_type($filename, $suggestedExtension = '') {
+		$result = null;
 		if (function_exists('mime_content_type')) {
 			$result = mime_content_type($filename);
 			// mime_content_type appears to return a charset
@@ -379,23 +381,47 @@ class String {
 			if (($i = strpos($result, ';')) !== false) {
 				$result = trim(substr($result, 0, $i));
 			}
-			return $result;
 		} elseif (function_exists('finfo_open')) {
 			$fi =& Registry::get('fileInfo', true, null);
 			if ($fi === null) {
 				$fi = finfo_open(FILEINFO_MIME, Config::getVar('finfo', 'mime_database_path'));
 			}
 			if ($fi !== false) {
-				return strtok(finfo_file($fi, $filename), ' ;');
+				$result = strtok(finfo_file($fi, $filename), ' ;');
 			}
 		}
 
 		// Fall back on an external "file" tool
-		$f = escapeshellarg($filename);
-		$result = trim(`file --brief --mime $f`);
-		// Make sure we just return the mime type.
-		if (($i = strpos($result, ';')) !== false) {
-			$result = trim(substr($result, 0, $i));
+		if (!$result) {
+			$f = escapeshellarg($filename);
+			$result = trim(`file --brief --mime $f`);
+			// Make sure we just return the mime type.
+			if (($i = strpos($result, ';')) !== false) {
+				$result = trim(substr($result, 0, $i));
+			}
+		}
+		
+		// Check ambiguous mimetypes against extension
+		$ext = array_pop(explode('.',$filename));
+		if ($suggestedExtension) {
+			$ext = $suggestedExtension;
+		}
+		// SUGGESTED_EXTENSION:DETECTED_MIME_TYPE => OVERRIDE_MIME_TYPE
+		$ambiguities = array(
+			'css:text/x-c' => 'text/css',
+			'css:text/plain' => 'text/css',
+			'xlsx:application/zip' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+			'xltx:application/zip' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.template',
+			'potx:application/zip' => 'application/vnd.openxmlformats-officedocument.presentationml.template',
+			'ppsx:application/zip' => 'application/vnd.openxmlformats-officedocument.presentationml.slideshow',
+			'pptx:application/zip' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+			'sldx:application/zip' => 'application/vnd.openxmlformats-officedocument.presentationml.slide',
+			'docx:application/zip' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+			'dotx:application/zip' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.template',
+			'epub:application/zip' => 'application/epub+zip',
+		);
+		if (isset($ambiguities[strtolower($ext.':'.$result)])) {
+			$result = $ambiguities[strtolower($ext.':'.$result)];
 		}
 		return $result;
 	}
@@ -1086,6 +1112,22 @@ class String {
 	 */
 	function enumerateAlphabetically($steps) {
 		return chr(ord('A') + $steps);
+	}
+
+	/**
+	 * Create a new UUID (version 4)
+	 * @return string
+	 */
+	function generateUUID() {
+		mt_srand((double)microtime()*10000);
+		$charid = strtoupper(md5(uniqid(rand(), true)));
+		$hyphen = '-';
+		$uuid = substr($charid, 0, 8).$hyphen
+				.substr($charid, 8, 4).$hyphen
+				.'4'.substr($charid,13, 3).$hyphen
+				.strtoupper(dechex(hexdec(ord(substr($charid,16,1))) % 4 + 8)).substr($charid,17, 3).$hyphen
+				.substr($charid,20,12);
+		return $uuid;
 	}
 }
 

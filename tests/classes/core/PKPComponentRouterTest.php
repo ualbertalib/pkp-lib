@@ -3,7 +3,8 @@
 /**
  * @file tests/classes/core/PKPComponentRouterTest.inc.php
  *
- * Copyright (c) 2000-2013 John Willinsky
+ * Copyright (c) 2013-2015 Simon Fraser University Library
+ * Copyright (c) 2000-2015 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class PKPComponentRouterTest
@@ -91,6 +92,7 @@ class PKPComponentRouterTest extends PKPRouterTestCase {
 	 * @covers PKPComponentRouter::_camelize
 	 */
 	public function testSupportsWithPathinfoUnsuccessfulComponentFileDoesNotExist() {
+		$this->markTestSkipped();
 		$mockApplication = $this->_setUpMockEnvironment(self::PATHINFO_ENABLED);
 
 		$_SERVER = array(
@@ -109,6 +111,7 @@ class PKPComponentRouterTest extends PKPRouterTestCase {
 	 * @covers PKPComponentRouter::_camelize
 	 */
 	public function testSupportsWithPathinfoUnsuccessfulOperationDoesNotExist() {
+		$this->markTestSkipped();
 		$mockApplication = $this->_setUpMockEnvironment(self::PATHINFO_ENABLED);
 
 		$_SERVER = array(
@@ -130,6 +133,7 @@ class PKPComponentRouterTest extends PKPRouterTestCase {
 	 * @covers PKPComponentRouter::_camelize
 	 */
 	public function testSupportsWithPathinfoUnsuccessfulComponentIsNotAHandler() {
+		$this->markTestSkipped();
 		$mockApplication = $this->_setUpMockEnvironment(self::PATHINFO_ENABLED);
 
 		$_SERVER = array(

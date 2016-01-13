@@ -1,7 +1,8 @@
 {**
  * templates/user/lostPassword.tpl
  *
- * Copyright (c) 2000-2013 John Willinsky
+ * Copyright (c) 2013-2015 Simon Fraser University Library
+ * Copyright (c) 2000-2015 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * Password reset form.
@@ -32,7 +33,7 @@
 <p><input type="submit" value="{translate key="user.login.resetPassword"}" class="button defaultButton" /></p>
 
 {if !$hideRegisterLink}
-	&#187; <a href="{url page="user" op=$registerOp}">{translate key=$registerLocaleKey}</a>
+	<ul><li><a href="{url page="user" op=$registerOp}">{translate key=$registerLocaleKey}</a></li></ul>
 {/if}
 
 <script type="text/javascript">

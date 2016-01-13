@@ -1,7 +1,8 @@
 /**
  * @file js/controllers/AutocompleteHandler.js
  *
- * Copyright (c) 2000-2013 John Willinsky
+ * Copyright (c) 2013-2015 Simon Fraser University Library
+ * Copyright (c) 2000-2015 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class AutocompleteHandler
@@ -113,6 +114,7 @@
 	 * @return {boolean} Return value to be passed back
 	 *  to jQuery.
 	 */
+	/*jslint unparam: true*/
 	$.pkp.controllers.AutocompleteHandler.prototype.itemSelected =
 			function(autocompleteElement, event, ui) {
 		var $hiddenInput, $textInput;
@@ -129,6 +131,7 @@
 		}
 		return false;
 	};
+	/*jslint unparam: false*/
 
 
 	/**
@@ -143,6 +146,7 @@
 	 * @return {boolean} Return value to be passed back
 	 *  to jQuery.
 	 */
+	/*jslint unparam: true*/
 	$.pkp.controllers.AutocompleteHandler.prototype.itemFocused =
 			function(autocompleteElement, event, ui) {
 		var $textInput;
@@ -154,6 +158,7 @@
 		}
 		return false;
 	};
+	/*jslint unparam: false*/
 
 
 	/**
@@ -162,6 +167,7 @@
 	 * @param {Object} request The autocomplete search request.
 	 * @param {Function} response The response handler function.
 	 */
+	/*jslint unparam: true*/
 	$.pkp.controllers.AutocompleteHandler.prototype.fetchAutocomplete =
 			function(callingElement, request, response) {
 		var $textInput;
@@ -173,6 +179,7 @@
 			response(data.content);
 		}, 'json');
 	};
+	/*jslint unparam: false*/
 
 
 	/**
@@ -213,12 +220,10 @@
 	//
 	/**
 	 * Text input element blur handler.
-	 * @param {HTMLElement} autocompleteElement The element that triggered
-	 *  the event.
-	 * @param {Event} event The blur event.
+	 * @private
 	 */
 	$.pkp.controllers.AutocompleteHandler.prototype.textInputBlurHandler_ =
-			function(autocompleteElement, event, ui) {
+			function() {
 		// Make sure we clean the text input if user selected no option
 		// from the available ones but leaved some text behind. This
 		// is needed to avoid bad form validation and to make it clear to

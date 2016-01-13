@@ -3,7 +3,8 @@
 /**
  * @file plugins/metadata/nlm30/filter/Nlm30CitationSchemaFilter.inc.php
  *
- * Copyright (c) 2000-2013 John Willinsky
+ * Copyright (c) 2013-2015 Simon Fraser University Library
+ * Copyright (c) 2000-2015 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class Nlm30CitationSchemaFilter
@@ -204,6 +205,11 @@ class Nlm30CitationSchemaFilter extends PersistableFilter {
 		$result =& $xmlWebService->call($webServiceRequest);
 
 		if (is_null($result)) {
+			// Add a flag for cases where the web service call failed because of their problems.
+			if ($xmlWebService->getLastResponseStatus() >= 500 || $xmlWebService->getLastResponseStatus() <= 599) {
+				$this->setData('serverError', true);
+			}
+
 			// Construct a helpful error message including
 			// the offending webservice url for get requests.
 			$webserviceUrl = $url;

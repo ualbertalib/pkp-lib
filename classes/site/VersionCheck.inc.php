@@ -3,7 +3,8 @@
 /**
  * @file classes/site/VersionCheck.inc.php
  *
- * Copyright (c) 2000-2013 John Willinsky
+ * Copyright (c) 2013-2015 Simon Fraser University Library
+ * Copyright (c) 2000-2015 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class VersionCheck
@@ -26,10 +27,25 @@ class VersionCheck {
 	 * @return array
 	 */
 	function &getLatestVersion() {
-		$application =& PKPApplication::getApplication();
+		$application =& Application::getApplication();
+
+		$includeId = Config::getVar('general', 'installed') &&
+			!defined('RUNNING_UPGRADE') &&
+			Config::getVar('general', 'enable_beacon', true);
+
+		if ($includeId) {
+			$pluginSettingsDao =& DAORegistry::getDAO('PluginSettingsDAO');
+			$uniqueSiteId = $pluginSettingsDao->getSetting(CONTEXT_SITE, 'UsageEventPlugin', 'uniqueSiteId');
+		} else $uniqueSiteId = null;
+
+		$request =& $application->getRequest();
 		$returner =& VersionCheck::parseVersionXML(
-			$application->getVersionDescriptorUrl()
+			$application->getVersionDescriptorUrl() .
+			($includeId?'?id=' . urlencode($uniqueSiteId) .
+				'&oai=' . urlencode($request->url('index', 'oai'))
+			:'')
 		);
+
 		return $returner;
 	}
 

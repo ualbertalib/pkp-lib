@@ -1,7 +1,8 @@
 /**
  * @file js/classes/Handler.js
  *
- * Copyright (c) 2000-2013 John Willinsky
+ * Copyright (c) 2013-2015 Simon Fraser University Library
+ * Copyright (c) 2000-2015 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class Handler
@@ -192,7 +193,7 @@
 		handler = $.pkp.classes.Handler.getHandler($callingElement);
 
 		// Make sure that we really got the right element.
-		if ($callingElement[0] !== handler.getHtmlElement.call(handler)[0]) {
+		if ($callingElement[0] !== handler.getHtmlElement()[0]) {
 			throw new Error(['An invalid handler is bound to the calling ',
 				'element of an event!'].join(''));
 		}
@@ -277,11 +278,12 @@
 	 * @return {Object|boolean} The parsed JSON data if no error occurred,
 	 *  otherwise false.
 	 */
+	/*jslint unparam: true*/
 	$.pkp.classes.Handler.prototype.remoteResponse =
 			function(ajaxOptions, jsonData) {
-
 		return this.handleJson(jsonData);
 	};
+	/*jslint unparam: false*/
 
 
 	/**
@@ -457,13 +459,12 @@
 				}
 			}
 			return jsonData;
-		} else {
-			// If we got an error message then display it.
-			if (jsonData.content) {
-				alert(jsonData.content);
-			}
-			return false;
 		}
+		// If we got an error message then display it.
+		if (jsonData.content) {
+			alert(jsonData.content);
+		}
+		return false;
 	};
 
 
@@ -511,6 +512,7 @@
 		// Add the event to the published event list.
 		this.publishedEvents_[eventName] = true;
 
+		/*jslint unparam: true*/
 		this.bind(eventName, function(context, privateEvent, var_args) {
 			// Retrieve additional event data.
 			var eventData = null;
@@ -521,6 +523,7 @@
 			// Re-trigger the private event publicly.
 			this.triggerPublicEvent_(eventName, eventData);
 		});
+		/*jslint unparam: false*/
 	};
 
 

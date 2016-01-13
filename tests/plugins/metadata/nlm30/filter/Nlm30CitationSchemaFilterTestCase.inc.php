@@ -3,7 +3,8 @@
 /**
  * @file tests/plugins/metadata/nlm30/filter/Nlm30CitationSchemaFilterTestCase.inc.php
  *
- * Copyright (c) 2000-2013 John Willinsky
+ * Copyright (c) 2013-2015 Simon Fraser University Library
+ * Copyright (c) 2000-2015 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class Nlm30CitationSchemaFilterTestCase
@@ -45,12 +46,19 @@ abstract class Nlm30CitationSchemaFilterTestCase extends PKPTestCase {
 			$testOutput =& $filter->execute($testInput);
 
 			// Prepare an error message
-			if (is_string($testInput)) {
+			if (is_string($testInput) && !$filter->getData('serverError')) {
 				// A raw citation or other easy-to-display test input.
 				$errorMessage = "Error in test #$citationFilterTestIndex: '$testInput'.";
 			} else {
 				// The test input cannot be easily rendered.
 				$errorMessage = "Error in test #$citationFilterTestIndex.";
+			}
+
+			if ($filter->getData('serverError')) {
+				// The error wasn't our fault.
+				$this->markTestSkipped(
+						'The external service is not working at the moment.'
+				);
 			}
 
 			// The citation filter should return a result

@@ -3,7 +3,8 @@
 #
 # buildjs.sh
 #
-# Copyright (c) 2010-2013 John Willinsky
+# Copyright (c) 2013-2015 Simon Fraser University Library
+# Copyright (c) 2010-2015 John Willinsky
 # Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
 #
 # Script to check and minimize JavaScript for distribution.
@@ -67,7 +68,7 @@ shift $((OPTIND-1))
 ### Start Processing ###
 echo >&2
 echo "Starting PKP JavaScript builder." >&2
-echo "Copyright (c) 2010-2013 John Willinsky" >&2
+echo "Copyright (c) 2010-2015 John Willinsky" >&2
 
 
 ### Checking Requirements ###
@@ -203,6 +204,12 @@ else
 	# Run Closure - second pass to minify
 	java -jar "$TOOL_PATH/compiler.jar" --jscomp_off checkTypes --warning_level VERBOSE $COMPILE_FILES \
 		$CLOSURE_EXTERNS --js_output_file "$JS_OUTPUT" 2>&1
+
+	if [ $? -ne 0 ]; then
+		echo "An error occurred during minification."
+		exit 1
+	fi
+
 	echo >&2
 
 	echo "Please don't forget to set enable_minified=On in your config.inc.php." >&2

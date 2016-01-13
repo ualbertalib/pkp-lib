@@ -4,10 +4,11 @@
 <!--
   * manager.xml
   *
-  * Copyright (c) 2003-2013 John Willinsky
+  * Copyright (c) 2013-2015 Simon Fraser University Library
+  * Copyright (c) 2003-2015 John Willinsky
   * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
   *
-  * Localization strings for the ro_RO (Romanian) locale.
+  * Localization strings for the ro_RO (Limba Română) locale.
   * Provided by Constantinescu Nicolaie. 
   *
   -->
@@ -32,6 +33,8 @@
 	<message key="manager.announcements.form.descriptionShortInstructions">O scurtă descriere care apare împreună cu titlul înștiințării.</message>
 	<message key="manager.announcements.form.descriptionShortRequired">Este necesară o scurtă descriere a înștiințării.</message>
 	<message key="manager.announcements.form.descriptionShort">Scurtă descriere</message>
+	<message key="manager.announcements.form.notificationToggle">Trimite o notificare</message>
+	<message key="manager.announcements.form.notificationToggleInstructions">Creați o nouă notificare la salvarea acestui anunț.</message>
 	<message key="manager.announcements.form.saveAndCreateAnother">Salvează şi creează altul</message>
 	<message key="manager.announcements.form.titleRequired">Este necesar un titlu pentru înștiințare.</message>
 	<message key="manager.announcements.form.title">Titlu</message>
@@ -196,13 +199,13 @@
 	<message key="manager.setup.filter.lookup.grid.descriptionConfirm">Ai ales să adaugi baza de date {$filterDisplayName}. Dă clic pe „OK” pentru a confirma.</message>
 	<message key="manager.setup.filter.lookup.grid.descriptionTemplate">Selectează o bază de date.</message>
 	<message key="manager.setup.filter.lookup.grid.description.iSBNdb"><![CDATA[<p>Acest filtru se conectează la <a href="http://isbndb.com/" target="_blank">ISBNdb.com</a> - baza de date pentru cărți și ISBN.</p>
-	<p>Este necesară o cheie ISBNdb API. Pentru informații privind cum să generezi o cheie, vezi <a href="http://isbndb.com/docs/api/30-keys.html" target="_blank">documentația online</a>.</p>]]></message>
+	<p>Este necesară o cheie ISBNdb API. Pentru informații privind cum să generezi o cheie, vezi <a href="http://isbndb.com/api/v1/docs/keys" target="_blank">documentația online</a>.</p>]]></message>
 	<message key="manager.setup.filter.lookup.grid.description.crossRef"><![CDATA[<p>Acest filtru asigură conectarea la baza de date cu citări bibliografice CrossRef folosind <a href="http://www.crossref.org/02publishers/openurl_info.html" target="_blank">interfața pentru interogare OpenURL</a>.</p> 
 	<p>Pentru a utiliza acest filtru, poți utiliza contul personal pentru sau te poți înregistra cu o adresă de email validă <a href="http://www.crossref.org/requestaccount/" target="_blank">aici</a>.</p>]]></message>
 	<message key="manager.setup.filter.lookup.grid.description.pubMed"><![CDATA[<p>Acest filtru asigură conectarea la motorul bazei de date al PubMed: <a href="http://www.ncbi.nlm.nih.gov/gquery/gquery.fcgi" target="_blank">Entrez</a>.</p>
 	<p>Nu este necesar neapărat un email de înregistrare, dar se poate dovedi util atunci când ai probleme de conectare. Vezi secțiunea <a href="http://www.be-md.ncbi.nlm.nih.gov/bookshelf/br.fcgi?book=helpeutils&part=chapter2#chapter2.Usage_Guidelines_and_Requiremen" target="_blank">instrucțiunilor de utilizare și a cerințelor specifice</a> existente în documentația Entrez pentru mai multe informații.</p>]]></message>
 	<message key="manager.setup.filter.lookup.grid.description.worldCat"><![CDATA[<p>Acest filtru asigură conectarea la serviciile OCLC <a href="http://www.worldcat.org/affiliate/webservices/xisbn/app.jsp" target="_blank">xISBN</a> și <a href="http://www.worldcat.org/" target="_blank">Worldcat</a> (opțional).</p>
-	<p>Dacă ai o <a href="http://www.worldcat.org/devnet/wiki/SearchAPIWhoCanUse" target="_blank">cheie API</a> Worldcat, atunci te poți conecta introducând-o mai jos.</p>]]></message>
+	<p>Dacă ai o <a href="http://oclc.org/developer/develop/web-services.html" target="_blank">cheie API</a> Worldcat, atunci te poți conecta introducând-o mai jos.</p>]]></message>
 	<message key="manager.setup.filter.lookup.grid.loadMessage">Așteaptă până când matricea de configurare a bazei de date pentru referințe bibliografice a fost încărcată...</message>
 	<message key="manager.setup.filter.lookup.grid.title">Conectori pentru bazele de date bibliografice</message>
 	<message key="manager.setup.filter.noMoreTemplates">Toate transformările existente au fost deja adăugate. Dă clic pe „anulează” pentru a te întoarce la pagina setărilor</message>
@@ -217,4 +220,17 @@
 	<message key="manager.setup.filter.parser.grid.title">Servicii pentru extragerea referințelor bibliografice</message>
 	<message key="manager.setup.filter.pleaseSelect">Selectează...</message>
 	<message key="manager.setup.metaCitationsDescription">Bifează pentru a activa editarea citărilor și a referințelor bibliografice. Acest lucru va permite autorilor să includă citări bibliografice brute. Redactorilor li se va permite accesul la asistentul pentru markup care poate verifica referințele brute pentru a vedea dacă există în baze de date externe precum WorldCat, ISBNdb, PubMed și altele și pentru acuratețe. Referințele bibliografice aprobate pot fi exportate în fișierele finale de asamblare.</message>
+	<message key="manager.announcements.datePublish">Publicat</message>
+	<message key="manager.emails.addEmail">Adaugă șablon de email</message>
+	<message key="manager.emails.data">Date șablon pentru mesaje</message>
+	<message key="manager.emails.details">Detaliile șablonului</message>
+	<message key="manager.navigation">Navigare</message>
+	<message key="manager.reviewerSearch.advancedSearch.short">Căutare avansată</message>
+	<message key="manager.reviewerSearch.searchByName.short">Căutare după nume</message>
+	<message key="manager.setup.layout.blockManagement">Managementul bărilor laterale</message>
+	<message key="manager.statistics.city">Oraș</message>
+	<message key="manager.statistics.region">Regiune</message>
+	<message key="plugins.categories.metadata">Pluginuri de metadate</message>
+	<message key="plugins.categories.citationOutput">Pluginuri pentru citări</message>
+	<message key="plugins.categories.citationParser">Pluginuri pentru extragerea citărilor</message>
 </locale>

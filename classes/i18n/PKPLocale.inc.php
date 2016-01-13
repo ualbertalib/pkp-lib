@@ -7,7 +7,8 @@
 /**
  * @file classes/i18n/PKPLocale.inc.php
  *
- * Copyright (c) 2000-2013 John Willinsky
+ * Copyright (c) 2013-2015 Simon Fraser University Library
+ * Copyright (c) 2000-2015 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class PKPLocale
@@ -92,8 +93,12 @@ class PKPLocale {
 		$notes =& Registry::get('system.debug.notes');
 		$notes[] = array('debug.notes.missingLocaleKey', array('key' => $key));
 
-		// Add some octothorpes to missing keys to make them more obvious
-		return '##' . htmlentities($key) . '##';
+		if (!HookRegistry::call('PKPLocale::translate', array(&$this, &$key, &$params, &$locale, &$localeFiles, &$value))) {
+			// Add some octothorpes to missing keys to make them more obvious
+			return '##' . htmlentities($key) . '##';
+		} else {
+			return $value;
+		}
 	}
 
 	/**
@@ -204,9 +209,11 @@ class PKPLocale {
 	function &registerLocaleFile ($locale, $filename, $addToTop = false) {
 		$localeFiles =& AppLocale::getLocaleFiles($locale);
 		$localeFile = new LocaleFile($locale, $filename);
-		if (!$localeFile->isValid()) {
-			$localeFile = null;
-			return $localeFile;
+		if (!HookRegistry::call('PKPLocale::registerLocaleFile::isValidLocaleFile', array(&$localeFile))) {
+			if (!$localeFile->isValid()) {
+				$localeFile = null;
+				return $localeFile;
+			}
 		}
 		if ($addToTop) {
 			// Work-around: unshift by reference.

@@ -1,7 +1,8 @@
 {**
  * templates/user/loginChangePassword.tpl
  *
- * Copyright (c) 2000-2013 John Willinsky
+ * Copyright (c) 2013-2015 Simon Fraser University Library
+ * Copyright (c) 2000-2015 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * Form to change a user's password in order to login.
@@ -25,18 +26,22 @@
 {/if}
 
 <form class="pkp_form" id="loginChangePassword" method="post" action="{url page="login" op="savePassword"}">
-
+{if $confirmHash}
+	<input type="hidden" value="{$confirmHash|escape}" name="confirmHash" />
+{/if}
 {include file="common/formErrors.tpl"}
 
-<p><span class="instruct">{translate key="user.login.changePasswordInstructions"}</span></p>
+<p><span class="instruct">{if !$confirmHash}{translate key="user.login.changePasswordInstructions"}{else}{translate key="user.login.changePasswordInstructionsOneStep"}{/if}</span></p>
 
 	{fbvFormArea id="loginFields"}
-		{fbvFormSection label="user.login" for="username"}
+		{fbvFormSection label="user.username" for="username"}
 			{fbvElement type="text" required=true id="username" value=$username|escape maxlength="32" size=$fbvStyles.size.MEDIUM}
 		{/fbvFormSection}
-		{fbvFormSection label="user.profile.oldPassword" for="oldPassword"}
-			{fbvElement type="text" required=true password=true id="oldPassword" value=$oldPassword|escape maxlength="32" size=$fbvStyles.size.MEDIUM}
-		{/fbvFormSection}
+		{if !$confirmHash}
+			{fbvFormSection label="user.profile.oldPassword" for="oldPassword"}
+				{fbvElement type="text" required=true password=true id="oldPassword" value=$oldPassword|escape maxlength="32" size=$fbvStyles.size.MEDIUM}
+			{/fbvFormSection}
+		{/if}
 		{fbvFormSection label="user.profile.newPassword" for="password"}
 			{fbvElement type="text" required=true password=true id="password" value=$password|escape maxlength="32" size=$fbvStyles.size.MEDIUM}
 			{fieldLabel translate=true for=password key=$passwordLengthRestrictionLocaleKey length=$minPasswordLength}

@@ -2,7 +2,8 @@
 /**
  * @file tests/PKPTestHelper.inc.php
  *
- * Copyright (c) 2000-2013 John Willinsky
+ * Copyright (c) 2013-2015 Simon Fraser University Library
+ * Copyright (c) 2000-2015 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class TestHelper
@@ -10,6 +11,10 @@
  *
  * @brief Class that implements functionality common to all PKP test types.
  */
+
+/* Config backup file name */
+define('PKP_TEST_HELPER_BACKUP_CONFIG_FILE', Core::getBaseDir() . DIRECTORY_SEPARATOR . 'config.BACKUP.inc.php');
+define('PKP_TEST_ENTIRE_DB', 1);
 
 abstract class PKPTestHelper {
 
@@ -23,15 +28,26 @@ abstract class PKPTestHelper {
 	 */
 	public static function backupTables($tables, $test) {
 		$dao = new DAO();
+		$driver = Config::getVar('database', 'driver');
 		foreach ($tables as $table) {
+			switch ($driver) {
+				case 'mysql':
+					$createLikeSql = "CREATE TABLE backup_$table LIKE $table";
+					break;
+				case 'postgres':
+					$createLikeSql = "CREATE TABLE backup_$table (LIKE $table)";
+					break;
+				default:
+					$test->fail("Unknown driver \"$driver\"");
+					return;
+			}
+
 			$sqls = array(
-				"ALTER TABLE $table RENAME TO backup_$table",
-				"CREATE TABLE $table LIKE backup_$table",
-				"INSERT INTO $table SELECT * FROM backup_$table"
+				$createLikeSql,
+				"INSERT INTO backup_$table SELECT * FROM $table"
 			);
 			foreach ($sqls as $sql) {
 				if (!$dao->update($sql, false, true, false)) {
-					self::restoreTables($tables, $test);
 					$test->fail("Error while backing up $table: offending SQL is '$sql'");
 				}
 			}
@@ -47,17 +63,84 @@ abstract class PKPTestHelper {
 		$dao = new DAO();
 		foreach ($tables as $table) {
 			$sqls = array(
-				"ALTER TABLE $table RENAME TO temp_$table",
-				"ALTER TABLE backup_$table RENAME TO $table",
-				"DROP TABLE temp_$table" // Only drop original table if we're sure that we really had a backup!
+				"TRUNCATE TABLE $table",
+				"INSERT INTO $table SELECT * FROM backup_$table",
+				"DROP TABLE backup_$table"
 			);
 			foreach ($sqls as $sql) {
 				if (!$dao->update($sql, false, true, false)) {
-					// Try to reset to the prior state before giving up.;
-					$dao->update("ALTER TABLE temp_$table RENAME TO $table");
 					$test->fail("Error while restoring $table: offending SQL is '$sql'");
 				}
 			}
+		}
+	}
+
+	/**
+	 * Restore the database from a dump file.
+	 */
+	public static function restoreDB($test) {
+		$filename = getenv('DATABASEDUMP');
+		if (!$filename || !file_exists($filename)) {
+			$test->fail('Database dump filename needs to be specified in env variable DATABASEDUMP!');
+			return;
+		}
+
+		$output = $status = null; // For PHP scrutinizer
+		switch (Config::getVar('database', 'driver')) {
+			case 'mysql':
+				exec($cmd = 'zcat ' .
+					escapeshellarg($filename) .
+					' | /usr/bin/mysql --user=' .
+					escapeshellarg(Config::getVar('database', 'username')) .
+					' --password=' .
+					escapeshellarg(Config::getVar('database', 'password')) .
+					' --host=' .
+					escapeshellarg(Config::getVar('database', 'host')) .
+					' ' .
+					escapeshellarg(Config::getVar('database', 'name')),
+					$output,
+					$status
+				);
+				if ($status !== 0) {
+					$test->fail("Error while restoring database from \"$filename\" (command: \"$cmd\").");
+				}
+				break;
+			case 'postgres':
+				// WARNING: Does not send a password.
+				exec($cmd = 'zcat ' .
+					escapeshellarg($filename) .
+					' | /usr/bin/psql --username=' .
+					escapeshellarg(Config::getVar('database', 'username')) .
+					' --no-password' .
+					' --host=' .
+					escapeshellarg(Config::getVar('database', 'host')) .
+					' ' .
+					escapeshellarg(Config::getVar('database', 'name')),
+					$output,
+					$status
+				);
+				if ($status !== 0) {
+					$test->fail("Error while restoring database from \"$filename\" (command: \"$cmd\".");
+				}
+				break;
+		}
+	}
+
+	/**
+	 * Backup the config file.
+	 */
+	public static function backupConfigFile() {
+		$fileMgr = new FileManager();
+		$fileMgr->copyFile(CONFIG_FILE, PKP_TEST_HELPER_BACKUP_CONFIG_FILE);
+	}
+
+	/**
+	 * Restore the config file, if any backup is present.
+	 */
+	public static function restoreConfigFile() {
+		$fileMgr = new FileManager();
+		if ($fileMgr->fileExists(PKP_TEST_HELPER_BACKUP_CONFIG_FILE)) {
+			$fileMgr->copyFile(PKP_TEST_HELPER_BACKUP_CONFIG_FILE, CONFIG_FILE);
 		}
 	}
 

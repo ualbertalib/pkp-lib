@@ -4,10 +4,11 @@
 <!--
   * locale/sr_SR/manager.xml
   *
-  * Copyright (c) 2000-2013 John Willinsky
+  * Copyright (c) 2013-2015 Simon Fraser University Library
+  * Copyright (c) 2000-2015 John Willinsky
   * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
   *
-  * Localization strings for the sr_SR (Serbian) locale.
+  * Localization strings for the sr_SR (Cрпски) locale.
   *
   -->
 
@@ -31,6 +32,8 @@
 	<message key="manager.announcements.form.descriptionShortInstructions">Kratak opis pojavljuje se uz naslov obaveštenje.</message>
 	<message key="manager.announcements.form.descriptionShortRequired">Kratki opis obaveštenje je obavezan.</message>
 	<message key="manager.announcements.form.descriptionShort">Kratak opis</message>
+	<message key="manager.announcements.form.notificationToggle">Pošalji obaveštenje</message>
+	<message key="manager.announcements.form.notificationToggleInstructions">Kreiranje novog obaveštenje na čuvanje u ovom obaveštenju.</message>
 	<message key="manager.announcements.form.saveAndCreateAnother">Sačuvaj i napravi drugo</message>
 	<message key="manager.announcements.form.titleRequired">Naslov obaveštenje je obavezan.</message>
 	<message key="manager.announcements.form.title">Naslov</message>
@@ -166,13 +169,13 @@
 	<message key="manager.setup.filter.lookup.grid.descriptionConfirm">Izabrali ste da dodate {$filterDisplayName} bazu podataka. Kliknite na "OK" da biste potvrdili..</message>
 	<message key="manager.setup.filter.lookup.grid.descriptionTemplate">Izaberite bazu za pronalaženje podataka.</message>
 	<message key="manager.setup.filter.lookup.grid.description.iSBNdb"><![CDATA[<p> Ovaj filter se povezuje sa <a href="http://isbndb.com/" target="_blank">ISBNdb.com</a> bazom podataka knjiga i ISBN-ova.</p>
-<p>ISBNdb API ključ je obavezan. Za informacije o generisanju ključa, pogledajte <a href="http://isbndb.com/docs/api/30-keys.html" target="_blank">online dokumentaciju</a>.</p>]]></message>
+<p>ISBNdb API ključ je obavezan. Za informacije o generisanju ključa, pogledajte <a href="http://isbndb.com/api/v1/docs/keys" target="_blank">online dokumentaciju</a>.</p>]]></message>
 	<message key="manager.setup.filter.lookup.grid.description.crossRef"><![CDATA[<p>Ovaj filter se povezuje sa CrossRef bazom citata koristeći CrossRef <a href="http://www.crossref.org/02publishers/openurl_info.html" target="_blank">OpenURL Query Interface</a>.</p>
 <p> Da biste koristili ovaj filter, možete da koristite svoj nalog CrossRef sistema, ili da registrujte važeću imejl adresu na CrossRef <a href="http://www.crossref.org/requestaccount/" target="_blank">ovde</a>.</p>]]></message>
 	<message key="manager.setup.filter.lookup.grid.description.pubMed"><![CDATA[<p>Ovaj filter se povezuje sa PubMed <a href="http://www.ncbi.nlm.nih.gov/gquery/gquery.fcgi" target="_blank">Entrez</a> bazom za pretragu citata.</p>
 	<p>Registracioni imejl nije obavezan, ali može biti neophodan ukoliko naiđete na probleme sa konekcijom. Pogledajte sekciju <a href="http://www.be-md.ncbi.nlm.nih.gov/bookshelf/br.fcgi?book=helpeutils&part=chapter2#chapter2.Usage_Guidelines_and_Requiremen" target="_blank">Uputstvo za korišćenje i sistemski zahtevi</a> u Entrez dokumentaciji za više informacija.</p>]]></message>
 	<message key="manager.setup.filter.lookup.grid.description.worldCat"><![CDATA[<p>Ovaj filter se povezuje na OCLC servis <a href="http://www.worldcat.org/affiliate/webservices/xisbn/app.jsp" target="_blank">xISBN</a> i <a href="http://www.worldcat.org/" target="_blank">Worldcat</a> (opciono).</p>
-	<p>Ukoliko imate Worldcat <a href="http://www.worldcat.org/devnet/wiki/SearchAPIWhoCanUse" target="_blank">API ključ</a> možete se povezati na Worldcat unosom ključa ispod.</p>]]></message>
+	<p>Ukoliko imate Worldcat <a href="http://oclc.org/developer/develop/web-services.html" target="_blank">API ključ</a> možete se povezati na Worldcat unosom ključa ispod.</p>]]></message>
 	<message key="manager.setup.filter.lookup.grid.loadMessage">Molimo sačekajte dok se konfiguracija baze učita...</message>
 	<message key="manager.setup.filter.lookup.grid.title">Konektori baze citata</message>
 	<message key="manager.setup.filter.noMoreTemplates">Sve moguće transformacije su dodate. Kliknite "Odustani" da biste se vratili na stranicu podešavanja.</message>

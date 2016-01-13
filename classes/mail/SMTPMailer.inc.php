@@ -3,7 +3,8 @@
 /**
  * @file classes/mail/SMTPMailer.inc.php
  *
- * Copyright (c) 2000-2013 John Willinsky
+ * Copyright (c) 2013-2015 Simon Fraser University Library
+ * Copyright (c) 2000-2015 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class SMTPMailer
@@ -69,7 +70,7 @@ class SMTPMailer {
 			return $this->disconnect('Did not receive expected 220');
 
 		// Send HELO/EHLO command
-		$serverHost = preg_replace("/:\d*$/", '', Request::getServerHost());
+		$serverHost = Request::getServerHost(null, false);
 		if (!$this->send($this->auth ? 'EHLO' : 'HELO', $serverHost))
 			return $this->disconnect('Could not send HELO/HELO');
 

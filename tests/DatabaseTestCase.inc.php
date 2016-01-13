@@ -3,7 +3,8 @@
 /**
  * @file tests/DatabaseTestCase.inc.php
  *
- * Copyright (c) 2000-2013 John Willinsky
+ * Copyright (c) 2013-2015 Simon Fraser University Library
+ * Copyright (c) 2000-2015 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class DatabaseTestCase
@@ -35,7 +36,10 @@ abstract class DatabaseTestCase extends PKPTestCase {
 	 */
 	protected function setUp() {
 		// Backup affected tables.
-		PKPTestHelper::backupTables($this->getAffectedTables(), $this);
+		$affectedTables = $this->getAffectedTables();
+		if (is_array($affectedTables)) {
+			PKPTestHelper::backupTables($affectedTables, $this);
+		}
 		parent::setUp();
 	}
 
@@ -44,7 +48,12 @@ abstract class DatabaseTestCase extends PKPTestCase {
 	 */
 	protected function tearDown() {
 		parent::tearDown();
-		PKPTestHelper::restoreTables($this->getAffectedTables(), $this);
+		$affectedTables = $this->getAffectedTables();
+		if (is_array($affectedTables)) {
+			PKPTestHelper::restoreTables($this->getAffectedTables(), $this);
+		} elseif ($affectedTables === PKP_TEST_ENTIRE_DB) {
+			PKPTestHelper::restoreDB($this);
+		}
 	}
 }
 ?>

@@ -1,7 +1,8 @@
 /**
  * @file styles/themes/default/theme.css
  *
- * Copyright (c) 2000-2013 John Willinsky
+ * Copyright (c) 2013-2015 Simon Fraser University Library
+ * Copyright (c) 2000-2015 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * OMP default theme
@@ -41,43 +42,6 @@
 /* @end */
 
 /* @group Content Overrides */
-
-body {
-	color: #333;
-}
-
-a {
-	color: #569bbe;
-}
-
-a:hover {
-	color: #E17009;
-}
-
-h1, .h1, h1 a, h1 a:hover {
-	color: #333;
-}
-
-h1 a {
-	text-decoration:none;	
-}
-
-h2, .h2 {
-	color: #555;
-	font-family: Georgia;
-}
-
-h3, .h3 {
-	color: #231f20;
-	text-transform: uppercase;
-	font-family: "Courier New", Courier, mono;
-}
-
-h4, .h4 {
-	color: #555;
-	text-transform: uppercase;
-	font-family: "Courier New", Courier, mono;
-}
 
 .pkp_structure_head_siteNav a {
 	color: #fff;

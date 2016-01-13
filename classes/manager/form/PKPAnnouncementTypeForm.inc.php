@@ -3,7 +3,8 @@
 /**
  * @file classes/manager/form/AnnouncementTypeForm.inc.php
  *
- * Copyright (c) 2000-2013 John Willinsky
+ * Copyright (c) 2013-2015 Simon Fraser University Library
+ * Copyright (c) 2000-2015 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class AnnouncementTypeForm
@@ -41,7 +42,7 @@ class PKPAnnouncementTypeForm extends Form {
 	 */
 	function getLocaleFieldNames() {
 		$announcementTypeDao =& DAORegistry::getDAO('AnnouncementTypeDAO');
-		return $announcementTypeDao->getLocaleFieldNames();
+		return parent::getLocaleFieldNames() + $announcementTypeDao->getLocaleFieldNames();
 	}
 
 	/**

@@ -4,10 +4,11 @@
 <!--
   * locale/de_DE/manager.xml
   *
-  * Copyright (c) 2000-2013 John Willinsky
+  * Copyright (c) 2013-2015 Simon Fraser University Library
+  * Copyright (c) 2000-2015 John Willinsky
   * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
-  *
   * Localization strings for the de_DE (Deutsch (Deutschland)) locale.
+  * Please contact Marco Tullney, marco.tullney@fu-berlin.de, with any questions regarding this translation.
   *
   -->
 
@@ -32,6 +33,8 @@
 	<message key="manager.announcements.form.descriptionShortInstructions">Eine kurze Beschreibung, die zusammen mit dem Mitteilungstitel erscheint</message>
 	<message key="manager.announcements.form.descriptionShortRequired">Eine kurze Beschreibung der Mitteilung ist erforderlich.</message>
 	<message key="manager.announcements.form.descriptionShort">Kurze Beschreibung</message>
+	<message key="manager.announcements.form.notificationToggle">Benachrichtigung senden</message>
+	<message key="manager.announcements.form.notificationToggleInstructions">Eine neue Benachrichtigung beim Speichern dieser Ankündigung erstellen.</message>
 	<message key="manager.announcements.form.saveAndCreateAnother">Speichern und eine weitere Mitteilung erstellen</message>
 	<message key="manager.announcements.form.titleRequired">Ein Mitteilungstitel ist erforderlich.</message>
 	<message key="manager.announcements.form.title">Titel</message>
@@ -77,7 +80,11 @@
 	<message key="manager.emails.resetAll.message">Wenn Sie alle Vorlagen zurücksetzen, gehen alle Veränderungen an den E-Mail-Vorlagen verloren. Möchten Sie diese Aktion bestätigen?</message>
 	<message key="manager.emails.reset">Zurücksetzen</message>
 	<message key="manager.emails.reset.message">Wenn Sie diese Vorlage zurücksetzen, werden alle Daten dieser Vorlage auf ihre Standardwerte zurückgesetzt, alle Veränderungen gehen verloren. Möchten Sie diese Aktion bestätigen?</message>
-	<message key="manager.emails.resetToDefault">Auf Standard zurücksetzen </message>
+	<message key="manager.emails.resetToDefault">Auf Standard zurücksetzen</message>
+	<message key="manager.emails.exportXML">Ausgewählte E-Mail-Vorlagen als XML exportieren</message>
+	<message key="manager.emails.uploadXML">XML-Datei hochladen</message>
+	<message key="manager.emails.uploadSuccess">Die ausgewählten E-Mail-Vorlagen wurden aktualisiert.</message>
+	<message key="manager.emails.uploadError">Beim Hochladen der Datei ist ein Fehler aufgetreten.</message>
 	<message key="manager.filesBrowser">Dateinavigator</message>
 	<message key="manager.files.confirmDelete">Datei oder Verzeichnis löschen? Beachten Sie, dass nur ein leeres Verzeichnis gelöscht werden kann.</message>
 	<message key="manager.files.createDir">Verzeichnis anlegen</message>
@@ -115,7 +122,7 @@
 	<message key="manager.people.emailUsers.emailUsersEnrolledAs">E-Mail an alle Benutzer/innen senden, die eingetragen sind als</message>
 	<message key="manager.people.emailUsers">E-Mail an die Benutzer/innen senden</message>
 	<message key="manager.people.emailUsers.selectLocale">Eine Regionaleinstellung auswählen</message>
-	<message key="manager.people.emailUsers.selectUsers">Wählen Sie die Benutzer/innen, denen Sie eine E-Mail senden wollen, dadurch aus, dass Sie die Kästchen neben ihren Namen anklicken.</message>
+	<message key="manager.people.emailUsers.selectUsers">Wählen Sie die Benutzer/innen, denen Sie eine E-Mail senden wollen, indem Sie die Kästchen neben dem Namen anklicken.</message>
 	<message key="manager.people.enable">Aktivieren</message>
 	<message key="manager.people.enroll">Benutzer/in eintragen</message>
 	<message key="manager.people.enrollment">Eintragen</message>
@@ -180,13 +187,13 @@
 	<message key="manager.setup.filter.lookup.grid.descriptionConfirm">Sie haben sich dafür entschieden, die {$filterDisplayName}-Datenbank hinzuzufügen. Bitte klicken Sie auf 'OK' zur Bestätigung.</message>
 	<message key="manager.setup.filter.lookup.grid.descriptionTemplate">Bitte wählen Sie eine Nachschlagedatenbank aus.</message>
 	<message key="manager.setup.filter.lookup.grid.description.iSBNdb"><![CDATA[<p>Dieser Filter ist mit der  <a href="http://isbndb.com/" target="_blank">ISBNdb.com</a> Buch-und-ISBN-Datenbank verknüpft.</p>
-	<p>Ein ISBNdb API key wird benötigt. Vgl. die <a href="http://isbndb.com/docs/api/30-keys.html" target="_blank">Online-Dokumentation</a> für Informationen zum Erzeugen eines Schlüssels.</p>]]></message>
+	<p>Ein ISBNdb API key wird benötigt. Vgl. die <a href="http://isbndb.com/api/v1/docs/keys" target="_blank">Online-Dokumentation</a> für Informationen zum Erzeugen eines Schlüssels.</p>]]></message>
 	<message key="manager.setup.filter.lookup.grid.description.crossRef"><![CDATA[<p>Dieser Filter ist mit der CrossRef-Zitationsdatenbenk über CrossRefs <a href="http://www.crossref.org/02publishers/openurl_info.html" target="_blank">OpenURL Query Interface</a> verknüpft.</p> 
 	<p>Um diesen Filter zu benutzen, können Sie Ihren CrossRef-Account benutzen, oder Sie registrieren eine gültige E-Mail-Adresse bei CrossRef <a href="http://www.crossref.org/requestaccount/" target="_blank">hier</a>.</p>]]></message>
 	<message key="manager.setup.filter.lookup.grid.description.pubMed"><![CDATA[<p>Dieser Filter ist mit PubMeds <a href="http://www.ncbi.nlm.nih.gov/gquery/gquery.fcgi" target="_blank">Entrez</a> Metasuchmaschine verknüpft.</p>
 	<p>Eine Registrierungs-E-Mail ist nicht unbedingt erforderlich, könnte aber nötig werden, wenn Sie auf Verbindungsprobleme stoßen. Vgl. für weitere Informationen den Abschnitt <a href="http://www.be-md.ncbi.nlm.nih.gov/bookshelf/br.fcgi?book=helpeutils&part=chapter2#chapter2.Usage_Guidelines_and_Requiremen" target="_blank">Usage Guidelines and Requirements</a> in der Entrez-Dokumentation.</p>]]></message>
 	<message key="manager.setup.filter.lookup.grid.description.worldCat"><![CDATA[<p>Dieser Filter ist mit den OCLC-Diensten <a href="http://www.worldcat.org/affiliate/webservices/xisbn/app.jsp" target="_blank">xISBN</a> und <a href="http://www.worldcat.org/" target="_blank">Worldcat</a> (optional) verknüpft.</p>
-	<p>Wenn Sie einen Worldcat <a href="http://www.worldcat.org/devnet/wiki/SearchAPIWhoCanUse" target="_blank">API key</a> besitzen, können Sie auf Worldcat zugreifen, in dem Sie den Schlüssel unten eingeben.</p>]]></message>
+	<p>Wenn Sie einen Worldcat <a href="http://oclc.org/developer/develop/web-services.html" target="_blank">API key</a> besitzen, können Sie auf Worldcat zugreifen, in dem Sie den Schlüssel unten eingeben.</p>]]></message>
 	<message key="manager.setup.filter.lookup.grid.loadMessage">Bitte warten Sie, bis das Raster zur Konfiguration der Zitationsdatenbank geladen worden ist…</message>
 	<message key="manager.setup.filter.lookup.grid.title">Verknüpfungen zu Zitationsdatenbanken</message>
 	<message key="manager.setup.filter.noMoreTemplates">Alle verfügbaren Transformationen sind bereits hinzugefügt worden. Bitte klicken Sie 'Abbrechen' um zur Setupseite zurückzukehren.</message>
@@ -209,12 +216,14 @@
 	<message key="manager.setup.layout.unselected">Nicht ausgewählt</message>
 	<message key="manager.setup.loggingAndAuditing">Protokollieren und prüfen</message>
 	<message key="manager.setup.metaCitationsDescription">Aktivieren Sie die folgende Auswahlbox, um Zitationsbearbeitung zu ermöglichen. Dies wird es Autor/innen ermöglichen, unbearbeitete Zitationen mit ihren Beiträgen einzureichen. Redakteur/innen werden ebenfalls Zugriff auf einen Zitationsauszeichnungsassistenten haben, der unbearbeitete Zitationen mit externen Datenbanken wie WorldCat, ISBNdb, PubMed u.a. abgleichen kann. Bestätigte Zitationen können in die endgültigen Fahnendateien exportiert werden.</message>
-	<message key="manager.setup.pageHeaderLogoImageInvalid">Das Format des Logos in der Kopfzeile der Zeitschriftenseiten ist ungültig. Gültige Formate sind .gif, .jpg und .png.</message>
-	<message key="manager.setup.pageHeaderTitleImageInvalid">Das Format des Titelbildes in der Kopfzeile der Zeitschriftenseiten ist ungültig. Gültige Formate sind .gif, .jpg und .png.</message>
+	<message key="manager.setup.pageHeaderLogoImageInvalid">Ungültiges Format des Logos in der Kopfzeile. Gültige Formate sind .gif, .jpg und .png.</message>
+	<message key="manager.setup.pageHeaderTitleImageInvalid">Ungültiges Format des Titelbilds. Gültige Formate sind .gif, .jpg und .png.</message>
 	<message key="manager.setup.selectOne">Auswählen</message>
 	<message key="manager.statistics"><![CDATA[Statistiken &amp; Berichte]]></message>
 	<message key="manager.statistics.statistics.count.value">{$count} ({$percentage}%)</message>
 	<message key="manager.statistics.statistics.totalNewValue">{$numTotal} ({$numNew} Neue)</message>
+	<message key="manager.statistics.city">Stadt</message>	
+	<message key="manager.statistics.region">Region</message>	
 	<message key="manager.users">Benutzer/innen</message>
 	<message key="plugins.categories.metadata">Metadaten-Plug-Ins</message>
 	<message key="plugins.categories.metadata.description">Metadaten-Plug-Ins implementieren zusätzliche Metadaten-Standards.</message>

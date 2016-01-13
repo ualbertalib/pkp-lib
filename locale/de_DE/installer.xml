@@ -4,10 +4,11 @@
 <!--
   * locale/de_DE/installer.xml
   *
-  * Copyright (c) 2000-2013 John Willinsky
+  * Copyright (c) 2013-2015 Simon Fraser University Library
+  * Copyright (c) 2000-2015 John Willinsky
   * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
-  *
   * Localization strings for the de_DE (Deutsch (Deutschland)) locale.
+  * Please contact Marco Tullney, marco.tullney@fu-berlin.de, with any questions regarding this translation.
   *
   -->
 
@@ -68,4 +69,7 @@
 	<message key="installer.publicFilesDirError">Das öffentliche Verzeichnis existiert nicht oder erlaubt keine Schreibzugriffe.</message>
 	<message key="installer.releaseNotes">Versionsinformationen</message>
 	<message key="installer.securitySettings">Sicherheitseinstellungen</message>
+
+	<message key="installer.beacon">Identifikationssignal</message>
+	<message key="installer.beacon.enable">Eine eindeutige Identifikation und die OAI base URL an PKP übermitteln (nur für Statistiken und Sicherheitsbenachrichtigungen).</message>
 </locale>

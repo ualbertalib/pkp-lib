@@ -3,7 +3,8 @@
 /**
  * @file classes/security/PKPUserGroupDAO.inc.php
  *
- * Copyright (c) 2003-2013 John Willinsky
+ * Copyright (c) 2013-2015 Simon Fraser University Library
+ * Copyright (c) 2003-2015 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class PKPUserGroupDAO
@@ -146,7 +147,7 @@ class PKPUserGroupDAO extends DAO {
 	 * @return array
 	 */
 	function getLocaleFieldNames() {
-		return array('name', 'abbrev');
+		return array_merge(parent::getLocaleFieldNames(), array('name', 'abbrev'));
 	}
 
 	/**
