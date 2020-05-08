@@ -6,9 +6,9 @@
 /**
  * @file controllers/review/linkAction/UnconsiderReviewLinkAction.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class UnconsiderReviewLinkAction
  * @ingroup controllers_review_linkAction
@@ -27,34 +27,30 @@ class UnconsiderReviewLinkAction extends LinkAction {
 	 * to show information about.
 	 * @param $submission Submission The reviewed submission.
 	 */
-	function UnconsiderReviewLinkAction($request, $reviewAssignment, $submission) {
-		// Instantiate the information center modal.
+	function __construct($request, $reviewAssignment, $submission) {
 		$router = $request->getRouter();
-
-		$actionArgs = array(
-			'submissionId' => $reviewAssignment->getSubmissionId(),
-			'reviewAssignmentId' => $reviewAssignment->getId(),
-			'stageId' => $reviewAssignment->getStageId()
-		);
-
 		import('lib.pkp.classes.linkAction.request.RemoteActionConfirmationModal');
-		$modal = new RemoteActionConfirmationModal(
-			__('editor.review.unconsiderReviewText'), __('editor.review.unconsiderReview'),
-			$router->url(
-				$request, null,
-				'grid.users.reviewer.ReviewerGridHandler', 'unconsiderReview',
-				null, $actionArgs
+		parent::__construct(
+			'unconsiderReview',
+			new RemoteActionConfirmationModal(
+				$request->getSession(),
+				__('editor.review.unconsiderReviewText'), __('editor.review.unconsiderReview'),
+				$router->url(
+					$request, null,
+					'grid.users.reviewer.ReviewerGridHandler', 'unconsiderReview',
+					null,
+					array(
+						'submissionId' => $reviewAssignment->getSubmissionId(),
+						'reviewAssignmentId' => $reviewAssignment->getId(),
+						'stageId' => $reviewAssignment->getStageId()
+					)
+				),
+				'modal_information'
 			),
-			'modal_information'
-		);
-
-		// Configure the link action.
-		parent::LinkAction(
-			'unconsiderReview', $modal,
-			__('common.complete'),
-			'completed'
+			__('editor.review.revertDecision'),
+			'unconsider'
 		);
 	}
 }
 
-?>
+

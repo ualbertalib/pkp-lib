@@ -1,27 +1,20 @@
 {**
  * templates/authorDashboard/submissionEmail.tpl
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * Render a single submission email.
  *}
-<blockquote>
-	<div id="email-{$submissionEmail->getId()}">
-		<table width="100%">
-			<tr valign="top">
-				<td>
-					{translate key="email.subject}: {$submissionEmail->getSubject()|escape}<br />
-					<span class="pkp_controllers_informationCenter_itemLastEvent">{$submissionEmail->getDateSent()|date_format:$datetimeFormatShort}</span>
-				</td>
-			</tr>
-			<tr valign="top">
-				{assign var="contents" value=$submissionEmail->getBody()}
-				<td><br />
-					{$submissionEmail->getBody()|nl2br|strip_unsafe_html}
-				</td>
-			</tr>
-		</table>
+<div class="pkp_submission_email">
+	<h2>
+		{$submissionEmail->getSubject()|escape}
+	</h2>
+	<div class="date">
+		{$submissionEmail->getDateSent()|date_format:$datetimeFormatShort}
 	</div>
-</blockquote>
+	<div class="email_entry">
+		{$submissionEmail->getBody()|strip_unsafe_html}
+	</div>
+</div>

@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/announcements/ManageAnnouncementGridHandler.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPManageAnnouncementGridHandler
  * @ingroup classes_controllers_grid_announcements
@@ -21,8 +21,8 @@ class ManageAnnouncementGridHandler extends AnnouncementGridHandler {
 	/**
 	 * Constructor
 	 */
-	function ManageAnnouncementGridHandler() {
-		parent::AnnouncementGridHandler();
+	function __construct() {
+		parent::__construct();
 		$this->addRoleAssignment(
 			ROLE_ID_MANAGER,
 			array(
@@ -40,8 +40,8 @@ class ManageAnnouncementGridHandler extends AnnouncementGridHandler {
 	/**
 	 * @copydoc AnnouncementGridHandler::initialize()
 	 */
-	function initialize($request) {
-		parent::initialize($request);
+	function initialize($request, $args = null) {
+		parent::initialize($request, $args);
 
 		$this->setTitle('announcement.announcements');
 
@@ -77,7 +77,7 @@ class ManageAnnouncementGridHandler extends AnnouncementGridHandler {
 	/**
 	 * @copydoc GridHandler::getRowInstance()
 	 */
-	function getRowInstance() {
+	protected function getRowInstance() {
 		import('lib.pkp.controllers.grid.announcements.AnnouncementGridRow');
 		return new AnnouncementGridRow();
 	}
@@ -85,10 +85,20 @@ class ManageAnnouncementGridHandler extends AnnouncementGridHandler {
 	/**
 	 * @copydoc GridHandler::authorize()
 	 */
-	function authorize($request, &$args, $roleAssignments) {
-		import('lib.pkp.classes.security.authorization.PkpContextAccessPolicy');
-		$this->addPolicy(new PkpContextAccessPolicy($request, $roleAssignments));
-		return parent::authorize($request, $args, $roleAssignments, false);
+	function authorize($request, &$args, $roleAssignments, $requireAnnouncementsEnabled = false) {
+		import('lib.pkp.classes.security.authorization.ContextAccessPolicy');
+		$this->addPolicy(new ContextAccessPolicy($request, $roleAssignments));
+		return parent::authorize($request, $args, $roleAssignments, $requireAnnouncementsEnabled);
+	}
+
+	/**
+	 * @copydoc GridHandler::loadData()
+	 */
+	protected function loadData($request, $filter) {
+		$context = $request->getContext();
+		$announcementDao = DAORegistry::getDAO('AnnouncementDAO'); /* @var $announcementDao AnnouncementDAO */
+		$rangeInfo = $this->getGridRangeInfo($request, $this->getId());
+		return $announcementDao->getByAssocId($context->getAssocType(), $context->getId(), $rangeInfo);
 	}
 
 
@@ -109,35 +119,27 @@ class ManageAnnouncementGridHandler extends AnnouncementGridHandler {
 	 * Display form to edit an announcement.
 	 * @param $args array
 	 * @param $request PKPRequest
-	 * @return string
+	 * @return JSONMessage JSON object
 	 */
 	function editAnnouncement($args, $request) {
-		$announcementId = (int)$request->getUserVar('announcementId');
 		$context = $request->getContext();
-		$contextId = $context->getId();
-
-		$announcementForm = new AnnouncementForm($contextId, $announcementId);
-		$announcementForm->initData($args, $request);
-
-		$json = new JSONMessage(true, $announcementForm->fetch($request));
-		return $json->getString();
+		$announcementForm = new AnnouncementForm($context->getId(), (int) $request->getUserVar('announcementId'));
+		$announcementForm->initData();
+		return new JSONMessage(true, $announcementForm->fetch($request));
 	}
 
 	/**
 	 * Save an edited/inserted announcement.
 	 * @param $args array
 	 * @param $request PKPRequest
-	 * @return string
+	 * @return JSONMessage JSON object
 	 */
 	function updateAnnouncement($args, $request) {
-
-		// Identify the announcement Id.
 		$announcementId = (int) $request->getUserVar('announcementId');
 		$context = $request->getContext();
-		$contextId = $context->getId();
 
 		// Form handling.
-		$announcementForm = new AnnouncementForm($contextId, $announcementId);
+		$announcementForm = new AnnouncementForm($context->getId(), $announcementId);
 		$announcementForm->readInputData();
 
 		if ($announcementForm->validate()) {
@@ -149,7 +151,7 @@ class ManageAnnouncementGridHandler extends AnnouncementGridHandler {
 				$notificationLocaleKey = 'notification.addedAnnouncement';
 			}
 
-			$announcementId = $announcementForm->execute($request);
+			$announcementId = $announcementForm->execute();
 
 			// Record the notification to user.
 			$notificationManager = new NotificationManager();
@@ -158,30 +160,35 @@ class ManageAnnouncementGridHandler extends AnnouncementGridHandler {
 
 			// Prepare the grid row data.
 			return DAO::getDataChangedEvent($announcementId);
-		} else {
-			$json = new JSONMessage(false);
 		}
-		return $json->getString();
+		return new JSONMessage(false);
 	}
 
 	/**
 	 * Delete an announcement.
 	 * @param $args array
 	 * @param $request
+	 * @return JSONMessage JSON object
 	 */
 	function deleteAnnouncement($args, $request) {
+		$context = $request->getContext();
 		$announcementId = (int) $request->getUserVar('announcementId');
 
-		$announcementDao = DAORegistry::getDAO('AnnouncementDAO');
-		$announcementDao->deleteById($announcementId);
+		$announcementDao = DAORegistry::getDAO('AnnouncementDAO'); /* @var $announcementDao AnnouncementDAO */
+		$announcement = $announcementDao->getById($announcementId, $context->getAssocType(), $context->getId());
+		if ($announcement && $request->checkCSRF()) {
+			$announcementDao->deleteObject($announcement);
 
-		// Create notification.
-		$notificationManager = new NotificationManager();
-		$user = $request->getUser();
-		$notificationManager->createTrivialNotification($user->getId(), NOTIFICATION_TYPE_SUCCESS, array('contents' => __('notification.removedAnnouncement')));
+			// Create notification.
+			$notificationManager = new NotificationManager();
+			$user = $request->getUser();
+			$notificationManager->createTrivialNotification($user->getId(), NOTIFICATION_TYPE_SUCCESS, array('contents' => __('notification.removedAnnouncement')));
 
-		return DAO::getDataChangedEvent($announcementId);
+			return DAO::getDataChangedEvent($announcementId);
+		}
+
+		return new JSONMessage(false);
 	}
 }
 
-?>
+

@@ -3,9 +3,9 @@
 /**
  * @file tests/classes/security/authorization/PolicyTestCase.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PolicyTestCase
  * @ingroup tests_classes_security_authorization
@@ -62,7 +62,9 @@ abstract class PolicyTestCase extends PKPTestCase {
 		if (is_null($this->authorizationContextManipulationPolicy)) {
 			// Use a policy to prepare an authorized context
 			// with a user group.
-			$policy = $this->getMock('AuthorizationPolicy', array('effect'));
+			$policy = $this->getMockBuilder(AuthorizationPolicy::class)
+				->setMethods(array('effect'))
+				->getMock();
 			$policy->expects($this->any())
 			       ->method('effect')
 			       ->will($this->returnCallback(array($this, 'mockEffect')));
@@ -105,7 +107,13 @@ abstract class PolicyTestCase extends PKPTestCase {
 		$this->setContextObjects($context);
 
 		// Mock a router.
-		$router = $this->getMock('PKPRouter', array('getRequestedOp', 'getContext'));
+		$router = $this->getMockBuilder(PKPRouter::class)
+			->setMethods(array('getHandler', 'getRequestedOp', 'getContext'))
+			->getMock();
+
+		$router->expects($this->any())
+		       ->method('getHandler')
+		       ->will($this->returnValue(new PKPHandler()));
 
 		// Mock the getRequestedOp() method.
 		$router->expects($this->any())
@@ -144,4 +152,4 @@ abstract class PolicyTestCase extends PKPTestCase {
 		return null;
 	}
 }
-?>
+

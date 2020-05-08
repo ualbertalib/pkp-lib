@@ -1,9 +1,9 @@
 {**
- * controllers/grid/plugins/uploadPluginForm.tpl
+ * templates/controllers/grid/plugins/uploadPluginForm.tpl
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * Form to upload plugin files.
  *}
@@ -15,16 +15,17 @@
 			{ldelim}
 				$uploader: $('#plupload'),
 				uploaderOptions: {ldelim}
-					uploadUrl: '{url|escape:javascript router=$smarty.const.ROUTE_COMPONENT op="uploadPluginFile" function=$function}',
-					baseUrl: '{$baseUrl|escape:javascript}'
+					uploadUrl: {url|json_encode router=$smarty.const.ROUTE_COMPONENT op="uploadPluginFile" function=$function escape=false},
+					baseUrl: {$baseUrl|json_encode}
 				{rdelim}
 			{rdelim});
 	{rdelim});
 </script>
 
-<form class="pkp_form" id="uploadPluginForm" action="{url router=$smarty.const.ROUTE_COMPONENT op="saveUploadPlugin" function=$function}" method="post">
+<form class="pkp_form" id="uploadPluginForm" action="{url router=$smarty.const.ROUTE_COMPONENT op="saveUploadPlugin" function=$function category=$category plugin=$plugin}" method="post">
+	{csrf}
 	{include file="controllers/notification/inPlaceNotification.tpl" notificationId="uploadPluginNotification"}
-	
+
 	{fbvFormArea id="file"}
 		{if $function == 'install'}
 			<p>{translate key="manager.plugins.uploadDescription"}</p>
@@ -37,7 +38,7 @@
 			{include file="controllers/fileUploadContainer.tpl" id="plupload"}
 		{/fbvFormSection}
 	{/fbvFormArea}
-	
-	{fbvFormButtons id="mastheadFormSubmit" submitText="common.save"}
+
+	{fbvFormButtons id="uploadPluginFormSubmit" submitText="common.save"}
 </form>
 <p><span class="formRequired">{translate key="common.requiredField"}</span></p>

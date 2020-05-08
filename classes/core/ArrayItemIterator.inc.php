@@ -3,9 +3,9 @@
 /**
  * @file classes/core/ArrayItemIterator.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ArrayItemIterator
  * @ingroup db
@@ -38,7 +38,8 @@ class ArrayItemIterator extends ItemIterator {
 	 * @param $page int the current page number
 	 * @param $itemsPerPage int Number of items to display per page
 	 */
-	function ArrayItemIterator(&$theArray, $page=-1, $itemsPerPage=-1) {
+	function __construct(&$theArray, $page=-1, $itemsPerPage=-1) {
+		parent::__construct();
 		if ($page>=1 && $itemsPerPage>=1) {
 			$this->theArray = $this->array_slice_key($theArray, ($page-1) * $itemsPerPage, $itemsPerPage);
 			$this->page = $page;
@@ -158,6 +159,13 @@ class ArrayItemIterator extends ItemIterator {
 	}
 
 	/**
+	 * Return this iterator as an associative array.
+	 */
+	function &toAssociativeArray() {
+		return $this->theArray;
+	}
+
+	/**
 	 * Determine whether or not the iterator is within bounds.
 	 * @return boolean
 	 */
@@ -200,4 +208,4 @@ class ArrayItemIterator extends ItemIterator {
 	}
 }
 
-?>
+

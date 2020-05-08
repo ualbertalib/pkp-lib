@@ -1,18 +1,15 @@
 {**
- * fileUploadForm.tpl
+ * templates/controllers/wizard/fileUpload/form/fileUploadForm.tpl
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * Files upload form.
  *
  * Parameters:
  *   $submissionId: The submissionId for which a file is being uploaded.
  *   $stageId: The workflow stage in which the file uploader was called.
- *   $uploaderUserGroupOptions: An array of user groups that are allowed
- *    to upload.
- *   $defaultUserGroupId: A pre-selected user group (optional).
  *   $revisionOnly: Whether the user can upload new files or not.
  *   $revisedFileId: The id of the file to be revised (optional).
  *    When set to a number then the user may not choose the file
@@ -121,44 +118,43 @@
 	<br /><br />
 {else}
 
+{assign var=uploadFormId value="uploadForm"|uniqid}
+{assign var=pluploadControl value="plupload"|uniqid}
+{assign var=browseButtonId value="browseButton"|uniqid}
 <script type="text/javascript">
 	$(function() {ldelim}
 		// Attach the upload form handler.
-		$('#uploadForm').pkpHandler(
+		$('#{$uploadFormId}').pkpHandler(
 			'$.pkp.controllers.wizard.fileUpload.form.FileUploadFormHandler',
 			{ldelim}
 				hasFileSelector: {if $showFileSelector}true{else}false{/if},
 				hasGenreSelector: {if $showGenreSelector}true{else}false{/if},
-				presetRevisedFileId: '{$revisedFileId}',
+				presetRevisedFileId: {$revisedFileId|json_encode},
 				// File genres currently assigned to submission files.
 				fileGenres: {ldelim}
 					{foreach name=currentSubmissionFileGenres from=$currentSubmissionFileGenres key=submissionFileId item=fileGenre}
 						{if !empty($fileGenre)}
-							{$submissionFileId}: {$fileGenre}{if !$smarty.foreach.currentSubmissionFileGenres.last},{/if}
+							{$submissionFileId|json_encode}: {$fileGenre|json_encode}{if !$smarty.foreach.currentSubmissionFileGenres.last},{/if}
 						{/if}
 					{/foreach}
 				{rdelim},
-				$uploader: $('#plupload'),
+				$uploader: $('#{$pluploadControl}'),
 				uploaderOptions: {ldelim}
-					uploadUrl: '{url|escape:javascript op="uploadFile" submissionId=$submissionId stageId=$stageId fileStage=$fileStage reviewRoundId=$reviewRoundId assocType=$assocType assocId=$assocId escape=false}',
-					baseUrl: '{$baseUrl|escape:javascript}',
+					uploadUrl: {url|json_encode op="uploadFile" submissionId=$submissionId stageId=$stageId fileStage=$fileStage reviewRoundId=$reviewRoundId assocType=$assocType assocId=$assocId escape=false},
+					baseUrl: {$baseUrl|json_encode},
+					browse_button: '{$browseButtonId}'
 				{rdelim}
 			{rdelim});
 	{rdelim});
 </script>
 
-<form class="pkp_form" id="uploadForm" action="#" method="post">
+<form class="pkp_form" id="{$uploadFormId}" action="#" method="post">
+	{include file="controllers/notification/inPlaceNotification.tpl" notificationId=$uploadFormId|concat:"Notification"}
+	{csrf}
 	{fbvFormArea id="file"}
 		{if $assocType && $assocId}
 			<input type="hidden" name="assocType" value="{$assocType|escape}" />
 			<input type="hidden" name="assocId" value="{$assocId|escape}" />
-		{/if}
-		{if count($uploaderUserGroupOptions) > 1}
-			{fbvFormSection label="submission.upload.userGroup" required=true}
-				{fbvElement type="select" name="uploaderUserGroupId" id="uploaderUserGroupId" from=$uploaderUserGroupOptions selected=$defaultUserGroupId translate=false}
-			{/fbvFormSection}
-		{else}
-			<input type="hidden" id="uploaderUserGroupId" name="uploaderUserGroupId" value="{$uploaderUserGroupOptions|@key}" />
 		{/if}
 
 		{if $showFileNameOnly}
@@ -182,18 +178,15 @@
 
 		{if $showGenreSelector}
 			{fbvFormSection title="submission.upload.fileContents" required=true}
-				{translate|assign:"defaultLabel" key="submission.upload.selectBookElement"}
-				{fbvElement type="select" name="genreId" id="genreId" from=$submissionFileGenres translate=false defaultLabel=$defaultLabel defaultValue="" required="true" selected=$genreId}
+				{capture assign="defaultLabel"}{translate key="submission.upload.selectComponent"}{/capture}
+				{fbvElement type="select" name="genreId" id="genreId" from=$submissionFileGenres translate=false defaultLabel=$defaultLabel defaultValue="" required="true" selected=$genreId required=true}
 			{/fbvFormSection}
 		{/if}
 
-		{fbvFormSection title="submission.submit.selectFile" required=true}
+		{fbvFormSection}
 			{* The uploader widget *}
-			{include file="controllers/fileUploadContainer.tpl" id="plupload"}
+			{include file="controllers/fileUploadContainer.tpl" id=$pluploadControl browseButton=$browseButtonId}
 		{/fbvFormSection}
-
-		{translate|assign:"maxFileUploadStatus" key="common.fileUpload.maxFileSizeStatus" fileSize=$maxFileUploadSize supportName=$currentContext->getSetting('supportName') supportEmail=$currentContext->getSetting('supportEmail')}
-		{fbvFormSection description=$maxFileUploadStatus translate=false}{/fbvFormSection}
 
 		{if $ensuringLink}
 			<div id="{$ensuringLink->getId()}" class="pkp_linkActions">
@@ -202,5 +195,4 @@
 		{/if}
 	{/fbvFormArea}
 </form>
-<p><span class="formRequired">{translate key="common.requiredField"}</span></p>
 {/if}

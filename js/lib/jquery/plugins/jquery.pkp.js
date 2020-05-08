@@ -5,9 +5,9 @@
 /**
  * @file js/lib/jquery/plugins/jquery.pkp.js
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @ingroup js_lib_jquery_plugins
  *
@@ -72,7 +72,7 @@
 					}
 				} else {
 					// Alert that the remote call failed.
-					$element.trigger('ajaxHtmlError', jsonData.content)
+					$element.trigger('ajaxHtmlError', jsonData.content);
 					alert(jsonData.content);
 				}
 			},
@@ -84,6 +84,4 @@
 		return this;
 	};
 
-
-/** @param {jQuery} $ jQuery closure. */
 })(jQuery);

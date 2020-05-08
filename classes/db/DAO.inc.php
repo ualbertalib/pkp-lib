@@ -8,9 +8,9 @@
 /**
  * @file classes/db/DAO.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class DAO
  * @ingroup db
@@ -22,6 +22,7 @@
 
 import('lib.pkp.classes.db.DBConnection');
 import('lib.pkp.classes.db.DAOResultFactory');
+import('lib.pkp.classes.db.DBResultRange');
 import('lib.pkp.classes.core.DataObject');
 
 define('SORT_DIRECTION_ASC', 0x00001);
@@ -59,7 +60,7 @@ class DAO {
 	 * Constructor.
 	 * Initialize the database connection.
 	 */
-	function DAO($dataSource = null, $callHooks = true) {
+	function __construct($dataSource = null, $callHooks = true) {
 		if ($callHooks === true) {
 			// Call hooks based on the object name. Results
 			// in hook calls named e.g. "sessiondao::_Constructor"
@@ -99,8 +100,9 @@ class DAO {
 		$result = $dataSource->execute($sql, $params !== false && !is_array($params) ? array($params) : $params);
 		if ($dataSource->errorNo()) {
 			// FIXME Handle errors more elegantly.
-			fatalError('DB Error: ' . $dataSource->errorMsg());
+			$this->handleError($dataSource, $sql);
 		}
+
 		return $result;
 	}
 
@@ -130,7 +132,7 @@ class DAO {
 		$result = $dataSource->CacheExecute($secsToCache, $sql, $params !== false && !is_array($params) ? array($params) : $params);
 		if ($dataSource->errorNo()) {
 			// FIXME Handle errors more elegantly.
-			fatalError('DB Error: ' . $dataSource->errorMsg());
+			$this->handleError($dataSource, $sql);
 		}
 		return $result;
 	}
@@ -160,7 +162,7 @@ class DAO {
 		$dataSource = $this->getDataSource();
 		$result = $dataSource->selectLimit($sql, $numRows === false ? -1 : $numRows, $offset === false ? -1 : $offset, $params !== false && !is_array($params) ? array($params) : $params);
 		if ($dataSource->errorNo()) {
-			fatalError('DB Error: ' . $dataSource->errorMsg());
+			$this->handleError($dataSource, $sql);
 		}
 		return $result;
 	}
@@ -186,9 +188,13 @@ class DAO {
 		if (isset($dbResultRange) && $dbResultRange->isValid()) {
 			$start = Core::microtime();
 			$dataSource = $this->getDataSource();
-			$result = $dataSource->PageExecute($sql, $dbResultRange->getCount(), $dbResultRange->getPage(), $params);
+			if (is_null($dbResultRange->getOffset())) {
+				$result = $dataSource->PageExecute($sql, $dbResultRange->getCount(), $dbResultRange->getPage(), $params);
+			} else {
+				$result = $dataSource->SelectLimit($sql, $dbResultRange->getCount(), $dbResultRange->getOffset(), $params);
+			}
 			if ($dataSource->errorNo()) {
-				fatalError('DB Error: ' . $dataSource->errorMsg());
+				$this->handleError($dataSource, $sql);
 			}
 		}
 		else {
@@ -222,7 +228,7 @@ class DAO {
 		$dataSource = $this->getDataSource();
 		$dataSource->execute($sql, $params !== false && !is_array($params) ? array($params) : $params);
 		if ($dieOnError && $dataSource->errorNo()) {
-			fatalError('DB Error: ' . $dataSource->errorMsg());
+			$this->handleError($dataSource, $sql);
 		}
 		return $dataSource->errorNo() == 0 ? true : false;
 	}
@@ -335,15 +341,19 @@ class DAO {
 	function convertFromDB($value, $type) {
 		switch ($type) {
 			case 'bool':
+			case 'boolean':
 				$value = (bool) $value;
 				break;
 			case 'int':
+			case 'integer':
 				$value = (int) $value;
 				break;
 			case 'float':
+			case 'number':
 				$value = (float) $value;
 				break;
 			case 'object':
+			case 'array':
 				$value = unserialize($value);
 				break;
 			case 'date':
@@ -395,17 +405,21 @@ class DAO {
 
 		switch ($type) {
 			case 'object':
+			case 'array':
 				$value = serialize($value);
 				break;
 			case 'bool':
+			case 'boolean':
 				// Cast to boolean, ensuring that string
 				// "false" evaluates to boolean false
 				$value = ($value && $value !== 'false') ? 1 : 0;
 				break;
 			case 'int':
+			case 'integer':
 				$value = (int) $value;
 				break;
 			case 'float':
+			case 'number':
 				$value = (float) $value;
 				break;
 			case 'date':
@@ -496,7 +510,8 @@ class DAO {
 		// Loop over all fields and update them in the settings table
 		$updateArray = $idArray;
 		$noLocale = 0;
-		$staleMetadataSettings = array();
+		$staleSettings = array();
+
 		foreach ($settingFields as $isTranslated => $fieldTypes) {
 			foreach ($fieldTypes as $isMetadata => $fieldNames) {
 				foreach ($fieldNames as $fieldName) {
@@ -532,17 +547,17 @@ class DAO {
 							$this->replace($tableName, $updateArray, $idFields);
 						}
 					} else {
-						// Meta-data fields are maintained "sparsly". Only set fields will be
+						// Data is maintained "sparsely". Only set fields will be
 						// recorded in the settings table. Fields that are not explicity set
 						// in the data object will be deleted.
-						if ($isMetadata) $staleMetadataSettings[] = $fieldName;
+						$staleSettings[] = $fieldName;
 					}
 				}
 			}
 		}
 
-		// Remove stale meta-data
-		if (count($staleMetadataSettings)) {
+		// Remove stale data
+		if (count($staleSettings)) {
 			$removeWhere = '';
 			$removeParams = array();
 			foreach ($idArray as $idField => $idValue) {
@@ -550,8 +565,8 @@ class DAO {
 				$removeWhere .= $idField.' = ?';
 				$removeParams[] = $idValue;
 			}
-			$removeWhere .= rtrim(' AND setting_name IN ( '.str_repeat('? ,', count($staleMetadataSettings)), ',').')';
-			$removeParams = array_merge($removeParams, $staleMetadataSettings);
+			$removeWhere .= rtrim(' AND setting_name IN ( '.str_repeat('? ,', count($staleSettings)), ',').')';
+			$removeParams = array_merge($removeParams, $staleSettings);
 			$removeSql = 'DELETE FROM '.$tableName.' WHERE '.$removeWhere;
 			$this->update($removeSql, $removeParams);
 		}
@@ -573,7 +588,6 @@ class DAO {
 			$params = false;
 		}
 		$result = $this->retrieve($sql, $params);
-
 		while (!$result->EOF) {
 			$row = $result->getRowAssoc(false);
 			$dataObject->setData(
@@ -587,6 +601,7 @@ class DAO {
 			$result->MoveNext();
 		}
 		$result->Close();
+
 	}
 
 	/**
@@ -627,7 +642,7 @@ class DAO {
 	 *  element ID here.
 	 * @param $content mixed (Optional) Additional content to pass back
 	 *  to the handler of the JSON message.
-	 * @return string A rendered JSON message.
+	 * @return JSONMessage
 	 */
 	static function getDataChangedEvent($elementId = null, $parentElementId = null, $content = '') {
 		// Create the event data.
@@ -644,7 +659,7 @@ class DAO {
 		import('lib.pkp.classes.core.JSONMessage');
 		$json = new JSONMessage(true, $content);
 		$json->setEvent('dataChanged', $eventData);
-		return $json->getString();
+		return $json;
 	}
 
 	/**
@@ -662,7 +677,7 @@ class DAO {
 		$today = getDate();
 		$todayTimestamp = mktime(0, 0, 0, $today['mon'], $today['mday'], $today['year']);
 		if ($date != null) {
-			$dueDateParts = explode('-', $date);
+			$dateParts = explode('-', $date);
 
 			// If we don't accept past dates...
 			if (!$acceptPastDate && $todayTimestamp > strtotime($date)) {
@@ -670,7 +685,7 @@ class DAO {
 				return date('Y-m-d H:i:s', $todayTimestamp);
 			} else {
 				// Return the passed date.
-				return date('Y-m-d H:i:s', mktime(0, 0, 0, $dueDateParts[1], $dueDateParts[2], $dueDateParts[0]));
+				return date('Y-m-d H:i:s', mktime(0, 0, 0, $dateParts[1], $dateParts[2], $dateParts[0]));
 			}
 		} elseif (isset($defaultNumWeeks)) {
 			// Add the equivalent of $numWeeks weeks, measured in seconds, to $todaysTimestamp.
@@ -683,6 +698,8 @@ class DAO {
 			return null;
 		}
 	}
-}
 
-?>
+	function handleError($dataSource, $sql) {
+		throw new Exception('DB Error: ' . $dataSource->errorMsg() . ' Query: ' . $sql);
+	}
+}

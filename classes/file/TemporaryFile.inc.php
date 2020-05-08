@@ -3,9 +3,9 @@
 /**
  * @file classes/file/TemporaryFile.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class TemporaryFile
  * @ingroup file
@@ -17,13 +17,6 @@
 import('lib.pkp.classes.file.PKPFile');
 
 class TemporaryFile extends PKPFile {
-
-	/**
-	 * Constructor.
-	 */
-	function TemporaryFile() {
-		parent::PKPFile();
-	}
 
 	/**
 	 * Return absolute path to the file on the host filesystem.
@@ -52,8 +45,8 @@ class TemporaryFile extends PKPFile {
 	 * @param $userId int
 	 */
 	function setUserId($userId) {
-		return $this->setData('userId', $userId);
+		$this->setData('userId', $userId);
 	}
 }
 
-?>
+

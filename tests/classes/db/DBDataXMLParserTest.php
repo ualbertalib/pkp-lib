@@ -3,9 +3,9 @@
 /**
  * @file tests/classes/db/DBDataXMLParserTest.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class DBDataXMLParserTest
  * @ingroup tests_classes_db
@@ -27,10 +27,15 @@ class DBDataXMLParserTest extends DatabaseTestCase {
 		$dataXMLParser->setDBConn(DBConnection::getConn());
 		$sql = $dataXMLParser->parseData(dirname(__FILE__) . '/data-sql.xml');
 		switch (Config::getVar('database', 'driver')) {
+			case 'mysqli':
 			case 'mysql':
 				$this->assertEquals(array('RAW QUERY', 'RAW MYSQL QUERY'), $sql);
 				break;
 			case 'postgres':
+			case 'postgres64':
+			case 'postgres7':
+			case 'postgres8':
+			case 'postgres9':
 				$this->assertEquals(array('RAW QUERY', 'RAW POSTGRESQL QUERY'), $sql);
 				break;
 			default: $this->fail('Unknown DB driver.');
@@ -46,8 +51,8 @@ class DBDataXMLParserTest extends DatabaseTestCase {
 		$dataXMLParser->setDBConn(DBConnection::getConn());
 		$sql = $dataXMLParser->parseData(dirname(__FILE__) . '/data-table.xml');
 		$this->assertEquals(array(
-			'INSERT INTO mytable (default_col, notnullable_default_col, nullable_default_col, notnullable_col, nullable_col, normal_col) VALUES (\'MY_DEFAULT\', \'\', NULL, \'\', NULL, \'MY_VALUE_1\')',
-			'INSERT INTO mytable (default_col, notnullable_default_col, nullable_default_col, notnullable_col, nullable_col, normal_col) VALUES (\'DEFAULT_OVERRIDDEN\', \'\', NULL, \'\', NULL, \'MY_VALUE_2\')'
+			'INSERT INTO mytable (notnullable_col, nullable_col, normal_col) VALUES (\'\', NULL, \'MY_VALUE_1\')',
+			'INSERT INTO mytable (notnullable_col, nullable_col, normal_col, default_col) VALUES (\'\', NULL, \'MY_VALUE_2\', \'DEFAULT_OVERRIDDEN\')'
 		), $sql);
 	}
 
@@ -60,6 +65,7 @@ class DBDataXMLParserTest extends DatabaseTestCase {
 		$dataXMLParser->setDBConn(DBConnection::getConn());
 		switch (Config::getVar('database', 'driver')) {
 			case 'mysql':
+			case 'mysqli':
 				$this->assertEquals(
 					array(
 						array('DROP TABLE IF EXISTS myDropTable'),
@@ -70,6 +76,10 @@ class DBDataXMLParserTest extends DatabaseTestCase {
 				);
 				break;
 			case 'postgres':
+			case 'postgres64':
+			case 'postgres7':
+			case 'postgres8':
+			case 'postgres9':
 				$this->markTestSkipped('PostgreSQL/ADODB weirdness prevents this test.');
 				break;
 			default: $this->fail('Unknown DB driver.');
@@ -77,4 +87,4 @@ class DBDataXMLParserTest extends DatabaseTestCase {
 	}
 }
 
-?>
+

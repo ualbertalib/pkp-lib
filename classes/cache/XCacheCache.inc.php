@@ -3,9 +3,9 @@
 /**
  * @file classes/cache/XCacheCache.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class XCacheCache
  * @ingroup cache
@@ -21,8 +21,8 @@ class XCacheCache extends GenericCache {
 	/**
 	 * Instantiate a cache.
 	 */
-	function XCacheCache($context, $cacheId, $fallback) {
-		parent::GenericCache($context, $cacheId, $fallback);
+	function __construct($context, $cacheId, $fallback) {
+		parent::__construct($context, $cacheId, $fallback);
 	}
 
 	/**
@@ -84,4 +84,4 @@ class XCacheCache extends GenericCache {
 	}
 }
 
-?>
+

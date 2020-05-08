@@ -3,9 +3,9 @@
 /**
  * @file classes/tombstone/DataObjectTombstoneDAO.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class DataObjectTombstoneDAO
  * @ingroup tombstone
@@ -17,12 +17,6 @@
 import('lib.pkp.classes.tombstone.DataObjectTombstone');
 
 class DataObjectTombstoneDAO extends DAO {
-	/**
-	 * Constructor.
-	 */
-	function DataObjectTombstoneDAO() {
-		parent::DAO();
-	}
 
 	/**
 	 * Return an instance of the DataObjectTombstone class.
@@ -111,7 +105,7 @@ class DataObjectTombstoneDAO extends DAO {
 			(int) $tombstoneId
 		);
 		if ($this->getAffectedRows()) {
-			$dataObjectTombstoneSettingsDao = DAORegistry::getDAO('DataObjectTombstoneSettingsDAO');
+			$dataObjectTombstoneSettingsDao = DAORegistry::getDAO('DataObjectTombstoneSettingsDAO'); /* @var $dataObjectTombstoneSettingsDao DataObjectTombstoneSettingsDAO */
 			$settingsDeleted = $dataObjectTombstoneSettingsDao->deleteSettings($tombstoneId);
 			$setObjectsDeleted = $this->deleteOAISetObjects($tombstoneId);
 			if ($settingsDeleted && $setObjectsDeleted) {
@@ -312,4 +306,4 @@ class DataObjectTombstoneDAO extends DAO {
 	}
 }
 
-?>
+

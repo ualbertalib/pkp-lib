@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/files/LibraryFileGridRow.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class LibraryFileGridRow
  * @ingroup controllers_grid_files
@@ -32,10 +32,10 @@ class LibraryFileGridRow extends GridRow {
 	/**
 	 * Constructor
 	 */
-	function LibraryFileGridRow($canEdit = false, $submission = null) {
+	function __construct($canEdit = false, $submission = null) {
 		$this->_canEdit = $canEdit;
 		$this->_submission = $submission;
-		parent::GridRow();
+		parent::__construct();
 	}
 
 	//
@@ -56,12 +56,11 @@ class LibraryFileGridRow extends GridRow {
 	//
 	// Overridden template methods
 	//
-	/*
-	 * Configure the grid row
-	 * @param $request PKPRequest
+	/**
+	 * @copydoc GridRow::initialize()
 	 */
-	function initialize($request) {
-		parent::initialize($request);
+	function initialize($request, $template = null) {
+		parent::initialize($request, $template);
 
 		$this->setFileType($request->getUserVar('fileType'));
 
@@ -95,6 +94,7 @@ class LibraryFileGridRow extends GridRow {
 				new LinkAction(
 					'deleteFile',
 					new RemoteActionConfirmationModal(
+						$request->getSession(),
 						__('common.confirmDelete'), __('common.delete'),
 						$router->url($request, null, null, 'deleteFile', null, $actionArgs),
 						'modal_delete'
@@ -107,4 +107,4 @@ class LibraryFileGridRow extends GridRow {
 	}
 }
 
-?>
+

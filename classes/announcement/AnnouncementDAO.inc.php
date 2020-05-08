@@ -3,9 +3,9 @@
 /**
  * @file classes/announcement/AnnouncementDAO.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class AnnouncementDAO
  * @ingroup announcement
@@ -17,22 +17,23 @@
 import('lib.pkp.classes.announcement.Announcement');
 
 class AnnouncementDAO extends DAO {
-	/**
-	 * Constructor
-	 */
-	function AnnouncementDAO() {
-		parent::DAO();
-	}
 
 	/**
 	 * Retrieve an announcement by announcement ID.
 	 * @param $announcementId int
+	 * @param $assocType int Optional assoc type
+	 * @param $assocId int Optional assoc ID
 	 * @return Announcement
 	 */
-	function getById($announcementId) {
+	function getById($announcementId, $assocType = null, $assocId = null) {
+		$params = array((int) $announcementId);
+		if ($assocType !== null) $params[] = (int) $assocType;
+		if ($assocId !== null) $params[] = (int) $assocId;
 		$result = $this->retrieve(
-			'SELECT * FROM announcements WHERE announcement_id = ?',
-			(int) $announcementId
+			'SELECT	* FROM announcements WHERE announcement_id = ?' .
+			($assocType !== null?' AND assoc_type = ?':'') .
+			($assocId !== null?' AND assoc_id = ?':''),
+			$params
 		);
 
 		$returner = null;
@@ -122,12 +123,13 @@ class AnnouncementDAO extends DAO {
 	 * @return int
 	 */
 	function insertObject($announcement) {
+		$dateExpire = $announcement->getDateExpire();
 		$this->update(
 			sprintf('INSERT INTO announcements
 				(assoc_type, assoc_id, type_id, date_expire, date_posted)
 				VALUES
 				(?, ?, ?, %s, %s)',
-				$this->datetimeToDB($announcement->getDateExpire()), $this->datetimeToDB($announcement->getDatetimePosted())),
+				!empty($dateExpire)?$this->datetimeToDB($dateExpire):'null', $this->datetimeToDB($announcement->getDatetimePosted())),
 			array(
 				(int) $announcement->getAssocType(),
 				(int) $announcement->getAssocId(),
@@ -145,6 +147,7 @@ class AnnouncementDAO extends DAO {
 	 * @return boolean
 	 */
 	function updateObject($announcement) {
+		$dateExpire = $announcement->getDateExpire();
 		$returner = $this->update(
 			sprintf('UPDATE announcements
 				SET
@@ -153,7 +156,7 @@ class AnnouncementDAO extends DAO {
 					type_id = ?,
 					date_expire = %s
 				WHERE announcement_id = ?',
-				$this->datetimeToDB($announcement->getDateExpire())),
+				!empty($dateExpire)?$this->datetimeToDB($dateExpire):'null'),
 			array(
 				(int) $announcement->getAssocType(),
 				(int) $announcement->getAssocId(),
@@ -180,6 +183,9 @@ class AnnouncementDAO extends DAO {
 	 * @return boolean
 	 */
 	function deleteById($announcementId) {
+		$notificationDao = DAORegistry::getDAO('NotificationDAO'); /* @var $notificationDao NotificationDAO */
+		$notificationDao->deleteByAssoc(ASSOC_TYPE_ANNOUNCEMENT, $announcementId);
+
 		$this->update('DELETE FROM announcement_settings WHERE announcement_id = ?', (int) $announcementId);
 		return $this->update('DELETE FROM announcements WHERE announcement_id = ?', (int) $announcementId);
 	}
@@ -221,7 +227,7 @@ class AnnouncementDAO extends DAO {
 			'SELECT *
 			FROM announcements
 			WHERE assoc_type = ? AND assoc_id = ?
-			ORDER BY announcement_id DESC',
+			ORDER BY date_posted DESC',
 			array((int) $assocType, (int) $assocId),
 			$rangeInfo
 		);
@@ -237,7 +243,7 @@ class AnnouncementDAO extends DAO {
 	 */
 	function getByTypeId($typeId, $rangeInfo = null) {
 		$result = $this->retrieveRange(
-			'SELECT * FROM announcements WHERE type_id = ? ORDER BY announcement_id DESC',
+			'SELECT * FROM announcements WHERE type_id = ? ORDER BY date_posted DESC',
 			(int) $typeId,
 			$rangeInfo
 		);
@@ -259,7 +265,7 @@ class AnnouncementDAO extends DAO {
 			FROM announcements
 			WHERE assoc_type = ?
 				AND assoc_id = ?
-			ORDER BY announcement_id DESC LIMIT ?',
+			ORDER BY date_posted DESC LIMIT ?',
 			array((int) $assocType, (int) $assocId, (int) $numAnnouncements),
 			$rangeInfo
 		);
@@ -280,8 +286,9 @@ class AnnouncementDAO extends DAO {
 			FROM announcements
 			WHERE assoc_type = ?
 				AND assoc_id = ?
-				AND (date_expire IS NULL OR date_expire > CURRENT_DATE)
-			ORDER BY announcement_id DESC',
+				AND (date_expire IS NULL OR DATE(date_expire) > DATE(NOW()))
+				AND (DATE(date_posted) <= DATE(NOW()))
+			ORDER BY date_posted DESC',
 			array((int) $assocType, (int) $assocId),
 			$rangeInfo
 		);
@@ -303,8 +310,9 @@ class AnnouncementDAO extends DAO {
 			FROM announcements
 			WHERE assoc_type = ?
 				AND assoc_id = ?
-				AND (date_expire IS NULL OR date_expire > CURRENT_DATE)
-			ORDER BY announcement_id DESC LIMIT ?',
+				AND (date_expire IS NULL OR DATE(date_expire) > DATE(NOW()))
+				AND (DATE(date_posted) <= DATE(NOW()))
+			ORDER BY date_posted DESC LIMIT ?',
 			array((int) $assocType, (int) $assocId, (int) $numAnnouncements),
 			$rangeInfo
 		);
@@ -324,7 +332,7 @@ class AnnouncementDAO extends DAO {
 			FROM announcements
 			WHERE assoc_type = ?
 				AND assoc_id = ?
-			ORDER BY announcement_id DESC LIMIT 1',
+			ORDER BY date_posted DESC LIMIT 1',
 			array((int) $assocType, (int) $assocId)
 		);
 
@@ -345,4 +353,4 @@ class AnnouncementDAO extends DAO {
 	}
 }
 
-?>
+

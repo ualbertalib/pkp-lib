@@ -3,9 +3,9 @@
 /**
  * @file classes/citation/CitationListTokenizerFilter.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class CitationListTokenizerFilter
  * @ingroup classes_citation
@@ -20,10 +20,10 @@ class CitationListTokenizerFilter extends Filter {
 	/**
 	 * Constructor
 	 */
-	function CitationListTokenizerFilter() {
+	function __construct() {
 		$this->setDisplayName('Split a reference list into separate citations');
 
-		parent::Filter('primitive::string', 'primitive::string[]');
+		parent::__construct('primitive::string', 'primitive::string[]');
 	}
 
 	//
@@ -38,7 +38,7 @@ class CitationListTokenizerFilter extends Filter {
 		// The default implementation assumes that raw citations are
 		// separated with line endings.
 		// 1) Remove empty lines and normalize line endings.
-		$input = String::regexp_replace('/[\r\n]+/s', "\n", $input);
+		$input = PKPString::regexp_replace('/[\r\n]+/s', "\n", $input);
 		// 2) Remove trailing/leading line breaks.
 		$input = trim($input, "\n");
 		// 3) Break up at line endings.
@@ -49,10 +49,10 @@ class CitationListTokenizerFilter extends Filter {
 		}
 		// 4) Remove numbers from the beginning of each citation.
 		foreach($citations as $index => $citation) {
-			$citations[$index] = String::regexp_replace('/^\s*[\[#]?[0-9]+[.)\]]?\s*/', '', $citation);
+			$citations[$index] = PKPString::regexp_replace('/^\s*[\[#]?[0-9]+[.)\]]?\s*/', '', $citation);
 		}
 
 		return $citations;
 	}
 }
-?>
+

@@ -6,9 +6,9 @@
 /**
  * @file plugins/metadata/mods34/schema/PKPMods34Schema.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPMods34Schema
  * @ingroup plugins_metadata_mods34_schema
@@ -49,11 +49,11 @@ class PKPMods34Schema extends MetadataSchema {
 	 * @param $useAuthoritiesForSubject boolean whether the subject is
 	 *  free text or controlled by vocabularies.
 	 */
-	function PKPMods34Schema($appSpecificAssocType = null, $useAuthoritiesForSubject = false) {
+	function __construct($appSpecificAssocType = null, $useAuthoritiesForSubject = false) {
 		// Configure the meta-data schema.
 		$assocTypes = array(ASSOC_TYPE_CITATION);
 		if (!is_null($appSpecificAssocType)) array_push($assocTypes, $appSpecificAssocType);
-		parent::MetadataSchema(
+		parent::__construct(
 			'mods-3.4',
 			'mods34',
 			'plugins.metadata.mods34.schema.Mods34Schema',
@@ -344,13 +344,6 @@ class PKPMods34Schema extends MetadataSchema {
 		// values be parsed into subelements, they may also be listed as a string under topic.
 		$this->addProperty('subject/topic', $topicType, true, METADATA_PROPERTY_CARDINALITY_MANY);
 
-		// Use this subelement for geographic subject terms. If the geographic name is part of a
-		// corporate body (for example, United States. Senate), it is coded as name, not geographic
-		$this->addProperty('subject/geographic', $geographicType, true);
-
-		// Use this subelement for chronological subject terms or temporal coverage.
-		// The first version is expressed as a subject term (historical coverage)
-		$this->addProperty('subject/temporal', $temporalType, true);
 		// The second version is expressed as a structured date using the same data
 		// definition as MODS dates.
 		$this->addProperty('subject/temporal[@encoding="w3cdtf"]', METADATA_PROPERTY_TYPE_DATE);
@@ -404,4 +397,4 @@ class PKPMods34Schema extends MetadataSchema {
 		$this->addProperty('recordInfo/languageOfCataloging/languageTerm[@authority="iso639-2b"]', METADATA_PROPERTY_TYPE_STRING, false, METADATA_PROPERTY_CARDINALITY_ONE, null, null, true);
 	}
 }
-?>
+

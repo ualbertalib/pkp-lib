@@ -8,9 +8,9 @@
 /**
  * @file classes/site/Site.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class Site
  * @ingroup site
@@ -21,12 +21,6 @@
 
 
 class Site extends DataObject {
-	/**
-	 * Constructor.
-	 */
-	function Site() {
-		parent::DataObject();
-	}
 
 	/**
 	 * Return associative array of all locales supported by the site.
@@ -56,10 +50,18 @@ class Site extends DataObject {
 	//
 
 	/**
+	 * Get site title.
+	 * @param $locale string Locale code to return, if desired.
+	 */
+	function getTitle($locale = null) {
+		return $this->getData('title', $locale);
+	}
+
+	/**
 	 * Get localized site title.
 	 */
 	function getLocalizedTitle() {
-		return $this->getLocalizedSetting('title');
+		return $this->getLocalizedData('title');
 	}
 
 	/**
@@ -67,51 +69,19 @@ class Site extends DataObject {
 	 * @return string
 	 */
 	function getLocalizedPageHeaderTitle() {
-		$typeArray = $this->getSetting('pageHeaderTitleType');
-		$imageArray = $this->getSetting('pageHeaderTitleImage');
-		$titleArray = $this->getSetting('title');
-
-		$title = null;
-
-		foreach (array(AppLocale::getLocale(), AppLocale::getPrimaryLocale()) as $locale) {
-			if (isset($typeArray[$locale]) && $typeArray[$locale]) {
-				if (isset($imageArray[$locale])) $title = $imageArray[$locale];
-			}
-			if (empty($title) && isset($titleArray[$locale])) $title = $titleArray[$locale];
-			if (!empty($title)) return $title;
+		if ($this->getLocalizedData('pageHeaderTitleImage')) {
+			return $this->getLocalizedData('pageHeaderTitleImage');
 		}
-		return null;
-	}
-
-	/**
-	 * Get localized site logo type.
-	 * @return boolean
-	 */
-	function getLocalizedPageHeaderTitleType() {
-		return $this->getLocalizedData('pageHeaderTitleType');
-	}
-
-	/**
-	 * Get original site stylesheet filename.
-	 * @return string
-	 */
-	function getOriginalStyleFilename() {
-		return $this->getData('originalStyleFilename');
-	}
-
-	/**
-	 * Set original site stylesheet filename.
-	 * @param $originalStyleFilename string
-	 */
-	function setOriginalStyleFilename($originalStyleFilename) {
-		return $this->setData('originalStyleFilename', $originalStyleFilename);
-	}
-
-	/**
-	 * Get localized site intro.
-	 */
-	function getLocalizedIntro() {
-		return $this->getLocalizedSetting('intro');
+		if ($this->getData('pageHeaderTitleImage', AppLocale::getPrimaryLocale())) {
+			return $this->getData('pageHeaderTitleImage', AppLocale::getPrimaryLocale());
+		}
+		if ($this->getLocalizedData('title')) {
+			return $this->getLocalizedData('title');
+		}
+		if ($this->getData('title', AppLocale::getPrimaryLocale())) {
+			return $this->getData('title', AppLocale::getPrimaryLocale());
+		}
+		return '';
 	}
 
 	/**
@@ -127,28 +97,28 @@ class Site extends DataObject {
 	 * @param $redirect int
 	 */
 	function setRedirect($redirect) {
-		return $this->setData('redirect', (int)$redirect);
+		$this->setData('redirect', (int)$redirect);
 	}
 
 	/**
 	 * Get localized site about statement.
 	 */
 	function getLocalizedAbout() {
-		return $this->getLocalizedSetting('about');
+		return $this->getLocalizedData('about');
 	}
 
 	/**
 	 * Get localized site contact name.
 	 */
 	function getLocalizedContactName() {
-		return $this->getLocalizedSetting('contactName');
+		return $this->getLocalizedData('contactName');
 	}
 
 	/**
 	 * Get localized site contact email.
 	 */
 	function getLocalizedContactEmail() {
-		return $this->getLocalizedSetting('contactEmail');
+		return $this->getLocalizedData('contactEmail');
 	}
 
 	/**
@@ -164,7 +134,7 @@ class Site extends DataObject {
 	 * @param $minPasswordLength int
 	 */
 	function setMinPasswordLength($minPasswordLength) {
-		return $this->setData('minPasswordLength', $minPasswordLength);
+		$this->setData('minPasswordLength', $minPasswordLength);
 	}
 
 	/**
@@ -180,7 +150,7 @@ class Site extends DataObject {
 	 * @param $primaryLocale string
 	 */
 	function setPrimaryLocale($primaryLocale) {
-		return $this->setData('primaryLocale', $primaryLocale);
+		$this->setData('primaryLocale', $primaryLocale);
 	}
 
 	/**
@@ -197,7 +167,7 @@ class Site extends DataObject {
 	 * @param $installedLocales array
 	 */
 	function setInstalledLocales($installedLocales) {
-		return $this->setData('installedLocales', $installedLocales);
+		$this->setData('installedLocales', $installedLocales);
 	}
 
 	/**
@@ -214,48 +184,8 @@ class Site extends DataObject {
 	 * @param $supportedLocales array
 	 */
 	function setSupportedLocales($supportedLocales) {
-		return $this->setData('supportedLocales', $supportedLocales);
-	}
-
-	/**
-	 * Get the local name under which the site-wide locale file is stored.
-	 * @return string
-	 */
-	function getSiteStyleFilename() {
-		return 'sitestyle.css';
-	}
-
-	/**
-	 * Retrieve a site setting value.
-	 * @param $name string
-	 * @param $locale string
-	 * @return mixed
-	 */
-	function &getSetting($name, $locale = null) {
-		$siteSettingsDao = DAORegistry::getDAO('SiteSettingsDAO');
-		$setting =& $siteSettingsDao->getSetting($name, $locale);
-		return $setting;
-	}
-
-	function getLocalizedSetting($name) {
-		$returner = $this->getSetting($name, AppLocale::getLocale());
-		// If setting is defined for current locale, use it.
-		if ($returner !== null) return $returner;
-		// Alternately, fall back on primary locale.
-		return $this->getSetting($name, AppLocale::getPrimaryLocale());
-	}
-
-	/**
-	 * Update a site setting value.
-	 * @param $name string
-	 * @param $value mixed
-	 * @param $type string optional
-	 * @param $isLocalized boolean optional
-	 */
-	function updateSetting($name, $value, $type = null, $isLocalized = false) {
-		$siteSettingsDao = DAORegistry::getDAO('SiteSettingsDAO');
-		return $siteSettingsDao->updateSetting($name, $value, $type, $isLocalized);
+		$this->setData('supportedLocales', $supportedLocales);
 	}
 }
 
-?>
+

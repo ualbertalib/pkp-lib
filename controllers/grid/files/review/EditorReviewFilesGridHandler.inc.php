@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/files/review/EditorReviewFilesGridHandler.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class EditorReviewFilesGridHandler
  * @ingroup controllers_grid_files_review
@@ -20,12 +20,12 @@ class EditorReviewFilesGridHandler extends FileListGridHandler {
 	/**
 	 * Constructor
 	 */
-	function EditorReviewFilesGridHandler() {
+	function __construct() {
 		import('lib.pkp.controllers.grid.files.review.ReviewGridDataProvider');
-		parent::FileListGridHandler(
-			new ReviewGridDataProvider(SUBMISSION_FILE_REVIEW_FILE, true),
+		parent::__construct(
+			new ReviewGridDataProvider(SUBMISSION_FILE_REVIEW_FILE),
 			null,
-			FILE_GRID_MANAGE|FILE_GRID_VIEW_NOTES
+			FILE_GRID_EDIT|FILE_GRID_MANAGE|FILE_GRID_VIEW_NOTES|FILE_GRID_DELETE
 		);
 
 		$this->addRoleAssignment(
@@ -33,7 +33,6 @@ class EditorReviewFilesGridHandler extends FileListGridHandler {
 			array('fetchGrid', 'fetchRow', 'selectFiles')
 		);
 
-		$this->setInstructions('editor.submission.review.reviewFilesDescription');
 		$this->setTitle('reviewer.submission.reviewFiles');
 	}
 
@@ -49,7 +48,7 @@ class EditorReviewFilesGridHandler extends FileListGridHandler {
 	 *
 	 * @param $args array
 	 * @param $request PKPRequest
-	 * @return string Serialized JSON object
+	 * @return JSONMessage JSON object
 	 */
 	function selectFiles($args, $request) {
 		$submission = $this->getSubmission();
@@ -57,10 +56,9 @@ class EditorReviewFilesGridHandler extends FileListGridHandler {
 		import('lib.pkp.controllers.grid.files.review.form.ManageReviewFilesForm');
 		$manageReviewFilesForm = new ManageReviewFilesForm($submission->getId(), $this->getRequestArg('stageId'), $this->getRequestArg('reviewRoundId'));
 
-		$manageReviewFilesForm->initData($args, $request);
-		$json = new JSONMessage(true, $manageReviewFilesForm->fetch($request));
-		return $json->getString();
+		$manageReviewFilesForm->initData();
+		return new JSONMessage(true, $manageReviewFilesForm->fetch($request));
 	}
 }
 
-?>
+

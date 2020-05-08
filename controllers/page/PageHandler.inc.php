@@ -3,26 +3,20 @@
 /**
  * @file lib/pkp/controllers/page/PageHandler.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PageHandler
  * @ingroup controllers_page
  *
- * @brief Handler for requests for page components such as the header, sidebar, and CSS.
+ * @brief Handler for requests for page components such as the header, tasks,
+ *  usernav, and CSS.
  */
 
 import('classes.handler.Handler');
 
 class PageHandler extends Handler {
-	/**
-	 * Constructor
-	 */
-	function PageHandler() {
-		parent::Handler();
-	}
-
 
 	//
 	// Implement template methods from PKPHandler
@@ -34,11 +28,12 @@ class PageHandler extends Handler {
 		import('lib.pkp.classes.security.authorization.PKPSiteAccessPolicy');
 		$this->addPolicy(new PKPSiteAccessPolicy(
 			$request,
-			array('header', 'sidebar', 'css'),
+			array('userNav', 'userNavBackend', 'tasks', 'css'),
 			SITE_ACCESS_ALL_ROLES
 		));
-		if (!Config::getVar('general', 'installed')) define('SESSION_DISABLE_INIT', true);
-		return parent::authorize($request, $args, $roleAssignments, false);
+
+		$this->setEnforceRestrictedSite(false);
+		return parent::authorize($request, $args, $roleAssignments);
 	}
 
 
@@ -46,83 +41,31 @@ class PageHandler extends Handler {
 	// Public operations
 	//
 	/**
-	 * Display the header.
+	 * Display the backend user-context menu.
 	 * @param $args array
 	 * @param $request PKPRequest
+	 * @return JSONMessage JSON object
 	 */
-	function header($args, $request) {
+	function userNavBackend($args, $request) {
 		$this->setupTemplate($request);
 		AppLocale::requireComponents(LOCALE_COMPONENT_PKP_MANAGER); // Management menu items
 		$templateMgr = TemplateManager::getManager($request);
 
-		$workingContexts = $this->getWorkingContexts($request);
+		$this->setupHeader($args, $request);
 
-		$multipleContexts = false;
-		if ($workingContexts && $workingContexts->getCount() > 1) {
-			$templateMgr->assign('multipleContexts', true);
-			$multipleContexts = true;
-		} else {
-			if (!$workingContexts) {
-				$templateMgr->assign('noContextsConfigured', true);
-				$templateMgr->assign('notInstalled', true);
-			} elseif ($workingContexts->getCount() == 0) { // no contexts configured or installing
-				$templateMgr->assign('noContextsConfigured', true);
-			}
-		}
-
-		if ($multipleContexts) {
-			$dispatcher = $request->getDispatcher();
-			$contextsNameAndUrl = array();
-			while ($workingContext = $workingContexts->next()) {
-				$contextUrl = $dispatcher->url($request, ROUTE_PAGE, $workingContext->getPath());
-				$contextsNameAndUrl[$contextUrl] = $workingContext->getLocalizedName();
-			}
-
-			// Get the current context switcher value. We don´t need to worry about the
-			// value when there is no current context, because then the switcher will not
-			// be visible.
-			$currentContextUrl = null;
-			if ($currentContext = $request->getContext()) {
-				$currentContextUrl = $dispatcher->url($request, ROUTE_PAGE, $currentContext->getPath());
-			} else {
-				$contextsNameAndUrl = array(__('context.select')) + $contextsNameAndUrl;
-			}
-
-			$templateMgr->assign('currentContextUrl', $currentContextUrl);
-			$templateMgr->assign('contextsNameAndUrl', $contextsNameAndUrl);
-		}
-
-		if ($context = $request->getContext()) {
-			import('pages.about.AboutContextHandler');
-			if (in_array('IAboutContextInfoProvider', class_implements('AboutContextHandler'))) {
-				$templateMgr->assign('contextInfo', AboutContextHandler::getAboutInfo($context));
-			} else {
-				$settingsDao = $context->getSettingsDAO();
-				$templateMgr->assign('contextSettings', $settingsDao->getSettings($context->getId()));
-			}
-		}
-
-		if (!defined('SESSION_DISABLE_INIT') && $user = $request->getUser()) {
-			// Get a count of unread tasks.
-			$notificationDao = DAORegistry::getDAO('NotificationDAO');
-
-			// Don't include certain tasks, defined in the notifications grid handler
-			import('lib.pkp.controllers.grid.notifications.NotificationsGridHandler');
-			$templateMgr->assign('unreadNotificationCount', $notificationDao->getNotificationCount(false, $user->getId(), null, NOTIFICATION_LEVEL_TASK, NotificationsGridHandler::getNotListableTaskTypes()));
-		}
-
-		return $templateMgr->fetchJson('controllers/page/header.tpl');
+		return $templateMgr->fetchJson('controllers/page/usernav.tpl');
 	}
 
 	/**
-	 * Display the sidebar.
+	 * Display the tasks component
 	 * @param $args array
 	 * @param $request PKPRequest
+	 * @return JSONMessage JSON object
 	 */
-	function sidebar($args, $request) {
+	function tasks($args, $request) {
 		$this->setupTemplate($request);
 		$templateMgr = TemplateManager::getManager($request);
-		return $templateMgr->fetchJson('controllers/page/sidebar.tpl');
+		return $templateMgr->fetchJson('controllers/page/tasks.tpl');
 	}
 
 	/**
@@ -133,53 +76,147 @@ class PageHandler extends Handler {
 	function css($args, $request) {
 		header('Content-Type: text/css');
 
-		$stylesheetName = $request->getUserVar('name');
-		switch ($stylesheetName) {
-			case '':
-			case null:
-				$cacheDirectory = CacheManager::getFileCachePath();
-				$compiledStylesheetFile = $cacheDirectory . '/compiled.css';
-				if (!file_exists($compiledStylesheetFile)) {
-					// Generate the stylesheet file
-					require_once('lib/pkp/lib/lessphp/lessc.inc.php');
-					$less = new lessc('styles/index.less');
-					$less->importDir = './';
-					$compiledStyles = $less->parse();
+		$templateManager = TemplateManager::getManager($request);
 
-					$compiledStyles = str_replace('{$baseUrl}', $request->getBaseUrl(), $compiledStyles);
+		$name = $request->getUserVar('name');
+		if (empty($name)) {
+			$name = 'pkp-lib';
+		}
+		switch ($name) {
 
-					// Allow plugins to intervene in stylesheet compilation
-					HookRegistry::call('PageHandler::compileCss', array($request, $less, &$compiledStylesheetFile, &$compiledStyles));
-
-					if (file_put_contents($compiledStylesheetFile, $compiledStyles) === false) {
-						// If the stylesheet cache can't be written, log the error and
-						// output the compiled styles directly without caching.
-						error_log("Unable to write \"$compiledStylesheetFile\".");
-						echo $compiledStyles;
-						return;
+			// The core app stylesheet
+			case 'pkp-lib':
+				$cachedFile = $templateManager->getCachedLessFilePath($name);
+				if (!file_exists($cachedFile)) {
+					$styles = $templateManager->compileLess($name, 'styles/index.less');
+					if (!$templateManager->cacheLess($cachedFile, $styles)) {
+						echo $styles;
+						die;
 					}
 				}
-
-				// Allow plugins to intervene in stylesheet display
-				HookRegistry::call('PageHandler::displayCoreCss', array($request, &$compiledStylesheetFile));
-
-				// Display the styles
-				header('Last-Modified: ' . gmdate('D, d M Y H:i:s', filemtime($compiledStylesheetFile)).' GMT');
-				header('Content-Length: ' . filesize($compiledStylesheetFile));
-				readfile($compiledStylesheetFile);
 				break;
+
 			default:
-				// Allow plugins to intervene
-				$result = null;
-				$lastModified = null;
-				TemplateManager::getManager($request); // Trigger loading of the themes plugins
-				if (!HookRegistry::call('PageHandler::displayCss', array($request, &$stylesheetName, &$result, &$lastModified))) {
+
+				// Backwards compatibility. This hook is deprecated.
+				if (HookRegistry::getHooks('PageHandler::displayCss')) {
+					$result = '';
+					$lastModified = null;
+					HookRegistry::call('PageHandler::displayCss', array($request, &$name, &$result, &$lastModified));
 					if ($lastModified) header('Last-Modified: ' . gmdate('D, d M Y H:i:s', $lastModified) . ' GMT');
 					header('Content-Length: ' . strlen($result));
 					echo $result;
+					die;
+
+				} else {
+					$cachedFile = $templateManager->getCachedLessFilePath($name);
+					if (!file_exists($cachedFile)) {
+
+						// Process styles registered with the current theme
+						$styles = '';
+						$themes = PluginRegistry::loadCategory('themes', true);
+						foreach($themes as $theme) {
+							if ($theme->isActive()) {
+								$style = $theme->getStyle($name);
+								if (!empty($style)) {
+
+									// Compile and cache the stylesheet
+									$styles = $templateManager->compileLess(
+										$name,
+										$style['style'],
+										array(
+											'baseUrl'          => isset($style['baseUrl']) ? $style['baseUrl'] : null,
+											'addLess'          => isset($style['addLess']) ? $style['addLess'] : null,
+											'addLessVariables' => isset($style['addLessVariables']) ? $style['addLessVariables'] : null,
+										)
+									);
+								}
+								break;
+							}
+						}
+
+						// If we still haven't found styles, fire off a hook
+						// which allows other types of plugins to handle
+						// requests
+						if (!$styles) {
+							HookRegistry::call(
+								'PageHandler::getCompiledLess',
+								array(
+									'request'    => $request,
+									'name'       => &$name,
+									'styles'     => &$styles,
+								)
+							);
+						}
+
+						// Give up if there are still no styles
+						if (!$styles) {
+							die;
+						}
+
+						// Try to save the styles to a cached file. If we can't,
+						// just print them out
+						if (!$templateManager->cacheLess($cachedFile, $styles)) {
+							echo $styles;
+							die;
+						}
+					}
 				}
+				break;
+		}
+
+		// Deliver the cached file
+		header('Last-Modified: ' . gmdate('D, d M Y H:i:s', filemtime($cachedFile)).' GMT');
+		header('Content-Length: ' . filesize($cachedFile));
+		readfile($cachedFile);
+		die;
+	}
+
+	/**
+	 * Setup and assign variables for any templates that want the overall header
+	 * context.
+	 * @param $args array
+	 * @param $request PKPRequest
+	 * @return JSONMessage JSON object
+	 */
+	private function setupHeader($args, $request) {
+
+		$templateMgr = TemplateManager::getManager($request);
+
+		$workingContexts = $this->getWorkingContexts($request);
+		$context = $request->getContext();
+
+		if ($workingContexts && $workingContexts->getCount() > 1) {
+			$dispatcher = $request->getDispatcher();
+			$contextsNameAndUrl = array();
+			while ($workingContext = $workingContexts->next()) {
+				$contextUrl = $dispatcher->url($request, ROUTE_PAGE, $workingContext->getPath(), 'submissions');
+				$contextsNameAndUrl[$contextUrl] = $workingContext->getLocalizedName();
+			}
+
+			// Get the current context switcher value. We don´t need to worry about the
+			// value when there is no current context, because then the switcher will not
+			// be visible.
+			$currentContextUrl = null;
+			$currentContextName = null;
+			if ($context) {
+				$currentContextUrl = $dispatcher->url($request, ROUTE_PAGE, $context->getPath());
+				$currentContextName = $context->getLocalizedName();
+			}
+
+			$templateMgr->assign(array(
+				'currentContextUrl' => $currentContextUrl,
+				'currentContextName' => $currentContextName,
+				'contextsNameAndUrl' => $contextsNameAndUrl,
+				'multipleContexts' => true
+			));
+		} else {
+			$templateMgr->assign('noContextsConfigured', true);
+			if (!$workingContexts) {
+				$templateMgr->assign('notInstalled', true);
+			}
 		}
 	}
 }
 
-?>
+

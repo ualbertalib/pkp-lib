@@ -1,9 +1,9 @@
 {**
  * templates/reviewer/review/step3.tpl
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * Show the step 3 review page
  *}
@@ -17,36 +17,49 @@
 </script>
 
 <form class="pkp_form" id="reviewStep3Form" method="post" action="{url op="saveStep" path=$submission->getId() step="3"}">
-	{include file="common/formErrors.tpl"}
-{fbvFormArea id="reviewStep3"}
-	{fbvFormSection label="common.download" description="reviewer.submission.downloadDescription"}
-		{url|assign:reviewFilesGridUrl router=$smarty.const.ROUTE_COMPONENT component="grid.files.review.ReviewerReviewFilesGridHandler" op="fetchGrid" submissionId=$submission->getId() stageId=$reviewAssignment->getStageId() reviewRoundId=$reviewRoundId reviewAssignmentId=$reviewAssignment->getId() escape=false}
-		{load_url_in_div id="reviewFiles" url=$reviewFilesGridUrl}
-	{/fbvFormSection}
+	{csrf}
+	{include file="controllers/notification/inPlaceNotification.tpl" notificationId="reviewStep3FormNotification"}
 
-	{fbvFormSection label="submission.review" description="reviewer.submission.reviewDescription"}
-		{if $viewGuidelinesAction}
-			<div id="viewGuidelines" class="pkp_helpers_align_right">
+{fbvFormArea id="reviewStep3"}
+
+	{capture assign="reviewFilesGridUrl"}{url router=$smarty.const.ROUTE_COMPONENT component="grid.files.review.ReviewerReviewFilesGridHandler" op="fetchGrid" submissionId=$submission->getId() stageId=$reviewAssignment->getStageId() reviewRoundId=$reviewRoundId reviewAssignmentId=$reviewAssignment->getId() escape=false}{/capture}
+	{load_url_in_div id="reviewFilesStep3" url=$reviewFilesGridUrl}
+
+	{if $viewGuidelinesAction}
+		{fbvFormSection title="reviewer.submission.reviewerGuidelines"}
+			<div id="viewGuidelines">
 				{include file="linkAction/linkAction.tpl" action=$viewGuidelinesAction contextId="viewGuidelines"}
 			</div>
-		{/if}
+		{/fbvFormSection}
+	{/if}
 
+	{fbvFormSection label="submission.review" description="reviewer.submission.reviewDescription"}
 		{if $reviewForm}
 			{include file="reviewer/review/reviewFormResponse.tpl"}
 		{else}
-			{fbvElement type="textarea" id="comments" name="comments" value=$reviewAssignment->getComments()|escape disabled=$reviewIsComplete}
+			{fbvFormSection label="submission.comments.canShareWithAuthor"}
+				{fbvElement type="textarea" id="comments" name="comments" value=$comments readonly=$reviewIsClosed rich=true}
+			{/fbvFormSection}
+			{fbvFormSection label="submission.comments.cannotShareWithAuthor"}
+				{fbvElement type="textarea" id="commentsPrivate" name="commentsPrivate" value=$commentsPrivate readonly=$reviewIsClosed rich=true}
+			{/fbvFormSection}
 		{/if}
 	{/fbvFormSection}
 
 	{fbvFormSection label="common.upload" description="reviewer.submission.uploadDescription"}
-		{url|assign:reviewAttachmentsGridUrl router=$smarty.const.ROUTE_COMPONENT component="grid.files.attachment.ReviewerReviewAttachmentsGridHandler" op="fetchGrid" assocType=$smarty.const.ASSOC_TYPE_REVIEW_ASSIGNMENT assocId=$submission->getReviewId() submissionId=$submission->getId() stageId=$submission->getStageId() reviewIsComplete=$reviewIsComplete escape=false}
+		{capture assign="reviewAttachmentsGridUrl"}{url router=$smarty.const.ROUTE_COMPONENT component="grid.files.attachment.ReviewerReviewAttachmentsGridHandler" op="fetchGrid" assocType=$smarty.const.ASSOC_TYPE_REVIEW_ASSIGNMENT assocId=$submission->getReviewId() submissionId=$submission->getId() stageId=$submission->getStageId() reviewIsClosed=$reviewIsClosed escape=false}{/capture}
 		{load_url_in_div id="reviewAttachmentsGridContainer" url=$reviewAttachmentsGridUrl}
 	{/fbvFormSection}
 
+	<!-- Display queries grid -->
+	{capture assign="queriesGridUrl"}{url router=$smarty.const.ROUTE_COMPONENT component="grid.queries.QueriesGridHandler" op="fetchGrid" submissionId=$submission->getId() stageId=$smarty.const.WORKFLOW_STAGE_ID_EXTERNAL_REVIEW escape=false}{/capture}
+	{load_url_in_div id="queriesGrid" url=$queriesGridUrl}	
+
 	{$additionalFormFields}
 
-	{url|assign:cancelUrl page="reviewer" op="submission" path=$submission->getId() step=2 escape=false}
-	{fbvFormButtons submitText="reviewer.submission.submitReview" confirmSubmit="reviewer.confirmSubmit" cancelText="navigation.goBack" cancelUrl=$cancelUrl submitDisabled=$reviewIsComplete}
+	{capture assign="cancelUrl"}{url page="reviewer" op="submission" path=$submission->getId() step=2 escape=false}{/capture}
+	{fbvFormButtons submitText="reviewer.submission.submitReview" confirmSubmit="reviewer.confirmSubmit" saveText="reviewer.submission.saveReviewForLater" saveValue="1" cancelText="navigation.goBack" cancelUrl=$cancelUrl cancelUrlTarget="_self" submitDisabled=$reviewIsClosed}
 {/fbvFormArea}
-</form>
+
 <p><span class="formRequired">{translate key="common.requiredField"}</span></p>
+</form>

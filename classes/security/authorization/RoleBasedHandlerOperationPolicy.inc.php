@@ -2,9 +2,9 @@
 /**
  * @file classes/security/authorization/RoleBasedHandlerOperationPolicy.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class RoleBasedHandlerOperationPolicy
  * @ingroup security_authorization
@@ -22,9 +22,6 @@ class RoleBasedHandlerOperationPolicy extends HandlerOperationPolicy {
 	/** @var boolean */
 	var $_allRoles;
 
-	/** @var boolean */
-	var $_bypassOperationCheck;
-
 	/**
 	 * Constructor
 	 * @param $request PKPRequest
@@ -33,15 +30,12 @@ class RoleBasedHandlerOperationPolicy extends HandlerOperationPolicy {
 	 *  this policy is targeting.
 	 * @param $message string a message to be displayed if the authorization fails
 	 * @param $allRoles boolean whether all roles must match ("all of") or whether it is
-	 *  enough for only one role to match ("any of").
-	 * @param $bypassOperationCheck boolean only for backwards compatibility, don't use.
-	 *  FIXME: remove this parameter once we've removed the HandlerValidatorRole
-	 *  compatibility class, see #5868.
+	 *  enough for only one role to match ("any of"). Default: false ("any of")
 	 */
-	function RoleBasedHandlerOperationPolicy($request, $roles, $operations,
+	function __construct($request, $roles, $operations,
 			$message = 'user.authorization.roleBasedAccessDenied',
-			$allRoles = false, $bypassOperationCheck = false) {
-		parent::HandlerOperationPolicy($request, $operations, $message);
+			$allRoles = false) {
+		parent::__construct($request, $operations, $message);
 
 		// Make sure a single role doesn't have to be
 		// passed in as an array.
@@ -51,7 +45,6 @@ class RoleBasedHandlerOperationPolicy extends HandlerOperationPolicy {
 		}
 		$this->_roles = $roles;
 		$this->_allRoles = $allRoles;
-		$this->_bypassOperationCheck = $bypassOperationCheck;
 	}
 
 
@@ -69,15 +62,10 @@ class RoleBasedHandlerOperationPolicy extends HandlerOperationPolicy {
 		if (empty($userRoles)) return AUTHORIZATION_DENY;
 
 		if (!$this->_checkUserRoleAssignment($userRoles)) return AUTHORIZATION_DENY;
+		if (!$this->_checkOperationWhitelist()) return AUTHORIZATION_DENY;
 
-		// FIXME: Remove the "bypass operation check" code once we've removed the
-		// HandlerValidatorRole compatibility class and make the operation
-		// check unconditional, see #5868.
-		if ($this->_bypassOperationCheck) {
-			assert($this->getOperations() === array());
-		} else {
-			if (!$this->_checkOperationWhitelist()) return AUTHORIZATION_DENY;
-		}
+		$handler = $this->getRequest()->getRouter()->getHandler();
+		$handler->markRoleAssignmentsChecked();
 
 		return AUTHORIZATION_PERMIT;
 	}
@@ -124,4 +112,4 @@ class RoleBasedHandlerOperationPolicy extends HandlerOperationPolicy {
 	}
 }
 
-?>
+

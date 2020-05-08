@@ -3,9 +3,9 @@
 /**
  * @file classes/tombstone/DataObjectTombstone.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class DataObjectTombstone
  * @ingroup tombstone
@@ -14,12 +14,6 @@
  */
 
 class DataObjectTombstone extends DataObject {
-	/**
-	 * Constructor.
-	 */
-	function DataObjectTombstone() {
-		parent::DataObject();
-	}
 
 	/**
 	 * get data object id
@@ -34,7 +28,7 @@ class DataObjectTombstone extends DataObject {
 	 * @param $dataObjectId int
 	 */
 	function setDataObjectId($dataObjectId) {
-		return $this->setData('dataObjectId', $dataObjectId);
+		$this->setData('dataObjectId', $dataObjectId);
 	}
 
 	/**
@@ -50,7 +44,7 @@ class DataObjectTombstone extends DataObject {
 	 * @param $dateDeleted date
 	 */
 	function setDateDeleted($dateDeleted) {
-		return $this->setData('dateDeleted', $dateDeleted);
+		$this->setData('dateDeleted', $dateDeleted);
 	}
 
 	/**
@@ -73,7 +67,7 @@ class DataObjectTombstone extends DataObject {
 	 * @param $setSpec string
 	 */
 	function setSetSpec($setSpec) {
-		return $this->setData('setSpec', $setSpec);
+		$this->setData('setSpec', $setSpec);
 	}
 
 	/**
@@ -89,7 +83,7 @@ class DataObjectTombstone extends DataObject {
 	 * @param $setName string
 	 */
 	function setSetName($setName) {
-		return $this->setData('setName', $setName);
+		$this->setData('setName', $setName);
 	}
 
 	/**
@@ -105,7 +99,7 @@ class DataObjectTombstone extends DataObject {
 	 * @param $oaiIdentifier string
 	 */
 	function setOAIIdentifier($oaiIdentifier) {
-		return $this->setData('oaiIdentifier', $oaiIdentifier);
+		$this->setData('oaiIdentifier', $oaiIdentifier);
 	}
 
 	/**
@@ -155,4 +149,4 @@ class DataObjectTombstone extends DataObject {
 	}
 }
 
-?>
+

@@ -2,9 +2,9 @@
 /**
  * @file classes/submission/reviewer/form/ReviewerReviewForm.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ReviewerReviewForm
  * @ingroup submission_reviewer_form
@@ -34,9 +34,10 @@ class ReviewerReviewForm extends Form {
 	 * @param $step integer
 	 * @param $request PKPRequest
 	 */
-	function ReviewerReviewForm($request, $reviewerSubmission, $reviewAssignment, $step) {
-		parent::Form(sprintf('reviewer/review/step%d.tpl', $step));
+	function __construct($request, $reviewerSubmission, $reviewAssignment, $step) {
+		parent::__construct(sprintf('reviewer/review/step%d.tpl', $step));
 		$this->addCheck(new FormValidatorPost($this));
+		$this->addCheck(new FormValidatorCSRF($this));
 		$this->request = $request;
 		$this->_step = (int) $step;
 		$this->_reviewerSubmission = $reviewerSubmission;
@@ -76,16 +77,16 @@ class ReviewerReviewForm extends Form {
 	// Implement protected template methods from Form
 	//
 	/**
-	 * @see Form::fetch()
+	 * @copydoc Form::fetch()
 	 */
-	function fetch($request) {
-		$reviewAssignment = $this->getReviewAssignment();
-
+	function fetch($request, $template = null, $display = false) {
 		$templateMgr = TemplateManager::getManager($request);
-		$templateMgr->assign('submission', $this->getReviewerSubmission());
-		$templateMgr->assign('reviewIsComplete', (boolean) $reviewAssignment->getDateCompleted());
-		$templateMgr->assign('step', $this->getStep());
-		return parent::fetch($request);
+		$templateMgr->assign(array(
+			'submission' => $this->getReviewerSubmission(),
+			'reviewIsClosed' => $this->getReviewAssignment()->getDateCompleted() || $this->getReviewAssignment()->getCancelled(),
+			'step' => $this->getStep(),
+		));
+		return parent::fetch($request, $template, $display);
 	}
 
 
@@ -98,7 +99,7 @@ class ReviewerReviewForm extends Form {
 	 * update the given reviewer submission.
 	 * @param $reviewerSubmission ReviewerSubmission
 	 */
-	function updateReviewStepAndSaveSubmission(&$reviewerSubmission) {
+	function updateReviewStepAndSaveSubmission($reviewerSubmission) {
 		// Update the review step.
 		$nextStep = $this->getStep() + 1;
 		if($reviewerSubmission->getStep() < $nextStep) {
@@ -110,5 +111,3 @@ class ReviewerReviewForm extends Form {
 		$reviewerSubmissionDao->updateReviewerSubmission($reviewerSubmission);
 	}
 }
-
-?>

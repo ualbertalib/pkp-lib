@@ -8,9 +8,9 @@
 /**
  * @file classes/linkAction/LinkAction.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class LinkAction
  * @ingroup linkAction
@@ -45,13 +45,14 @@ class LinkAction {
 	 * @param $toolTip string (optional) A localized tool tip to display when hovering over
 	 *  the link action.
 	 */
-	function LinkAction($id, &$actionRequest, $title = null, $image = null, $toolTip = null) {
+	function __construct($id, $actionRequest, $title = null, $image = null, $toolTip = null) {
 		$this->_id = $id;
 		assert(is_a($actionRequest, 'LinkActionRequest'));
-		$this->_actionRequest =& $actionRequest;
+		$this->_actionRequest = $actionRequest;
 		$this->_title = $title;
 		$this->_image = $image;
 		$this->_toolTip = $toolTip;
+		HookRegistry::call('LinkAction::construct', array($this));
 	}
 
 
@@ -80,6 +81,14 @@ class LinkAction {
 	 */
 	function getTitle() {
 		return $this->_title;
+	}
+
+	/**
+	 * Set the localized action title.
+	 * @return string
+	 */
+	function setTitle($title) {
+		$this->_title = $title;
 	}
 
 	/**
@@ -115,4 +124,4 @@ class LinkAction {
 	}
 }
 
-?>
+

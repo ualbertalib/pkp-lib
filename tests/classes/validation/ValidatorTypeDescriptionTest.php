@@ -3,9 +3,9 @@
 /**
  * @file tests/classes/validation/ValidatorTypeDescriptionTest.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ValidatorTypeDescriptionTest
  * @ingroup tests_classes_filter
@@ -26,40 +26,36 @@ class ValidatorTypeDescriptionTest extends PKPTestCase {
 		$typeDescription = new ValidatorTypeDescription('email');
 		self::assertTrue($typeDescription->isCompatible($object = 'jerico.dev@gmail.com'));
 		self::assertFalse($typeDescription->isCompatible($object = 'another string'));
-
-		$typeDescription = new ValidatorTypeDescription('uri(array("ftp"))');
-		self::assertTrue($typeDescription->isCompatible($object = 'ftp://some.domain.org/'));
-		self::assertFalse($typeDescription->isCompatible($object = 'http://some.domain.org/'));
 	}
 
 	/**
 	 * @covers ValidatorTypeDescription
 	 * @covers TypeDescription
-	 * @expectedException PHPUnit_Framework_Error
 	 */
 	function testInstantiateWithInvalidTypeDescriptor1() {
 		// An unknown type name will cause an error.
+		$this->expectError();
 		$typeDescription = new ValidatorTypeDescription('email(xyz]');
 	}
 
 	/**
 	 * @covers ValidatorTypeDescription
 	 * @covers TypeDescription
-	 * @expectedException PHPUnit_Framework_Error
 	 */
 	function testInstantiateWithInvalidTypeDescriptor2() {
 		// We don't allow multi-dimensional arrays.
+		$this->expectError();
 		$typeDescription = new ValidatorTypeDescription('Email');
 	}
 
 	/**
 	 * @covers ValidatorTypeDescription
 	 * @covers TypeDescription
-	 * @expectedException PHPUnit_Framework_Error
 	 */
 	function testInstantiateWithInvalidTypeDescriptor3() {
 		// An invalid cardinality will also cause an error.
+		$this->expectError();
 		$typeDescription = new ValidatorTypeDescription('email&');
 	}
 }
-?>
+

@@ -3,9 +3,9 @@
 /**
  * @file classes/citation/PlainTextReferencesList.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PlainTextReferencesList
  * @ingroup citation
@@ -29,7 +29,7 @@ class PlainTextReferencesList {
 	 * @param $listContent string
 	 * @param $ordering integer one of the REFERENCES_LIST_ORDERING_* constants
 	 */
-	function PlainTextReferencesList($listContent, $ordering) {
+	function __construct($listContent, $ordering) {
 		$this->_listContent = $listContent;
 		$this->_ordering = $ordering;
 	}
@@ -71,4 +71,4 @@ class PlainTextReferencesList {
 	}
 
 }
-?>
+

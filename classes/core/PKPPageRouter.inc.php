@@ -3,9 +3,9 @@
 /**
  * @file classes/core/PKPPageRouter.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPPageRouter
  * @ingroup core
@@ -35,13 +35,6 @@ class PKPPageRouter extends PKPRouter {
 	var $_indexUrl;
 	/** @var string cache filename */
 	var $_cacheFilename;
-
-	/**
-	 * Constructor
-	 */
-	function PKPPageRouter() {
-		parent::PKPRouter();
-	}
 
 	/**
 	 * get the installation pages
@@ -157,7 +150,6 @@ class PKPPageRouter extends PKPRouter {
 		// If the application has not yet been installed we only
 		// allow installer pages to be displayed.
 		if (!Config::getVar('general', 'installed')) {
-			define('SESSION_DISABLE_INIT', 1);
 			if (!in_array($page, $this->getInstallationPages())) {
 				// A non-installation page was called although
 				// the system is not yet installed. Redirect to
@@ -173,6 +165,16 @@ class PKPPageRouter extends PKPRouter {
 
 				// Call request's redirect method
 				call_user_func_array($redirectMethod, $redirectArguments);
+			}
+		}
+
+		// Redirect requests from logged-out users to a context which is not
+		// publicly enabled
+		if (!defined('SESSION_DISABLE_INIT')) {
+			$user = $request->getUser();
+			$currentContext = $request->getContext();
+			if ($currentContext && !$currentContext->getEnabled() && !is_a($user, 'User')) {
+				if ($page != 'login') $request->redirect(null, 'login');
 			}
 		}
 
@@ -214,6 +216,7 @@ class PKPPageRouter extends PKPRouter {
 		// Instantiate the handler class
 		$handlerClass = HANDLER_CLASS;
 		$handler = new $handlerClass($request);
+		$this->setHandler($handler);
 
 		// Authorize and initialize the request but don't call the
 		// validate() method on page handlers.
@@ -389,7 +392,15 @@ class PKPPageRouter extends PKPRouter {
 	 * @param $request PKPRequest the request to be routed
 	 */
 	function redirectHome($request) {
-		$userGroupDao = DAORegistry::getDAO('UserGroupDAO');
+		$request->redirectUrl($this->getHomeUrl($request));
+	}
+
+	/**
+	 * Get the user's "home" page URL (e.g. where they are sent after login).
+	 * @param $request PKPRequest the request to be routed
+	 */
+	function getHomeUrl($request) {
+		$userGroupDao = DAORegistry::getDAO('UserGroupDAO'); /* @var $userGroupDao UserGroupDAO */
 		$user = $request->getUser();
 		$userId = $user->getId();
 
@@ -398,9 +409,9 @@ class PKPPageRouter extends PKPRouter {
 			$userGroups = $userGroupDao->getByUserId($userId, $context->getId());
 			if($userGroups->getCount() <= 1) {
 				$userGroup = $userGroups->next();
-				if (!$userGroup || $userGroup->getRoleId() == ROLE_ID_READER) $request->redirect(null, 'index');
+				if (!$userGroup || $userGroup->getRoleId() == ROLE_ID_READER) return $request->url(null, 'index');
 			}
-			$request->redirect(null, 'dashboard');
+			return $request->url(null, 'submissions');
 		} else {
 			// The user is at the site context, check to see if they are
 			// only registered in one place w/ one role
@@ -413,7 +424,7 @@ class PKPPageRouter extends PKPRouter {
 				if (!isset($context)) $request->redirect('index', 'index');
 				if ($userGroup->getRoleId() == ROLE_ID_READER) $request->redirect(null, 'index');
 			}
-			$request->redirect('index', 'index');
+			return $request->url('index', 'index');
 		}
 	}
 
@@ -422,13 +433,13 @@ class PKPPageRouter extends PKPRouter {
 	// Private helper methods.
 	//
 	/**
-	* Retrieve part of the current requested
-	* url using the passed callback method.
-	* @param $callback array Core method to retrieve
-	* page, operation or arguments from url.
-	* @param $request PKPRequest
-	* @return array|string|null
-	*/
+	 * Retrieve part of the current requested
+	 * url using the passed callback method.
+	 * @param $callback array Core method to retrieve
+	 * page, operation or arguments from url.
+	 * @param $request PKPRequest
+	 * @return array|string|null
+	 */
 	private function _getRequestedUrlParts($callback, &$request) {
 		$url = null;
 		assert(is_a($request->getRouter(), 'PKPPageRouter'));
@@ -447,4 +458,4 @@ class PKPPageRouter extends PKPRouter {
 	}
 }
 
-?>
+

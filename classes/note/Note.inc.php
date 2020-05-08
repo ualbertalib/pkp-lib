@@ -3,9 +3,9 @@
 /**
  * @file classes/note/Note.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class Note
  * @ingroup note
@@ -15,12 +15,6 @@
 
 
 class Note extends DataObject {
-	/**
-	 * Constructor.
-	 */
-	function Note() {
-		parent::DataObject();
-	}
 
 	/**
 	 * get user id of the note's author
@@ -35,7 +29,7 @@ class Note extends DataObject {
 	 * @param $userId int
 	 */
 	function setUserId($userId) {
-		return $this->setData('userId', $userId);
+		$this->setData('userId', $userId);
 	}
 
 	/**
@@ -43,7 +37,7 @@ class Note extends DataObject {
 	 * @return User
 	 */
 	function getUser() {
-		$userDao = DAORegistry::getDAO('UserDAO');
+		$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 		return $userDao->getById($this->getUserId(), true);
 	}
 
@@ -60,7 +54,7 @@ class Note extends DataObject {
 	 * @param $dateCreated date (YYYY-MM-DD HH:MM:SS)
 	 */
 	function setDateCreated($dateCreated) {
-		return $this->setData('dateCreated', $dateCreated);
+		$this->setData('dateCreated', $dateCreated);
 	}
 
 	/**
@@ -76,7 +70,7 @@ class Note extends DataObject {
 	 * @param $dateModified date (YYYY-MM-DD HH:MM:SS)
 	 */
 	function setDateModified($dateModified) {
-		return $this->setData('dateModified', $dateModified);
+		$this->setData('dateModified', $dateModified);
 	}
 
 	/**
@@ -92,7 +86,7 @@ class Note extends DataObject {
 	 * @param $contents string
 	 */
 	function setContents($contents) {
-		return $this->setData('contents', $contents);
+		$this->setData('contents', $contents);
 	}
 
 	/**
@@ -108,7 +102,7 @@ class Note extends DataObject {
 	 * @param $title string
 	 */
 	function setTitle($title) {
-		return $this->setData('title', $title);
+		$this->setData('title', $title);
 	}
 
 	/**
@@ -124,7 +118,7 @@ class Note extends DataObject {
 	 * @param $assocType int
 	 */
 	function setAssocType($assocType) {
-		return $this->setData('assocType', $assocType);
+		$this->setData('assocType', $assocType);
 	}
 
 	/**
@@ -140,7 +134,7 @@ class Note extends DataObject {
 	 * @param $assocId int
 	 */
 	function setAssocId($assocId) {
-		return $this->setData('assocId', $assocId);
+		$this->setData('assocId', $assocId);
 	}
 
 	/**
@@ -149,9 +143,9 @@ class Note extends DataObject {
 	 * @return int RECORD_VIEW_RESULT_...
 	 */
 	function markViewed($userId) {
-		$viewsDao = DAORegistry::getDAO('ViewsDAO');
+		$viewsDao = DAORegistry::getDAO('ViewsDAO'); /* @var $viewsDao ViewsDAO */
 		return $viewsDao->recordView(ASSOC_TYPE_NOTE, $this->getId(), $userId);
 	}
 }
 
-?>
+

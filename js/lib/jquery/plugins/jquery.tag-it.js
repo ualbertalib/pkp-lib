@@ -121,7 +121,7 @@
                 this.options.singleFieldNode = this.element;
                 this.element.addClass('tagit-hidden-field');
             } else {
-                this.tagList = this.element.find('ul, ol').andSelf().last();
+                this.tagList = this.element.find('ul, ol').addBack().last();
             }
 
             this.tagInput = $('<input type="text" />').addClass('ui-widget-content');
@@ -241,7 +241,7 @@
                     // Tab will also create a tag, unless the tag input is empty,
                     // in which case it isn't caught.
                     if (
-                        (event.which === $.ui.keyCode.COMMA && event.shiftKey === false) ||
+                        (event.key === ',' && event.shiftKey === false) ||
                         event.which === $.ui.keyCode.ENTER ||
                         (
                             event.which == $.ui.keyCode.TAB &&

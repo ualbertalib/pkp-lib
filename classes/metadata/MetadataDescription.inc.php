@@ -3,9 +3,9 @@
 /**
  * @file classes/metadata/MetadataDescription.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class MetadataDescription
  * @ingroup metadata
@@ -134,9 +134,9 @@ class MetadataDescription extends DataObject {
 	/**
 	 * Constructor
 	 */
-	function MetadataDescription($metadataSchemaName, $assocType) {
+	function __construct($metadataSchemaName, $assocType) {
 		assert(is_string($metadataSchemaName) && is_integer($assocType));
-		parent::DataObject();
+		parent::__construct();
 		$this->_metadataSchemaName = $metadataSchemaName;
 		$this->_assocType = $assocType;
 	}
@@ -223,7 +223,7 @@ class MetadataDescription extends DataObject {
 	 * Set the sequence id
 	 * @param $seq integer
 	 */
-	function setSeq($seq) {
+	function setSequence($seq) {
 		$this->_seq = $seq;
 	}
 
@@ -231,7 +231,7 @@ class MetadataDescription extends DataObject {
 	 * Get the sequence id
 	 * @return integer
 	 */
-	function getSeq() {
+	function getSequence() {
 		return $this->_seq;
 	}
 
@@ -563,4 +563,4 @@ class MetadataDescription extends DataObject {
 	}
 }
 
-?>
+

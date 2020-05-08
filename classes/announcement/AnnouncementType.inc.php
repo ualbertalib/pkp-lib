@@ -3,9 +3,9 @@
 /**
  * @file classes/announcement/AnnouncementType.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class AnnouncementType
  * @ingroup announcement
@@ -15,12 +15,6 @@
  */
 
 class AnnouncementType extends DataObject {
-	/**
-	 * Constructor
-	 */
-	function AnnouncementType() {
-		parent::DataObject();
-	}
 
 	//
 	// Get/set methods
@@ -38,7 +32,7 @@ class AnnouncementType extends DataObject {
 	 * @param $assocId int
 	 */
 	function setAssocId($assocId) {
-		return $this->setData('assocId', $assocId);
+		$this->setData('assocId', $assocId);
 	}
 
 	/**
@@ -54,7 +48,7 @@ class AnnouncementType extends DataObject {
 	 * @param $assocType int
 	 */
 	function setAssocType($assocType) {
-		return $this->setData('assocType', $assocType);
+		$this->setData('assocType', $assocType);
 	}
 
 	/**
@@ -80,8 +74,8 @@ class AnnouncementType extends DataObject {
 	 * @param $locale string
 	 */
 	function setName($name, $locale) {
-		return $this->setData('name', $name, $locale);
+		$this->setData('name', $name, $locale);
 	}
 }
 
-?>
+

@@ -3,9 +3,9 @@
 /**
  * @file classes/controllers/listbuilder/MultilingualListbuilderGridColumn.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class MultilingualListbuilderGridColumn
  * @ingroup controllers_listbuilder
@@ -20,7 +20,7 @@ class MultilingualListbuilderGridColumn extends ListbuilderGridColumn {
 	/**
 	 * Constructor
 	 */
-	function MultilingualListbuilderGridColumn($listbuilder, $id = '', $title = null,
+	function __construct($listbuilder, $id = '', $title = null,
 			$titleTranslated = null, $template = null, $cellProvider = null,
 			$availableLocales = null, $flags = array()) {
 
@@ -34,8 +34,8 @@ class MultilingualListbuilderGridColumn extends ListbuilderGridColumn {
 		$flags['multilingual'] = true; // This is a multilingual column.
 		$flags['availableLocales'] = $availableLocales; // Provide available locales
 
-		parent::ListbuilderGridColumn($listbuilder, $id, $title, $titleTranslated, $template, $cellProvider, $flags);
+		parent::__construct($listbuilder, $id, $title, $titleTranslated, $template, $cellProvider, $flags);
 	}
 }
 
-?>
+

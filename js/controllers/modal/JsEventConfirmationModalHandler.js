@@ -1,9 +1,9 @@
 /**
  * @file js/controllers/modal/JsEventConfirmationModalHandler.js
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class JsEventConfirmationModalHandler
  * @ingroup js_controllers_modal
@@ -97,13 +97,13 @@
 	 *
 	 * @param {HTMLElement} dialogElement The element the
 	 *  dialog was created on.
+	 * @param {Event} event The click event.
 	 */
 	$.pkp.controllers.modal.JsEventConfirmationModalHandler.prototype.
-			modalConfirm = function(dialogElement) {
+			modalConfirm = function(dialogElement, event) {
 
 		this.trigger(/** @type {string} */ (this.jsEvent_),
 				/** @type {Array} */ (this.extraArguments_));
 		this.modalClose(dialogElement);
 	};
-/** @param {jQuery} $ jQuery closure. */
 }(jQuery));

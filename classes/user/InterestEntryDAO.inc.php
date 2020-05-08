@@ -3,9 +3,9 @@
 /**
  * @file classes/user/InterestEntryDAO.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class InterestsEntryDAO
  * @ingroup user
@@ -19,12 +19,6 @@ import('lib.pkp.classes.user.InterestEntry');
 import('lib.pkp.classes.controlledVocab.ControlledVocabEntryDAO');
 
 class InterestEntryDAO extends ControlledVocabEntryDAO {
-	/**
-	 * Constructor
-	 */
-	function InterestEntryDAO() {
-		parent::ControlledVocabEntryDAO();
-	}
 
 	/**
 	 * Construct a new data object corresponding to this DAO.
@@ -63,7 +57,8 @@ class InterestEntryDAO extends ControlledVocabEntryDAO {
 				JOIN user_interests ui ON (cve.controlled_vocab_entry_id = ui.controlled_vocab_entry_id)
 				' . ($filter?'JOIN controlled_vocab_entry_settings cves ON (cves.controlled_vocab_entry_id = cve.controlled_vocab_entry_id)':'') . '
 			WHERE cve.controlled_vocab_id = ?
-			' . ($filter?'AND cves.setting_name=? AND cves.setting_value LIKE ?':'') . '
+			' . ($filter?'AND cves.setting_name=? AND LOWER(cves.setting_value) LIKE LOWER(?)':'') . '
+			GROUP BY cve.controlled_vocab_entry_id
 			ORDER BY seq',
 			$params,
 			$rangeInfo
@@ -71,6 +66,22 @@ class InterestEntryDAO extends ControlledVocabEntryDAO {
 
 		return new DAOResultFactory($result, $this, '_fromRow');
 	}
+
+	/**
+	 * Retrieve controlled vocab entries matching a list of vocab entry IDs
+	 *
+	 * @param $entryIds array
+	 * @return DAOResultFactory
+	 */
+	public function getByIds($entryIds) {
+		$entryString = join(',', array_map('intval', $entryIds));
+
+		$result = $this->retrieve(
+			'SELECT * FROM controlled_vocab_entries WHERE controlled_vocab_entry_id IN (' . $entryString . ')'
+		);
+
+		return new DAOResultFactory($result, $this, '_fromRow');
+	}
 }
 
-?>
+

@@ -3,9 +3,9 @@
 /**
  * @file classes/controllers/grid/GridBodyElement.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class GridBodyElement
  * @ingroup controllers_grid
@@ -32,7 +32,7 @@ class GridBodyElement {
 	/**
 	 * Constructor
 	 */
-	function GridBodyElement($id = '', $cellProvider = null, $flags = array()) {
+	function __construct($id = '', $cellProvider = null, $flags = array()) {
 		$this->_id = $id;
 		$this->_cellProvider = $cellProvider;
 		$this->_flags = $flags;
@@ -98,7 +98,7 @@ class GridBodyElement {
 	 * Get the cell provider
 	 * @return GridCellProvider
 	 */
-	function &getCellProvider() {
+	function getCellProvider() {
 		return $this->_cellProvider;
 	}
 
@@ -106,9 +106,9 @@ class GridBodyElement {
 	 * Set the cell provider
 	 * @param $cellProvider GridCellProvider
 	 */
-	function setCellProvider(&$cellProvider) {
-		$this->_cellProvider =& $cellProvider;
+	function setCellProvider($cellProvider) {
+		$this->_cellProvider = $cellProvider;
 	}
 }
 
-?>
+

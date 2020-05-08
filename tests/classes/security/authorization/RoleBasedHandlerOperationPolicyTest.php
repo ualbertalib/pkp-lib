@@ -3,9 +3,9 @@
 /**
  * @file tests/classes/security/authorization/RoleBasedHandlerOperationPolicyTest.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class RoleBasedHandlerOperationPolicyTest
  * @ingroup tests_classes_security_authorization
@@ -58,22 +58,11 @@ class RoleBasedHandlerOperationPolicyTest extends PolicyTestCase {
 		$decisionManager->addPolicy($rolePolicy);
 		self::assertEquals(AUTHORIZATION_DENY, $decisionManager->decide());
 
-		// Test the policy with an authorized role and a
-		// non-authorized operation but bypass the the operation check.
-		// FIXME: Remove the "bypass operation check" code once we've removed the
-		// HandlerValidatorRole compatibility class, see #5868.
-		$rolePolicy = new PolicySet(COMBINING_DENY_OVERRIDES);
-		$rolePolicy->addPolicy($this->getAuthorizationContextManipulationPolicy());
-		$rolePolicy->addPolicy(new RoleBasedHandlerOperationPolicy($request, ROLE_ID_SITE_ADMIN, array(), 'some.message', false, true));
-		$decisionManager = new AuthorizationDecisionManager();
-		$decisionManager->addPolicy($rolePolicy);
-		self::assertEquals(AUTHORIZATION_PERMIT, $decisionManager->decide());
-
 		// Test the "all roles must match" feature.
 		$request = $this->getMockRequest('permittedOperation');
 		$rolePolicy = new PolicySet(COMBINING_DENY_OVERRIDES);
 		$rolePolicy->addPolicy($this->getAuthorizationContextManipulationPolicy());
-		$rolePolicy->addPolicy(new RoleBasedHandlerOperationPolicy($request, array(ROLE_ID_SITE_ADMIN, ROLE_ID_TEST), 'permittedOperation', 'some.message', true, false));
+		$rolePolicy->addPolicy(new RoleBasedHandlerOperationPolicy($request, array(ROLE_ID_SITE_ADMIN, ROLE_ID_TEST), 'permittedOperation', 'some.message', true));
 		$decisionManager = new AuthorizationDecisionManager();
 		$decisionManager->addPolicy($rolePolicy);
 		self::assertEquals(AUTHORIZATION_PERMIT, $decisionManager->decide());
@@ -88,4 +77,4 @@ class RoleBasedHandlerOperationPolicyTest extends PolicyTestCase {
 		self::assertEquals(AUTHORIZATION_DENY, $decisionManager->decide());
 	}
 }
-?>
+

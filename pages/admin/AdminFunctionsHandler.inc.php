@@ -3,9 +3,9 @@
 /**
  * @file pages/admin/AdminFunctionsHandler.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class AdminFunctionsHandler
  * @ingroup pages_admin
@@ -22,14 +22,15 @@ class AdminFunctionsHandler extends AdminHandler {
 	/**
 	 * Constructor
 	 */
-	function AdminFunctionsHandler() {
-		parent::AdminHandler();
+	function __construct() {
+		parent::__construct();
 
 		$this->addRoleAssignment(
 			array(ROLE_ID_SITE_ADMIN),
 			array(
 				'systemInfo', 'editSystemConfig', 'saveSystemConfig', 'phpinfo',
-				'expireSessions', 'clearTemplateCache', 'clearDataCache'
+				'expireSessions', 'clearTemplateCache', 'clearDataCache',
+				'downloadScheduledTaskLogFile', 'clearScheduledTaskLogFiles'
 			)
 		);
 	}
@@ -42,7 +43,7 @@ class AdminFunctionsHandler extends AdminHandler {
 	function systemInfo($args, $request) {
 		$this->setupTemplate($request, true);
 
-		$versionDao = DAORegistry::getDAO('VersionDAO');
+		$versionDao = DAORegistry::getDAO('VersionDAO'); /* @var $versionDao VersionDAO */
 		$currentVersion = $versionDao->getCurrentVersion();
 
 		$templateMgr = TemplateManager::getManager($request);
@@ -68,7 +69,7 @@ class AdminFunctionsHandler extends AdminHandler {
 	 * @param $request PKPRequest
 	 */
 	function expireSessions($args, $request) {
-		$sessionDao = DAORegistry::getDAO('SessionDAO');
+		$sessionDao = DAORegistry::getDAO('SessionDAO'); /* @var $sessionDao SessionDAO */
 		$sessionDao->deleteAllSessions();
 		$request->redirect(null, 'admin');
 	}
@@ -81,6 +82,7 @@ class AdminFunctionsHandler extends AdminHandler {
 	function clearTemplateCache($args, $request) {
 		$templateMgr = TemplateManager::getManager($request);
 		$templateMgr->clearTemplateCache();
+		$templateMgr->clearCssCache();
 		$request->redirect(null, 'admin');
 	}
 
@@ -100,6 +102,28 @@ class AdminFunctionsHandler extends AdminHandler {
 
 		$request->redirect(null, 'admin');
 	}
+
+	/**
+	 * Download scheduled task execution log file.
+	 */
+	function downloadScheduledTaskLogFile() {
+		$request = Application::get()->getRequest();
+
+		$file = basename($request->getUserVar('file'));
+		import('lib.pkp.classes.scheduledTask.ScheduledTaskHelper');
+		ScheduledTaskHelper::downloadExecutionLog($file);
+	}
+
+	/**
+	 * Clear scheduled tasks execution logs.
+	 */
+	function clearScheduledTaskLogFiles() {
+		import('lib.pkp.classes.scheduledTask.ScheduledTaskHelper');
+		ScheduledTaskHelper::clearExecutionLogs();
+
+		$request = Application::get()->getRequest();
+		$request->redirect(null, 'admin');
+	}
 }
 
-?>
+

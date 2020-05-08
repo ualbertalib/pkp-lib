@@ -3,9 +3,9 @@
 /**
  * @file classes/controllers/listbuilder/ListbuilderGridRow.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ListbuilderGridRow
  * @ingroup controllers_listbuilder
@@ -24,8 +24,8 @@ class ListbuilderGridRow extends GridRow {
 	 * Constructor
 	 * @param $hasDeleteItemLink boolean
 	 */
-	function ListbuilderGridRow($hasDeleteItemLink = true) {
-		parent::GridRow();
+	function __construct($hasDeleteItemLink = true) {
+		parent::__construct();
 
 		$this->setHasDeleteItemLink($hasDeleteItemLink);
 	}
@@ -43,8 +43,7 @@ class ListbuilderGridRow extends GridRow {
 	// Overridden template methods
 	//
 	/**
-	 * @see GridRow::initialize()
-	 * @param PKPRequest $request
+	 * @copydoc GridRow::initialize()
 	 */
 	function initialize($request, $template = 'controllers/listbuilder/listbuilderGridRow.tpl') {
 		parent::initialize($request);
@@ -74,4 +73,4 @@ class ListbuilderGridRow extends GridRow {
 	}
 }
 
-?>
+

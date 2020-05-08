@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/settings/SetupGridHandler.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SetupGridHandler
  * @ingroup controllers_grid_settings
@@ -19,8 +19,8 @@ class SetupGridHandler extends GridHandler {
 	/**
 	 * Constructor
 	 */
-	function SetupGridHandler() {
-		parent::GridHandler();
+	function __construct() {
+		parent::__construct();
 		$this->addRoleAssignment(
 			array(ROLE_ID_MANAGER),
 			array('uploadImage')
@@ -30,8 +30,8 @@ class SetupGridHandler extends GridHandler {
 	/**
 	 * @copydoc GridHandler::initialize()
 	 */
-	function initialize($request) {
-		parent::initialize($request);
+	function initialize($request, $args = null) {
+		parent::initialize($request, $args);
 
 		AppLocale::requireComponents(LOCALE_COMPONENT_APP_MANAGER);
 	}
@@ -42,8 +42,8 @@ class SetupGridHandler extends GridHandler {
 	 */
 	function authorize($request, &$args, $roleAssignments, $contextRequired = true) {
 		if ($contextRequired) {
-			import('lib.pkp.classes.security.authorization.PkpContextAccessPolicy');
-			$this->addPolicy(new PkpContextAccessPolicy($request, $roleAssignments));
+			import('lib.pkp.classes.security.authorization.ContextAccessPolicy');
+			$this->addPolicy(new ContextAccessPolicy($request, $roleAssignments));
 		}
 		return parent::authorize($request, $args, $roleAssignments);
 	}
@@ -66,12 +66,11 @@ class SetupGridHandler extends GridHandler {
 			$json->setAdditionalAttributes(array(
 				'temporaryFileId' => $temporaryFile->getId()
 			));
+			return $json;
 		} else {
-			$json = new JSONMessage(false, __('common.uploadFailed'));
+			return new JSONMessage(false, __('common.uploadFailed'));
 		}
-
-		return $json->getString();
 	}
 }
 
-?>
+

@@ -3,9 +3,9 @@
 /**
  * @file classes/security/UserGroupAssignmentDAO.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class UserGroupAssignmentDAO
  * @ingroup security
@@ -20,12 +20,6 @@
 import('lib.pkp.classes.security.UserGroupAssignment');
 
 class UserGroupAssignmentDAO extends DAO {
-	/**
-	 * Constructor.
-	 */
-	function UserGroupAssignmentDAO() {
-		parent::DAO();
-	}
 
 	/**
 	 * Create a new UserGroupAssignment object
@@ -130,9 +124,13 @@ class UserGroupAssignmentDAO extends DAO {
 	 * @param $groupId
 	 */
 	function insertObject($userGroupAssignment) {
-		$this->update(
-			'INSERT INTO user_user_groups (user_id, user_group_id) VALUES(?, ?)',
-			array((int) $userGroupAssignment->getUserId(), (int) $userGroupAssignment->getUserGroupId())
+		$this->replace(
+			'user_user_groups',
+			array(
+				'user_id' => (int) $userGroupAssignment->getUserId(),
+				'user_group_id' => (int) $userGroupAssignment->getUserGroupId(),
+			),
+			array('user_id', 'user_group_id')
 		);
 	}
 
@@ -148,4 +146,4 @@ class UserGroupAssignmentDAO extends DAO {
 	}
 }
 
-?>
+

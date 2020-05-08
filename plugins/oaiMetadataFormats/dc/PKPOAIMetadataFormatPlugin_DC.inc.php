@@ -3,9 +3,9 @@
 /**
  * @file plugins/oaiMetadataFormats/dc/PKPOAIMetadataFormatPlugin_DC.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPOAIMetadataFormatPlugin_DC
  * @see OAI
@@ -16,12 +16,6 @@
 import('lib.pkp.classes.plugins.OAIMetadataFormatPlugin');
 
 class PKPOAIMetadataFormatPlugin_DC extends OAIMetadataFormatPlugin {
-	/**
-	 * Constructor
-	 */
-	function PKPOAIMetadataFormatPlugin_DC() {
-		parent::OAIMetadataFormatPlugin();
-	}
 	/**
 	 * Get the name of this plugin. The name must be unique within
 	 * its category.
@@ -56,4 +50,4 @@ class PKPOAIMetadataFormatPlugin_DC extends OAIMetadataFormatPlugin {
 	}
 }
 
-?>
+

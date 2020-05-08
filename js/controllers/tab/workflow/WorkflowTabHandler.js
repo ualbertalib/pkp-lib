@@ -4,9 +4,9 @@
 /**
  * @file js/controllers/tab/workflow/WorkflowTabHandler.js
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class WorkflowTabHandler
  * @ingroup js_controllers_tab_workflow
@@ -15,6 +15,11 @@
  * of the workflow.
  */
 (function($) {
+
+	/** @type {Object} */
+	$.pkp.controllers.tab =
+			$.pkp.controllers.tab || {};
+
 
 	/** @type {Object} */
 	$.pkp.controllers.tab.workflow =
@@ -54,5 +59,4 @@
 			$.pkp.controllers.tab.workflow.WorkflowTabHandler,
 			$.pkp.controllers.TabHandler);
 
-/** @param {jQuery} $ jQuery closure. */
 }(jQuery));

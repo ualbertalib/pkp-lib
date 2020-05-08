@@ -3,9 +3,9 @@
 /**
  * @file tests/classes/core/PKPPageRouterTest.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPPageRouterTest
  * @ingroup tests_classes_core
@@ -22,10 +22,15 @@ import('lib.pkp.tests.classes.core.PKPRouterTestCase');
 import('classes.security.Validation'); // This will import our mock validation class.
 import('classes.i18n.AppLocale'); // This will import our mock locale.
 
+/**
+ * @backupGlobals enabled
+ */
 class PKPPageRouterTest extends PKPRouterTestCase {
-	protected function setUp() {
+	protected function setUp() : void {
 		parent::setUp();
-		$this->router = $this->getMock('PKPPageRouter', array('getCacheablePages'));
+		$this->router = $this->getMockBuilder(PKPPageRouter::class)
+			->setMethods(array('getCacheablePages'))
+			->getMock();
 		$this->router->expects($this->any())
 		             ->method('getCacheablePages')
 		             ->will($this->returnValue(array('cacheable')));
@@ -58,7 +63,8 @@ class PKPPageRouterTest extends PKPRouterTestCase {
 		$mockApplication = $this->_setUpMockEnvironment(self::PATHINFO_ENABLED);
 		$_GET = array('somevar' => 'someval');
 		$_SERVER = array(
-			'PATH_INFO' => '/context1/context2/somepage'
+			'PATH_INFO' => '/context1/context2/somepage',
+			'SCRIPT_NAME' => '/index.php',
 		);
 		self::assertFalse($this->router->isCacheable($this->request));
 
@@ -69,13 +75,16 @@ class PKPPageRouterTest extends PKPRouterTestCase {
 
 	/**
 	 * @covers PKPPageRouter::isCacheable
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
 	 */
 	public function testIsCacheableWithPathinfoSuccess() {
 		$this->setTestConfiguration('request1', 'classes/core/config'); // installed
 		$mockApplication = $this->_setUpMockEnvironment(self::PATHINFO_ENABLED);
 		$_GET = array();
 		$_SERVER = array(
-			'PATH_INFO' => '/context1/context2/cacheable'
+			'PATH_INFO' => '/context1/context2/cacheable',
+			'SCRIPT_NAME' => '/index.php',
 		);
 
 		self::assertTrue($this->router->isCacheable($this->request, true));
@@ -106,6 +115,8 @@ class PKPPageRouterTest extends PKPRouterTestCase {
 
 	/**
 	 * @covers PKPPageRouter::isCacheable
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
 	 */
 	public function testIsCacheableWithoutPathinfoSuccess() {
 		$this->setTestConfiguration('request1', 'classes/core/config'); // installed
@@ -122,6 +133,7 @@ class PKPPageRouterTest extends PKPRouterTestCase {
 	 */
 	public function testGetCacheFilename() {
 		// Override parent test
+		$this->markTestSkipped();
 	}
 
 	/**
@@ -130,7 +142,8 @@ class PKPPageRouterTest extends PKPRouterTestCase {
 	public function testGetCacheFilenameWithPathinfo() {
 		$mockApplication = $this->_setUpMockEnvironment(self::PATHINFO_ENABLED);
 		$_SERVER = array(
-			'PATH_INFO' => '/context1/context2/index'
+			'PATH_INFO' => '/context1/context2/index',
+			'SCRIPT_NAME' => '/index.php',
 		);
 		$expectedId = '/context1/context2/index-en_US';
 		self::assertEquals(Core::getBaseDir().'/cache/wc-'.md5($expectedId).'.html', $this->router->getCacheFilename($this->request));
@@ -157,7 +170,8 @@ class PKPPageRouterTest extends PKPRouterTestCase {
 		$mockApplication = $this->_setUpMockEnvironment(self::PATHINFO_ENABLED);
 
 		$_SERVER = array(
-			'PATH_INFO' => '/context1/context2/some#page'
+			'PATH_INFO' => '/context1/context2/some#page',
+			'SCRIPT_NAME' => '/index.php',
 		);
 		self::assertEquals('somepage', $this->router->getRequestedPage($this->request));
 	}
@@ -179,7 +193,8 @@ class PKPPageRouterTest extends PKPRouterTestCase {
 		$mockApplication = $this->_setUpMockEnvironment(self::PATHINFO_ENABLED);
 
 		$_SERVER = array(
-			'PATH_INFO' => '/context1/context2'
+			'PATH_INFO' => '/context1/context2',
+			'SCRIPT_NAME' => '/index.php',
 		);
 		self::assertEquals('', $this->router->getRequestedPage($this->request));
 	}
@@ -201,7 +216,8 @@ class PKPPageRouterTest extends PKPRouterTestCase {
 		$mockApplication = $this->_setUpMockEnvironment(self::PATHINFO_ENABLED);
 
 		$_SERVER = array(
-			'PATH_INFO' => '/context1/context2/somepage/some#op'
+			'PATH_INFO' => '/context1/context2/somepage/some#op',
+			'SCRIPT_NAME' => '/index.php',
 		);
 		self::assertEquals('someop', $this->router->getRequestedOp($this->request));
 	}
@@ -223,7 +239,8 @@ class PKPPageRouterTest extends PKPRouterTestCase {
 		$mockApplication = $this->_setUpMockEnvironment(self::PATHINFO_ENABLED);
 
 		$_SERVER = array(
-			'PATH_INFO' => '/context1/context2/somepage'
+			'PATH_INFO' => '/context1/context2/somepage',
+			'SCRIPT_NAME' => '/index.php',
 		);
 		self::assertEquals('index', $this->router->getRequestedOp($this->request));
 	}
@@ -245,7 +262,7 @@ class PKPPageRouterTest extends PKPRouterTestCase {
 		$this->setTestConfiguration('request1', 'classes/core/config'); // restful URLs
 		$mockApplication = $this->_setUpMockEnvironment(self::PATHINFO_ENABLED);
 		$_SERVER = array(
-			'HOSTNAME' => 'mydomain.org',
+			'SERVER_NAME' => 'mydomain.org',
 			'SCRIPT_NAME' => '/index.php',
 			'PATH_INFO' => '/current-context1/current-context2/current-page/current-op'
 		);
@@ -313,7 +330,7 @@ class PKPPageRouterTest extends PKPRouterTestCase {
 		// Set up a request with an overridden context
 		$mockApplication = $this->_setUpMockEnvironment(self::PATHINFO_ENABLED);
 		$_SERVER = array(
-			'HOSTNAME' => 'mydomain.org',
+			'SERVER_NAME' => 'mydomain.org',
 			'SCRIPT_NAME' => '/index.php',
 			'PATH_INFO' => '/overridden-context/current-context2/current-page/current-op'
 		);
@@ -333,7 +350,7 @@ class PKPPageRouterTest extends PKPRouterTestCase {
 		// 'overridden-context' as new context. (Reproduces #5118)
 		$mockApplication = $this->_setUpMockEnvironment(self::PATHINFO_ENABLED);
 		$_SERVER = array(
-			'HOSTNAME' => 'mydomain.org',
+			'SERVER_NAME' => 'mydomain.org',
 			'SCRIPT_NAME' => '/index.php',
 			'PATH_INFO' => '/current-context1/current-context2/current-page/current-op'
 		);
@@ -348,7 +365,7 @@ class PKPPageRouterTest extends PKPRouterTestCase {
 	public function testUrlWithPathinfoAndSecondContextObjectIsNull() {
 		$mockApplication = $this->_setUpMockEnvironment(self::PATHINFO_ENABLED);
 		$_SERVER = array(
-			'HOSTNAME' => 'mydomain.org',
+			'SERVER_NAME' => 'mydomain.org',
 			'SCRIPT_NAME' => '/index.php',
 			'PATH_INFO' => '/current-context1/current-context2/current-page/current-op'
 		);
@@ -366,7 +383,7 @@ class PKPPageRouterTest extends PKPRouterTestCase {
 	public function testUrlWithoutPathinfo() {
 		$mockApplication = $this->_setUpMockEnvironment(self::PATHINFO_DISABLED);
 		$_SERVER = array(
-			'HOSTNAME' => 'mydomain.org',
+			'SERVER_NAME' => 'mydomain.org',
 			'SCRIPT_NAME' => '/index.php',
 		);
 		$_GET = array(
@@ -434,7 +451,7 @@ class PKPPageRouterTest extends PKPRouterTestCase {
 		$this->setTestConfiguration('request2', 'classes/core/config'); // contains overridden context
 		$mockApplication = $this->_setUpMockEnvironment(self::PATHINFO_DISABLED);
 		$_SERVER = array(
-			'HOSTNAME' => 'mydomain.org',
+			'SERVER_NAME' => 'mydomain.org',
 			'SCRIPT_NAME' => '/index.php',
 		);
 		$_GET = array(
@@ -460,7 +477,7 @@ class PKPPageRouterTest extends PKPRouterTestCase {
 		$this->setTestConfiguration('request2', 'classes/core/config'); // restful URLs enabled
 		$mockApplication = $this->_setUpMockEnvironment(self::PATHINFO_DISABLED);
 		$_SERVER = array(
-			'HOSTNAME' => 'mydomain.org',
+			'SERVER_NAME' => 'mydomain.org',
 			'SCRIPT_NAME' => '/index.php',
 		);
 		$_GET = array(
@@ -478,4 +495,4 @@ class PKPPageRouterTest extends PKPRouterTestCase {
 		self::assertEquals('http://mydomain.org/?firstContext=current-context1&secondContext=index&page=current-page&op=current-op', $result);
 	}
 }
-?>
+

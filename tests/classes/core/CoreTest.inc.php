@@ -3,9 +3,9 @@
 /**
  * @file tests/classes/core/CoreTest.inc.php
  *
- * Copyright (c) 2013-2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2013-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class CoreTest
  * @ingroup tests_classes_core
@@ -49,6 +49,8 @@ class CoreTest extends PKPTestCase {
 		$configData =& Config::getData();
 		$configData['general']['base_url[' . $contextPath . ']'] = $baseUrl;
 		$configData['general']['base_url[test2]'] = $baseUrl . '/test';
+		// edge case: context matches a page
+		$configData['general']['base_url[art]'] = $baseUrl . '/art';
 
 		$actualUrl = Core::removeBaseUrl($url);
 		$this->assertEquals($expectUrl, $actualUrl);
@@ -94,6 +96,9 @@ class CoreTest extends PKPTestCase {
 		// Path info disabled without host and rewrite rules removing index.php.
 		$cases[] = array('http://localhost/ojs', '/ojs?journal=test', '?journal=test');
 
+		// Edge cases
+		$cases[] = array('http://localhost/ojs', 'http://localhost/ojs/index.php/art/article/view/100', '/art/article/view/100');
+
 		return $cases;
 	}
 
@@ -135,7 +140,10 @@ class CoreTest extends PKPTestCase {
 		// Path info disabled only.
 		$cases[] = array('test', 'http://localhost/ojstest', '/ojstest/index.php?journal=test&page=index', '/test?journal=test&page=index');
 
+		// Edge cases
+		$cases[] = array('art', 'http://localhost', 'http://localhost/art/article/view/100', '/art/article/view/100');
+
 		return $cases;
 	}
 }
-?>
+

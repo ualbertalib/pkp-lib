@@ -2,9 +2,9 @@
 /**
  * @file classes/linkAction/request/EventAction.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class EventAction
  * @ingroup linkAction_request
@@ -30,8 +30,8 @@ class EventAction extends LinkActionRequest {
 	 * @param $targetSelector string Selector for target to receive event.
 	 * @param $eventName string Name of Javascript event to trigger.
 	 */
-	function EventAction($targetSelector, $eventName, $options = array()) {
-		parent::LinkActionRequest();
+	function __construct($targetSelector, $eventName, $options = array()) {
+		parent::__construct();
 		$this->targetSelector = $targetSelector;
 		$this->eventName = $eventName;
 		$this->options = $options;
@@ -62,4 +62,4 @@ class EventAction extends LinkActionRequest {
 	}
 }
 
-?>
+

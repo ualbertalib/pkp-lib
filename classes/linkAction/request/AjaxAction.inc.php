@@ -2,9 +2,9 @@
 /**
  * @file classes/linkAction/request/AjaxAction.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class AjaxAction
  * @ingroup linkAction_request
@@ -32,8 +32,8 @@ class AjaxAction extends LinkActionRequest {
 	 * @param $remoteAction string The target URL.
 	 * @param $requestType string One of the AJAX_REQUEST_TYPE_* constants.
 	 */
-	function AjaxAction($remoteAction, $requestType = AJAX_REQUEST_TYPE_POST) {
-		parent::LinkActionRequest();
+	function __construct($remoteAction, $requestType = AJAX_REQUEST_TYPE_POST) {
+		parent::__construct();
 		$this->_remoteAction = $remoteAction;
 		$this->_requestType = $requestType;
 	}
@@ -80,4 +80,4 @@ class AjaxAction extends LinkActionRequest {
 	}
 }
 
-?>
+

@@ -1,9 +1,9 @@
 {**
  * templates/manager/reviewForms/reviewFormElementForm.tpl
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * Form to create/modify a review form element.
  *
@@ -16,23 +16,22 @@
 </script>
 
 <script type="text/javascript">
-{literal}
 <!--
-function togglePossibleResponses(newValue, multipleResponsesElementTypesString) {
-	if (multipleResponsesElementTypesString.indexOf(';'+newValue+';') != -1) {
+function togglePossibleResponses(newValue, multipleResponsesElementTypesString) {ldelim}
+	if (multipleResponsesElementTypesString.indexOf(';'+newValue+';') != -1) {ldelim}
 		document.getElementById('reviewFormElementForm').addResponse.disabled=false;
-	} else {
-		if (document.getElementById('reviewFormElementForm').addResponse.disabled == false) {
-			alert({/literal}'{translate|escape:"jsparam" key="manager.reviewFormElement.changeType"}'{literal});
-		}
+	{rdelim} else {ldelim}
+		if (document.getElementById('reviewFormElementForm').addResponse.disabled == false) {ldelim}
+			alert({translate|json_encode key="manager.reviewFormElement.changeType"});
+		{rdelim}
 		document.getElementById('reviewFormElementForm').addResponse.disabled=true;
-	}
-}
+	{rdelim}
+{rdelim}
 // -->
-{/literal}
 </script>
 
 <form class="pkp_form" id="reviewFormElementForm" method="post" action="{url router=$smarty.const.ROUTE_COMPONENT component="grid.settings.reviewForms.ReviewFormElementsGridHandler" op="updateReviewFormElement" anchor="possibleResponses"}">
+	{csrf}
 	{fbvElement id="reviewFormId" type="hidden" name="reviewFormId" value=$reviewFormId}
 	{fbvElement id="reviewFormElementId" type="hidden" name="reviewFormElementId" value=$reviewFormElementId}
 
@@ -43,6 +42,11 @@ function togglePossibleResponses(newValue, multipleResponsesElementTypesString) 
 		<!-- question -->
 		{fbvFormSection title="manager.reviewFormElements.question" required=true for="question"}
 			{fbvElement type="textarea" id="question" value=$question multilingual=true rich=true}
+		{/fbvFormSection}
+
+		<!-- description -->
+		{fbvFormSection title="manager.reviewFormElements.description" for="description"}
+			{fbvElement type="textarea" id="description" value=$description multilingual=true rich=true}
 		{/fbvFormSection}
 
 		<!-- required checkbox -->
@@ -76,8 +80,8 @@ function togglePossibleResponses(newValue, multipleResponsesElementTypesString) 
 		<!-- Options listbuilder. Activated for some element types. -->
 		<div id="elementOptions" class="full left">
 			<div id="elementOptionsContainer" class="full left">
-				{url|assign:elementOptionsUrl router=$smarty.const.ROUTE_COMPONENT component="listbuilder.settings.reviewForms.ReviewFormElementResponseItemListbuilderHandler" op="fetch" reviewFormId=$reviewFormId reviewFormElementId=$reviewFormElementId escape=false}
-				{load_url_in_div id="elementOptionsContainer" url=$elementOptionsUrl}
+				{capture assign=elementOptionsUrl}{url router=$smarty.const.ROUTE_COMPONENT component="listbuilder.settings.reviewForms.ReviewFormElementResponseItemListbuilderHandler" op="fetch" reviewFormId=$reviewFormId reviewFormElementId=$reviewFormElementId escape=false}{/capture}
+				{load_url_in_div id="elementOptionsListbuilderContainer" url=$elementOptionsUrl}
 			</div>
 		</div>
 		<!-- required field text -->

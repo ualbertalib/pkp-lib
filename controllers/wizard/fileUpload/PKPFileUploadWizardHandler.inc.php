@@ -3,9 +3,9 @@
 /**
  * @file controllers/wizard/fileUpload/FileUploadWizardHandler.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class FileUploadWizardHandler
  * @ingroup controllers_wizard_fileUpload
@@ -15,25 +15,17 @@
  */
 
 // Import the base handler.
-import('lib.pkp.classes.file.FileManagementHandler');
+import('classes.handler.Handler');
 
 // Import JSON class for use with all AJAX requests.
 import('lib.pkp.classes.core.JSONMessage');
 
-// The percentage of characters that the name of a file
-// has to share with an existing file for it to be
-// considered as a revision of that file.
-define('SUBMISSION_MIN_SIMILARITY_OF_REVISION', 70);
-
-class PKPFileUploadWizardHandler extends FileManagementHandler {
+class PKPFileUploadWizardHandler extends Handler {
 	/** @var integer */
 	var $_fileStage;
 
 	/** @var array */
 	var $_uploaderRoles;
-
-	/** @var array */
-	var $_uploaderGroupIds;
 
 	/** @var boolean */
 	var $_revisionOnly;
@@ -54,14 +46,14 @@ class PKPFileUploadWizardHandler extends FileManagementHandler {
 	/**
 	 * Constructor
 	 */
-	function PKPFileUploadWizardHandler() {
-		parent::Handler();
+	function __construct() {
+		parent::__construct();
 		$this->addRoleAssignment(
 			array(ROLE_ID_MANAGER, ROLE_ID_SUB_EDITOR, ROLE_ID_AUTHOR, ROLE_ID_REVIEWER, ROLE_ID_ASSISTANT),
 			array(
 				'startWizard', 'displayFileUploadForm',
 				'uploadFile', 'confirmRevision',
-				'editMetadata', 'saveMetadata',
+				'editMetadata',
 				'finishFileSubmission'
 			)
 		);
@@ -74,8 +66,8 @@ class PKPFileUploadWizardHandler extends FileManagementHandler {
 	/**
 	 * @copydoc PKPHandler::initialize()
 	 */
-	function initialize($request, $args) {
-		parent::initialize($request, $args);
+	function initialize($request) {
+		parent::initialize($request);
 		// Configure the wizard with the authorized submission and file stage.
 		// Validated in authorize.
 		$this->_fileStage = (int)$request->getUserVar('fileStage');
@@ -88,17 +80,6 @@ class PKPFileUploadWizardHandler extends FileManagementHandler {
 			foreach($uploaderRoles as $uploaderRole) {
 				if (!is_numeric($uploaderRole)) fatalError('Invalid uploader role!');
 				$this->_uploaderRoles[] = (int)$uploaderRole;
-			}
-		}
-
-		// Set the uploader group IDs (if given).
-		$uploaderGroupIds = $request->getUserVar('uploaderGroupIds');
-		if (!empty($uploaderGroupIds)) {
-			$this->_uploaderGroupIds = array();
-			$uploaderGroupIds = explode('-', $uploaderGroupIds);
-			foreach($uploaderGroupIds as $uploaderGroupId) {
-				if (!is_numeric($uploaderGroupId)) fatalError('Invalid uploader group ID!');
-				$this->_uploaderGroupIds[] = (int)$uploaderGroupId;
 			}
 		}
 
@@ -123,14 +104,27 @@ class PKPFileUploadWizardHandler extends FileManagementHandler {
 		);
 	}
 
-	function authorize($request, &$args, $roleAssignments) {
-		return parent::authorize($request, $args, $roleAssignments);
-	}
-
 
 	//
 	// Getters and Setters
 	//
+	/**
+	 * The submission to which we upload files.
+	 * @return Submission
+	 */
+	function getSubmission() {
+		return $this->getAuthorizedContextObject(ASSOC_TYPE_SUBMISSION);
+	}
+
+
+	/**
+	 * Get the authorized workflow stage.
+	 * @return integer One of the WORKFLOW_STAGE_ID_* constants.
+	 */
+	function getStageId() {
+		return $this->getAuthorizedContextObject(ASSOC_TYPE_WORKFLOW_STAGE);
+	}
+
 	/**
 	 * Get the workflow stage file storage that
 	 * we upload files to. One of the SUBMISSION_FILE_*
@@ -147,14 +141,6 @@ class PKPFileUploadWizardHandler extends FileManagementHandler {
 	 */
 	function getUploaderRoles() {
 		return $this->_uploaderRoles;
-	}
-
-	/**
-	 * Get the uploader group IDs.
-	 * @return array
-	 */
-	function getUploaderGroupIds() {
-		return $this->_uploaderGroupIds;
 	}
 
 	/**
@@ -204,44 +190,24 @@ class PKPFileUploadWizardHandler extends FileManagementHandler {
 	 * Displays the file upload wizard.
 	 * @param $args array
 	 * @param $request Request
-	 * @return string a serialized JSON object
+	 * @return JSONMessage JSON object
 	 */
 	function startWizard($args, $request) {
 		$templateMgr = TemplateManager::getManager($request);
-
-		// Assign the submission.
-		$submission = $this->getSubmission();
-		$templateMgr->assign('submissionId', $submission->getId());
-
-		// Assign the workflow stage.
-		$templateMgr->assign('stageId', $this->getStageId());
-
-		// Assign the roles allowed to upload in the given context.
-		$templateMgr->assign('uploaderRoles', implode('-', (array) $this->getUploaderRoles()));
-
-		// Assign the roles allowed to upload in the given context.
-		$templateMgr->assign('uploaderGroupIds', implode('-', (array) $this->getUploaderGroupIds()));
-
-		// Assign the file stage.
-		$templateMgr->assign('fileStage', $this->getFileStage());
-
-		// Preserve the isReviewer flag
-		$templateMgr->assign('isReviewer', $request->getUserVar('isReviewer'));
-
-		// Configure the "revision only" feature.
-		$templateMgr->assign('revisionOnly', $this->getRevisionOnly());
 		$reviewRound = $this->getReviewRound();
-		if (is_a($reviewRound, 'ReviewRound')) {
-			$templateMgr->assign('reviewRoundId', $reviewRound->getId());
-		}
-		$templateMgr->assign('revisedFileId', $this->getRevisedFileId());
-		$templateMgr->assign('assocType', $this->getAssocType());
-		$templateMgr->assign('assocId', $this->getAssocId());
-
-		// only dependent file types?
-		$templateMgr->assign('dependentFilesOnly', $request->getUserVar('dependentFilesOnly'));
-
-		// Render the file upload wizard.
+		$templateMgr->assign(array(
+			'submissionId' => $this->getSubmission()->getId(),
+			'stageId' => $this->getStageId(),
+			'uploaderRoles' => implode('-', (array) $this->getUploaderRoles()),
+			'fileStage' => $this->getFileStage(),
+			'isReviewer' => $request->getUserVar('isReviewer'),
+			'revisionOnly' => $this->getRevisionOnly(),
+			'reviewRoundId' => is_a($reviewRound, 'ReviewRound')?$reviewRound->getId():null,
+			'revisedFileId' => $this->getRevisedFileId(),
+			'assocType' => $this->getAssocType(),
+			'assocId' => $this->getAssocId(),
+			'dependentFilesOnly' => $request->getUserVar('dependentFilesOnly'),
+		));
 		return $templateMgr->fetchJson('controllers/wizard/fileUpload/fileUploadWizard.tpl');
 	}
 
@@ -249,72 +215,183 @@ class PKPFileUploadWizardHandler extends FileManagementHandler {
 	 * Render the file upload form in its initial state.
 	 * @param $args array
 	 * @param $request Request
-	 * @return string a serialized JSON object
+	 * @return JSONMessage JSON object
 	 */
 	function displayFileUploadForm($args, $request) {
 		// Instantiate, configure and initialize the form.
-		import('controllers.wizard.fileUpload.form.SubmissionFilesUploadForm'); // app-specific
+		import('lib.pkp.controllers.wizard.fileUpload.form.SubmissionFilesUploadForm');
 		$submission = $this->getSubmission();
 		$fileForm = new SubmissionFilesUploadForm(
-			$request, $submission->getId(), $this->getStageId(), $this->getUploaderRoles(), $this->getUploaderGroupIds(), $this->getFileStage(),
+			$request, $submission->getId(), $this->getStageId(), $this->getUploaderRoles(), $this->getFileStage(),
 			$this->getRevisionOnly(), $this->getReviewRound(), $this->getRevisedFileId(),
 			$this->getAssocType(), $this->getAssocId()
 		);
-		$fileForm->initData($args, $request);
+		$fileForm->initData();
 
 		// Render the form.
-		$json = new JSONMessage(true, $fileForm->fetch($request));
-		return $json->getString();
+		return new JSONMessage(true, $fileForm->fetch($request));
 	}
 
 	/**
 	 * Upload a file and render the modified upload wizard.
 	 * @param $args array
 	 * @param $request Request
-	 * @return string a serialized JSON object
+	 * @return JSONMessage JSON object
 	 */
-	function uploadFile($args, $request, $fileModifyCallback = null) {
+	function uploadFile($args, $request) {
 		// Instantiate the file upload form.
 		$submission = $this->getSubmission();
-		import('controllers.wizard.fileUpload.form.SubmissionFilesUploadForm'); // app-specific
+		import('lib.pkp.controllers.wizard.fileUpload.form.SubmissionFilesUploadForm');
 		$uploadForm = new SubmissionFilesUploadForm(
-			$request, $submission->getId(), $this->getStageId(), null, null, $this->getFileStage(),
+			$request, $submission->getId(), $this->getStageId(), null, $this->getFileStage(),
 			$this->getRevisionOnly(), $this->getReviewRound(), null, $this->getAssocType(), $this->getAssocId()
 		);
 		$uploadForm->readInputData();
 
 		// Validate the form and upload the file.
-		if ($uploadForm->validate($request)) {
-			if (is_a($uploadedFile = $uploadForm->execute($request), 'SubmissionFile')) { /* @var $uploadedFile SubmissionFile */
-				// Retrieve file info to be used in a JSON response.
-				$uploadedFileInfo = $this->_getUploadedFileInfo($uploadedFile);
+		if (!$uploadForm->validate()) {
+			return new JSONMessage(true, $uploadForm->fetch($request));
+		}
+
+		$uploadedFile = $uploadForm->execute(); /* @var $uploadedFile SubmissionFile */
+		if (!is_a($uploadedFile, 'SubmissionFile')) {
+			return new JSONMessage(false, __('common.uploadFailed'));
+		}
+
+		$this->_attachEntities($uploadedFile);
+
+		// Retrieve file info to be used in a JSON response.
+		$uploadedFileInfo = $this->_getUploadedFileInfo($uploadedFile);
+		$reviewRound = $this->getReviewRound();
+
+		// If no revised file id was given then try out whether
+		// the user maybe accidentally didn't identify this file as a revision.
+		if (!$uploadForm->getRevisedFileId()) {
+			$user = $request->getUser();
+			$revisionSubmissionFilesSelection = $uploadForm->getRevisionSubmissionFilesSelection($user, $uploadedFile);
+			$revisedFileId = $this->_checkForRevision($uploadedFile, $revisionSubmissionFilesSelection);
+			if ($revisedFileId) {
+				// Instantiate the revision confirmation form.
+				import('lib.pkp.controllers.wizard.fileUpload.form.SubmissionFilesUploadConfirmationForm');
+				$confirmationForm = new SubmissionFilesUploadConfirmationForm($request, $submission->getId(), $this->getStageId(), $this->getFileStage(), $reviewRound, $revisedFileId, $this->getAssocType(), $this->getAssocId(), $uploadedFile);
+				$confirmationForm->initData();
+
+				// Render the revision confirmation form.
+				return new JSONMessage(true, $confirmationForm->fetch($request), '0', $uploadedFileInfo);
+			}
+		}
+
+		// Advance to the next step (i.e. meta-data editing).
+		return new JSONMessage(true, '', '0', $uploadedFileInfo);
+	}
+
+	/**
+	 * Attach any dependent entities to a new file upload.
+	 * @param $submissionFile SubmissionFile
+	 */
+	protected function _attachEntities($submissionFile) {
+		switch ($submissionFile->getFileStage()) {
+			case SUBMISSION_FILE_ATTACHMENT:
+				// If this attachment was created in the review stage, add it to
+				// the review round.
+				if ($reviewRound = $this->getReviewRound()) {
+					$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO'); /* @var $submissionFileDao SubmissionFileDAO */
+					$submissionFileDao->assignRevisionToReviewRound($submissionFile->getFileId(), $submissionFile->getRevision(), $reviewRound);
+				}
+				break;
+			case SUBMISSION_FILE_REVIEW_FILE:
+			case SUBMISSION_FILE_REVIEW_ATTACHMENT:
+			case SUBMISSION_FILE_REVIEW_REVISION:
+				// Add the uploaded review file to the review round.
 				$reviewRound = $this->getReviewRound();
+				$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO'); /* @var $submissionFileDao SubmissionFileDAO */
+				$submissionFileDao->assignRevisionToReviewRound($submissionFile->getFileId(), $submissionFile->getRevision(), $reviewRound);
 
-				// If no revised file id was given then try out whether
-				// the user maybe accidentally didn't identify this file as a revision.
-				if (!$uploadForm->getRevisedFileId()) {
-					$revisedFileId = $this->_checkForRevision($uploadedFile, $uploadForm->getSubmissionFiles());
-					if ($revisedFileId) {
-						// Instantiate the revision confirmation form.
-						import('lib.pkp.controllers.wizard.fileUpload.form.SubmissionFilesUploadConfirmationForm');
-						$confirmationForm = new SubmissionFilesUploadConfirmationForm($request, $submission->getId(), $this->getStageId(), $this->getFileStage(), $reviewRound, $revisedFileId, $this->getAssocType(), $this->getAssocId(), $uploadedFile);
-						$confirmationForm->initData($args, $request);
+				if ($submissionFile->getFileStage() == SUBMISSION_FILE_REVIEW_REVISION) {
+					// Get a list of author user IDs
+					$authorUserIds = array();
+					$stageAssignmentDao = DAORegistry::getDAO('StageAssignmentDAO'); /* @var $stageAssignmentDao StageAssignmentDAO */
+					$submitterAssignments = $stageAssignmentDao->getBySubmissionAndRoleId($reviewRound->getSubmissionId(), ROLE_ID_AUTHOR);
+					while ($assignment = $submitterAssignments->next()) {
+						$authorUserIds[] = $assignment->getUserId();
+					}
 
-						// Render the revision confirmation form.
-						$json = new JSONMessage(true, $confirmationForm->fetch($request), '0', $uploadedFileInfo);
-						return $json->getString();
+					// Update the task notifications
+					$notificationMgr = new NotificationManager();
+					$notificationMgr->updateNotification(
+						Application::get()->getRequest(),
+						array(NOTIFICATION_TYPE_PENDING_INTERNAL_REVISIONS, NOTIFICATION_TYPE_PENDING_EXTERNAL_REVISIONS),
+						$authorUserIds,
+						ASSOC_TYPE_SUBMISSION,
+						$reviewRound->getSubmissionId()
+					);
+
+					// Update the ReviewRound status when revision is submitted
+					import('lib.pkp.classes.submission.reviewRound.ReviewRoundDAO');
+					$reviewRoundDao = DAORegistry::getDAO('ReviewRoundDAO'); /* @var $reviewRoundDao ReviewRoundDAO */
+					$reviewRoundDao->updateStatus($reviewRound);
+
+					// Notify editors about the revision upload
+					$submission = $this->getSubmission();
+					$request = Application::get()->getRequest();
+					$router = $request->getRouter();
+					$dispatcher = $router->getDispatcher();
+					$context = $request->getContext();
+					$uploader = $request->getUser();
+					// If the file is uploaded by an author
+					if (in_array($uploader->getId(), $authorUserIds)) {
+
+						// Fetch the latest notification email timestamp if any
+						import('lib.pkp.classes.log.SubmissionEmailLogEntry'); // Import email event constants
+						$submissionEmailLogDao = DAORegistry::getDAO('SubmissionEmailLogDAO'); /* @var $submissionEmailLogDao SubmissionEmailLogDAO */
+						$submissionEmails = $submissionEmailLogDao->getByEventType($submission->getId(), SUBMISSION_EMAIL_AUTHOR_NOTIFY_REVISED_VERSION);
+						$lastNotification = null;
+						$sentDates = array();
+						if ($submissionEmails){
+							while ($email = $submissionEmails->next()) {
+								if ($email->getDateSent()){
+									$sentDates[] = $email->getDateSent();
+								}
+							}
+							if (!empty($sentDates)){ 
+								$lastNotification = max(array_map('strtotime', $sentDates));
+							}
+						}
+
+						import('lib.pkp.classes.mail.SubmissionMailTemplate');
+						$mail = new SubmissionMailTemplate($submission, 'REVISED_VERSION_NOTIFY');
+						$mail->setEventType(SUBMISSION_EMAIL_AUTHOR_NOTIFY_REVISED_VERSION);
+						$mail->setReplyTo($context->getData('contactEmail'), $context->getData('contactName'));
+						// Get editors assigned to the submission, consider also the recommendOnly editors
+						$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
+						$editorsStageAssignments = $stageAssignmentDao->getEditorsAssignedToStage($submission->getId(), $this->getStageId());
+						foreach ($editorsStageAssignments as $editorsStageAssignment) {
+							$editor = $userDao->getById($editorsStageAssignment->getUserId());
+ 							// If no prior notification exists OR if editor has logged in after the last revision upload OR the last upload and notification was sent more than a day ago, send a new notification
+							if (is_null($lastNotification) || strtotime($editor->getDateLastLogin()) > $lastNotification || strtotime('-1 day') > $lastNotification){
+								$mail->addRecipient($editor->getEmail(), $editor->getFullName());
+							}
+						}
+						// Get uploader name
+						$submissionUrl = $dispatcher->url($request, ROUTE_PAGE, null, 'workflow', 'index', array($submission->getId(), $this->getStageId()));
+						$mail->assignParams(array(
+							'authorName' => $uploader->getFullName(),
+							'editorialContactSignature' => $context->getData('contactName'),
+							'submissionUrl' => $submissionUrl,
+						));
+
+						if ($mail->getRecipients()){
+							if (!$mail->send($request)) {
+								import('classes.notification.NotificationManager');
+								$notificationMgr = new NotificationManager();
+								$notificationMgr->createTrivialNotification($request->getUser()->getId(), NOTIFICATION_TYPE_ERROR, array('contents' => __('email.compose.error')));
+							}
+						}
+
 					}
 				}
-
-				// Advance to the next step (i.e. meta-data editing).
-				$json = new JSONMessage(true, '', '0', $uploadedFileInfo);
-			} else {
-				$json = new JSONMessage(false, __('common.uploadFailed'));
-			}
-		} else {
-			$json = new JSONMessage(false, array_pop($uploadForm->getErrorsArray()));
+				break;
 		}
-		return $json->getString();
 	}
 
 	/**
@@ -322,7 +399,7 @@ class PKPFileUploadWizardHandler extends FileManagementHandler {
 	 * earlier uploaded file.
 	 * @param $args array
 	 * @param $request Request
-	 * @return string a serialized JSON object
+	 * @return JSONMessage JSON object
 	 */
 	function confirmRevision($args, $request) {
 		// Instantiate the revision confirmation form.
@@ -336,17 +413,20 @@ class PKPFileUploadWizardHandler extends FileManagementHandler {
 		$confirmationForm->readInputData();
 
 		// Validate the form and revise the file.
-		if ($confirmationForm->validate($request)) {
-			if (is_a($uploadedFile = $confirmationForm->execute($request), 'SubmissionFile')) {
+		if ($confirmationForm->validate()) {
+			if (is_a($uploadedFile = $confirmationForm->execute(), 'SubmissionFile')) {
+
+				$this->_attachEntities($uploadedFile);
+
 				// Go to the meta-data editing step.
-				$json = new JSONMessage(true, '', '0', $this->_getUploadedFileInfo($uploadedFile));
+				return new JSONMessage(true, '', '0', $this->_getUploadedFileInfo($uploadedFile));
 			} else {
-				$json = new JSONMessage(false, __('common.uploadFailed'));
+
+				return new JSONMessage(false, __('common.uploadFailed'));
 			}
 		} else {
-			$json = new JSONMessage(false, array_pop($confirmationForm->getErrorsArray()));
+			return new JSONMessage(true, $confirmationForm->fetch($request));
 		}
-		return $json->getString();
 	}
 
 	/**
@@ -354,80 +434,19 @@ class PKPFileUploadWizardHandler extends FileManagementHandler {
 	 * the requested submission file.
 	 * @param $args array
 	 * @param $request Request
-	 * @return string a serialized JSON object
+	 * @return JSONMessage JSON object
 	 */
 	function editMetadata($args, $request) {
 		$metadataForm = $this->_getMetadataForm($request);
-		$metadataForm->initData($args, $request);
-		$json = new JSONMessage(true, $metadataForm->fetch($request));
-		return $json->getString();
-	}
-
-	/**
-	 * Save the metadata of the latest revision of
-	 * the requested submission file
-	 * @param $args array
-	 * @param $request Request
-	 * @return string a serialized JSON object
-	 */
-	function saveMetadata($args, $request) {
-		$submission = $this->getSubmission();
-		$metadataForm = $this->_getMetadataForm($request);
-		$metadataForm->readInputData();
-		if ($metadataForm->validate()) {
-			$metadataForm->execute($args, $request);
-			$submissionFile = $metadataForm->getSubmissionFile();
-
-			$notificationMgr = new NotificationManager(); /* @var $notificationMgr NotificationManager */
-			$submission = $this->getSubmission();
-			$notificationMgr->updateNotification(
-				$request,
-				$this->_getUpdateNotifications(),
-				array($submission->getUserId()),
-				ASSOC_TYPE_SUBMISSION,
-				$submission->getId()
-			);
-
-			$reviewRound = $this->getReviewRound();
-			if ($reviewRound) {
-				$notificationMgr->updateNotification(
-					$request,
-					array(NOTIFICATION_TYPE_ALL_REVISIONS_IN),
-					null,
-					ASSOC_TYPE_REVIEW_ROUND,
-					$reviewRound->getId()
-				);
-
-				// Delete any 'revision requested' notifications since all revisions are now in.
-				$context = $request->getContext();
-				$notificationDao = DAORegistry::getDAO('NotificationDAO');
-				$notificationDao->deleteByAssoc(ASSOC_TYPE_SUBMISSION, $submission->getId(), $submission->getUserId(), NOTIFICATION_TYPE_EDITOR_DECISION_PENDING_REVISIONS, $context->getId());
-			}
-
-			// Log the upload event
-			import('lib.pkp.classes.log.SubmissionLog');
-			import('classes.log.SubmissionEventLogEntry');
-			import('lib.pkp.classes.log.SubmissionFileEventLogEntry'); // constants
-			$user = $request->getUser();
-			SubmissionLog::logEvent(
-				$request, $submission,
-				$submissionFile->getRevision()>1?SUBMISSION_LOG_FILE_REVISION_UPLOAD:SUBMISSION_LOG_FILE_UPLOAD,
-				$submissionFile->getRevision()>1?'submission.event.fileRevised':'submission.event.fileUploaded',
-				array('fileStage' => $submissionFile->getFileStage(), 'fileId' => $submissionFile->getFileId(), 'fileRevision' => $submissionFile->getRevision(), 'originalFileName' => $submissionFile->getOriginalFileName(), 'submissionId' => $submissionFile->getSubmissionId(), 'username' => $user->getUsername())
-			);
-
-			return DAO::getDataChangedEvent();
-		} else {
-			$json = new JSONMessage(false, $metadataForm->fetch($request));
-		}
-		return $json->getString();
+		$metadataForm->initData();
+		return new JSONMessage(true, $metadataForm->fetch($request));
 	}
 
 	/**
 	 * Display the final tab of the modal
 	 * @param $args array
 	 * @param $request Request
-	 * @return string a serialized JSON object
+	 * @return JSONMessage JSON object
 	 */
 	function finishFileSubmission($args, $request) {
 		$submission = $this->getSubmission();
@@ -438,6 +457,9 @@ class PKPFileUploadWizardHandler extends FileManagementHandler {
 		$templateMgr = TemplateManager::getManager($request);
 		$templateMgr->assign('submissionId', $submission->getId());
 		$templateMgr->assign('fileId', $fileId);
+		if (isset($args['fileStage'])) {
+			$templateMgr->assign('fileStage', $args['fileStage']);
+		}
 
 		return $templateMgr->fetchJson('controllers/wizard/fileUpload/form/fileSubmissionComplete.tpl');
 	}
@@ -451,23 +473,9 @@ class PKPFileUploadWizardHandler extends FileManagementHandler {
 	 * @param $request Request
 	 * @return SubmissionFilesMetadataForm
 	 */
-	function &_getMetadataForm($request) {
-		// Retrieve the authorized submission.
-		$submission = $this->getSubmission();
-
-		// Retrieve the submission file.
+	function _getMetadataForm($request) {
 		$submissionFile = $this->getAuthorizedContextObject(ASSOC_TYPE_SUBMISSION_FILE);
-
-		// Import the meta-data form based on the file implementation.
-		if (is_a($submissionFile, 'ArtworkFile')) {
-			import('lib.pkp.controllers.wizard.fileUpload.form.SubmissionFilesArtworkMetadataForm');
-			$metadataForm = new SubmissionFilesArtworkMetadataForm($submissionFile, $this->getStageId(), $this->getReviewRound());
-		} else {
-			import('lib.pkp.controllers.wizard.fileUpload.form.SubmissionFilesMetadataForm');
-			$metadataForm = new SubmissionFilesMetadataForm($submissionFile, $this->getStageId(), $this->getReviewRound());
-		}
-
-		return $metadataForm;
+		return $submissionFile->getMetadataForm($this->getStageId(), $this->getReviewRound());
 	}
 
 	/**
@@ -484,31 +492,19 @@ class PKPFileUploadWizardHandler extends FileManagementHandler {
 		$uploadedFileName = $uploadedFile->getOriginalFileName();
 
 		// Start with the minimal required similarity.
-		$minPercentage = SUBMISSION_MIN_SIMILARITY_OF_REVISION;
+		$minPercentage = Config::getVar('files', 'filename_revision_match', 70);
 
 		// Find out whether one of the files belonging to the current
 		// file stage matches the given file name.
 		$possibleRevisedFileId = null;
 		$matchedPercentage = 0;
-		foreach ($submissionFiles as $submissionFile) { /* @var $submissionFile SubmissionFile */
-			// Do not consider the uploaded file itself.
-			if ($uploadedFile->getFileId() == $submissionFile->getFileId()) continue;
-
-			// Do not consider files from different publication formats.
-			if ((($uploadedFile->getAssocType() == ASSOC_TYPE_REPRESENTATION &&
-				$submissionFile->getAssocType() == ASSOC_TYPE_REPRESENTATION)) &&
-				$uploadedFile->getAssocId() != $submissionFile->getAssocId()) continue;
-
+		foreach ((array) $submissionFiles as $submissionFile) { /* @var $submissionFile SubmissionFile */
 			// Test whether the current submission file is similar
 			// to the uploaded file. (Transliterate to ASCII -- the
 			// similar_text function can't handle UTF-8.)
-
-			import('lib.pkp.classes.core.Transcoder');
-			$transcoder = new Transcoder('UTF-8', 'ASCII', true);
-
 			similar_text(
-				$a = $transcoder->trans($uploadedFileName),
-				$b = $transcoder->trans($submissionFile->getOriginalFileName()),
+				$a = Stringy\Stringy::create($uploadedFileName)->toAscii(),
+				$b = Stringy\Stringy::create($submissionFile->getOriginalFileName())->toAscii(),
 				$matchedPercentage
 			);
 			if($matchedPercentage > $minPercentage && !$this->_onlyNumbersDiffer($a, $b)) {
@@ -562,18 +558,12 @@ class PKPFileUploadWizardHandler extends FileManagementHandler {
 		return array(
 			'uploadedFile' => array(
 				'fileId' => $uploadedFile->getFileId(),
-				'revision' => $uploadedFile->getRevision()
+				'revision' => $uploadedFile->getRevision(),
+				'name' => $uploadedFile->getLocalizedName(),
+				'fileLabel' => $uploadedFile->getFileLabel(),
+				'type' => $uploadedFile->getDocumentType(),
+				'genreId' => $uploadedFile->getGenreId(),
 			)
 		);
 	}
-
-	/**
-	 * Get the list of notifications to be updated on metadata form submission.
-	 * @return array
-	 */
-	protected function _getUpdateNotifications() {
-		return array(NOTIFICATION_TYPE_PENDING_EXTERNAL_REVISIONS);
-	}
 }
-
-?>

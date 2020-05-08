@@ -3,9 +3,9 @@
 /**
  * @file classes/submission/SubmissionFile.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubmissionFile
  * @ingroup submission
@@ -29,18 +29,40 @@ define('SUBMISSION_FILE_COPYEDIT', 9);
 define('SUBMISSION_FILE_PROOF', 10);
 define('SUBMISSION_FILE_PRODUCTION_READY', 11);
 define('SUBMISSION_FILE_ATTACHMENT', 13);
-define('SUBMISSION_FILE_SIGNOFF', 14);
 define('SUBMISSION_FILE_REVIEW_REVISION', 15);
 define('SUBMISSION_FILE_DEPENDENT', 17);
+define('SUBMISSION_FILE_QUERY', 18);
 
 class SubmissionFile extends PKPFile {
-	/**
-	 * Constructor.
-	 */
-	function SubmissionFile() {
-		parent::PKPFile();
-	}
 
+	/**
+	 * Get a piece of data for this object, localized to the current
+	 * locale if possible.
+	 * @param $key string
+	 * @param $preferredLocale string
+	 * @return mixed
+	 */
+	function &getLocalizedData($key, $preferredLocale = null) {
+		if (is_null($preferredLocale)) $preferredLocale = AppLocale::getLocale();
+		$localePrecedence = array($preferredLocale, $this->getSubmissionLocale());
+		foreach ($localePrecedence as $locale) {
+			if (empty($locale)) continue;
+			$value =& $this->getData($key, $locale);
+			if (!empty($value)) return $value;
+			unset($value);
+		}
+
+		// Fallback: Get the first available piece of data.
+		$data =& $this->getData($key, null);
+		foreach ((array) $data as $dataValue) {
+			if (!empty($dataValue)) return $dataValue;
+		}
+
+		// No data available; return null.
+		unset($data);
+		$data = null;
+		return $data;
+	}
 
 	//
 	// Getters and Setters
@@ -62,7 +84,49 @@ class SubmissionFile extends PKPFile {
 	function setFileId($fileId) {
 		// WARNING: Do not modernize getter/setters without considering
 		// ID clash with subclasses ArticleGalley and ArticleNote!
-		return $this->setData('fileId', $fileId);
+		$this->setData('fileId', $fileId);
+	}
+
+	/**
+	 * Get ID of file.
+	 * @return int
+	 */
+	function getId() {
+		// WARNING: Do not modernize getter/setters without considering
+		// ID clash with subclasses ArticleGalley and ArticleNote!
+		return $this->getData('fileId');
+	}
+
+	/**
+	 * Set ID of file.
+	 * @param $fileId int
+	 */
+	function setId($fileId) {
+		// WARNING: Do not modernize getter/setters without considering
+		// ID clash with subclasses ArticleGalley and ArticleNote!
+		$this->setData('fileId', $fileId);
+	}
+
+	/**
+	 * Get the locale of the submission.
+	 * This is not properly a property of the submission file
+	 * (e.g. it won't be persisted to the DB with the update function)
+	 * It helps solve submission locale requirement for file's multilingual metadata
+	 * @return string
+	 */
+	function getSubmissionLocale() {
+		return $this->getData('submissionLocale');
+	}
+
+	/**
+	 * Set the locale of the submission.
+	 * This is not properly a property of the submission file
+	 * (e.g. it won't be persisted to the DB with the update function)
+	 * It helps solve submission locale requirement for file's multilingual metadata
+	 * @param $submissionLocale string
+	 */
+	function setSubmissionLocale($submissionLocale) {
+		$this->setData('submissionLocale', $submissionLocale);
 	}
 
 	/**
@@ -78,7 +142,7 @@ class SubmissionFile extends PKPFile {
 	 * @param $sourceFileId int
 	 */
 	function setSourceFileId($sourceFileId) {
-		return $this->setData('sourceFileId', $sourceFileId);
+		$this->setData('sourceFileId', $sourceFileId);
 	}
 
 	/**
@@ -94,11 +158,11 @@ class SubmissionFile extends PKPFile {
 	 * @param $sourceRevision int
 	 */
 	function setSourceRevision($sourceRevision) {
-		return $this->setData('sourceRevision', $sourceRevision);
+		$this->setData('sourceRevision', $sourceRevision);
 	}
 
 	/**
-	 * Get associated ID of file. (Used, e.g., for email log attachments.)
+	 * Get associated ID of file.
 	 * @return int
 	 */
 	function getAssocId() {
@@ -106,11 +170,33 @@ class SubmissionFile extends PKPFile {
 	}
 
 	/**
-	 * Set associated ID of file. (Used, e.g., for email log attachments.)
+	 * Set associated ID of file.
 	 * @param $assocId int
 	 */
 	function setAssocId($assocId) {
-		return $this->setData('assocId', $assocId);
+		$this->setData('assocId', $assocId);
+	}
+
+	/**
+	 * Get stored public ID of the file.
+	 * @param @literal $pubIdType string One of the NLM pub-id-type values or
+	 * 'other::something' if not part of the official NLM list
+	 * (see <http://dtd.nlm.nih.gov/publishing/tag-library/n-4zh0.html>). @endliteral
+	 * @return int
+	 */
+	function getStoredPubId($pubIdType) {
+		return $this->getData('pub-id::'.$pubIdType);
+	}
+
+	/**
+	 * Set the stored public ID of the file.
+	 * @param $pubIdType string One of the NLM pub-id-type values or
+	 * 'other::something' if not part of the official NLM list
+	 * (see <http://dtd.nlm.nih.gov/publishing/tag-library/n-4zh0.html>).
+	 * @param $pubId string
+	 */
+	function setStoredPubId($pubIdType, $pubId) {
+		$this->setData('pub-id::'.$pubIdType, $pubId);
 	}
 
 	/**
@@ -128,7 +214,7 @@ class SubmissionFile extends PKPFile {
 	 * @param $directSalesPrice numeric|null
 	 */
 	function setDirectSalesPrice($directSalesPrice) {
-		return $this->setData('directSalesPrice', $directSalesPrice);
+		$this->setData('directSalesPrice', $directSalesPrice);
 	}
 
 	/**
@@ -144,7 +230,7 @@ class SubmissionFile extends PKPFile {
 	 * @param $salesType string
 	 */
 	function setSalesType($salesType) {
-		return $this->setData('salesType', $salesType);
+		$this->setData('salesType', $salesType);
 	}
 
 	/**
@@ -174,13 +260,25 @@ class SubmissionFile extends PKPFile {
 	}
 
 	/**
+	 * Determine whether this file supports dependent content.
+	 * @return boolean
+	 */
+	function supportsDependentFiles() {
+		return !in_array($this->getFileStage(), array(SUBMISSION_FILE_DEPENDENT, SUBMISSION_FILE_QUERY)) && in_array($this->getFileType(), array(
+			'text/html',
+			'application/xml',
+			'text/xml',
+		));
+	}
+
+	/**
 	 * Get the file's extension.
 	 * @return string
 	 */
 	function getExtension() {
 		import('lib.pkp.classes.file.FileManager');
 		$fileManager = new FileManager();
-		return strtoupper($fileManager->parseFileExtension($this->getOriginalFileName()));
+		return $fileManager->parseFileExtension($this->getOriginalFileName());
 	}
 
 	/**
@@ -220,6 +318,17 @@ class SubmissionFile extends PKPFile {
 	}
 
 	/**
+	 * Return the "best" file ID -- If a public ID is set,
+	 * use it; otherwise use the internal ID and revision.
+	 * @return string
+	 */
+	function getBestId() {
+		$publicFileId = $this->getStoredPubId('publisher-id');
+		if (!empty($publicFileId)) return $publicFileId;
+		return $this->getFileIdAndRevision();
+	}
+
+	/**
 	 * Get the combined key of the file
 	 * consisting of the file id and the revision.
 	 * @return string
@@ -239,7 +348,7 @@ class SubmissionFile extends PKPFile {
 	 * @param $revision int
 	 */
 	function setRevision($revision) {
-		return $this->setData('revision', $revision);
+		$this->setData('revision', $revision);
 	}
 
 	/**
@@ -255,25 +364,7 @@ class SubmissionFile extends PKPFile {
 	 * @param $submissionId int
 	 */
 	function setSubmissionId($submissionId) {
-		return $this->setData('submissionId', $submissionId);
-	}
-
-	/**
-	 * Get type of the file.
-	 * @return int
-	 */
-	function getType() {
-		if (Config::getVar('debug', 'deprecation_warnings')) trigger_error('Deprecated function.');
-		return $this->getFileStage();
-	}
-
-	/**
-	 * Set type of the file.
-	 * @param $type int
-	 */
-	function setType($type) {
-		if (Config::getVar('debug', 'deprecation_warnings')) trigger_error('Deprecated function.');
-		return $this->setFileStage($type);
+		$this->setData('submissionId', $submissionId);
 	}
 
 	/**
@@ -289,7 +380,7 @@ class SubmissionFile extends PKPFile {
 	 * @param $fileStage int SUBMISSION_FILE_...
 	 */
 	function setFileStage($fileStage) {
-		return $this->setData('fileStage', $fileStage);
+		$this->setData('fileStage', $fileStage);
 	}
 
 	/**
@@ -307,7 +398,7 @@ class SubmissionFile extends PKPFile {
 	 */
 
 	function setDateModified($dateModified) {
-		return $this->SetData('dateModified', $dateModified);
+		return $this->setData('dateModified', $dateModified);
 	}
 
 	/**
@@ -324,7 +415,7 @@ class SubmissionFile extends PKPFile {
 	 * @param $round int
 	 */
 	function setRound($round) {
-		return $this->SetData('round', $round);
+		return $this->setData('round', $round);
 	}
 
 	/**
@@ -341,7 +432,7 @@ class SubmissionFile extends PKPFile {
 	 * @param $viewable boolean
 	 */
 	function setViewable($viewable) {
-		return $this->SetData('viewable', $viewable);
+		return $this->setData('viewable', $viewable);
 	}
 
 	/**
@@ -361,22 +452,6 @@ class SubmissionFile extends PKPFile {
 	}
 
 	/**
-	 * Set the uploader's user group id
-	 * @param $userGroupId int
-	 */
-	function setUserGroupId($userGroupId) {
-		$this->setData('userGroupId', $userGroupId);
-	}
-
-	/**
-	 * Get the uploader's user group id
-	 * @return int
-	 */
-	function getUserGroupId() {
-		return $this->getData('userGroupId');
-	}
-
-	/**
 	 * Get type that is associated with this file.
 	 * @return int
 	 */
@@ -389,7 +464,23 @@ class SubmissionFile extends PKPFile {
 	 * @param $assocType int
 	 */
 	function setAssocType($assocType) {
-		return $this->setData('assocType', $assocType);
+		$this->setData('assocType', $assocType);
+	}
+
+	/**
+	 * Get the submission chapter id.
+	 * @return int
+	 */
+	function getChapterId() {
+		return $this->getData('chapterId');
+	}
+
+	/**
+	 * Set the submission chapter id.
+	 * @param $chapterId int
+	 */
+	function setChapterId($chapterId) {
+		$this->setData('chapterId', $chapterId);
 	}
 
 	/**
@@ -397,7 +488,7 @@ class SubmissionFile extends PKPFile {
 	 */
 	function getFilePath() {
 		// Get the context ID
-		$submissionDao = Application::getSubmissionDAO();
+		$submissionDao = DAORegistry::getDAO('SubmissionDAO'); /* @var $submissionDao SubmissionDAO */
 		$submission = $submissionDao->getById($this->getSubmissionId());
 		if (!$submission) return null;
 		$contextId = $submission->getContextId();
@@ -439,6 +530,7 @@ class SubmissionFile extends PKPFile {
 	function copyEditableMetadataFrom($submissionFile) {
 		assert(is_a($submissionFile, 'SubmissionFile'));
 		$this->setName($submissionFile->getName(null), null);
+		$this->setChapterId($submissionFile->getChapterId());
 	}
 
 	/**
@@ -449,19 +541,19 @@ class SubmissionFile extends PKPFile {
 		// Generate a human readable time stamp.
 		$timestamp = date('Ymd', strtotime($this->getDateUploaded()));
 
-		$genreDao = DAORegistry::getDAO('GenreDAO');
+		$genreDao = DAORegistry::getDAO('GenreDAO'); /* @var $genreDao GenreDAO */
 		$genre = $genreDao->getById($this->getGenreId());
 
 		// Make the file name unique across all files and file revisions.
 		// Also make sure that files can be ordered sensibly by file name.
 		return	$this->getSubmissionId() . '-'.
-			($genre? ($genre->getDesignation() . '_' . $genre->getLocalizedName() . '-'):'') .
+			($genre? ($genre->getLocalizedName() . '-'):'') .
 			$this->getFileId() . '-' .
 			$this->getRevision() . '-' .
 			$this->getFileStage() . '-' .
 			$timestamp .
 			'.' .
-			strtolower_codesafe($this->getExtension());
+			$this->getExtension();
 	}
 
 	//
@@ -490,7 +582,7 @@ class SubmissionFile extends PKPFile {
 	* @return int
 	*/
 	function getViews() {
-		$application = Application::getApplication();
+		$application = Application::get();
 		return $application->getPrimaryMetricByAssoc(ASSOC_TYPE_SUBMISSION_FILE, $this->getFileId());
 	}
 
@@ -519,6 +611,37 @@ class SubmissionFile extends PKPFile {
 	}
 
 	/**
+	 * Generate a user-facing name for the file
+	 * @param $anonymous boolean Whether the user name should be excluded
+	 * @return string
+	 */
+	function _generateName($anonymous = false) {
+		$genreDao = DAORegistry::getDAO('GenreDAO'); /* @var $genreDao GenreDAO */
+		$genre = $genreDao->getById($this->getGenreId());
+		$userDAO = DAORegistry::getDAO('UserDAO');
+		$user = $userDAO->getById($this->getUploaderUserId());
+
+		$submissionLocale = $this->getSubmissionLocale();
+		AppLocale::requireComponents(LOCALE_COMPONENT_PKP_COMMON, $submissionLocale);
+
+		$genreName = '';
+		if ($genre) {
+			$genreName = $genre->getName($submissionLocale) ? $genre->getName($submissionLocale) : $genre->getLocalizedName();
+		}
+
+		$localeKey = $anonymous ? 'common.file.anonymousNamingPattern' : 'common.file.namingPattern';
+		return __($localeKey,
+			array(
+				'genre'            => $genreName,
+				'docType'          => $this->getDocumentType(),
+				'originalFilename' => $this->getOriginalFilename(),
+				'username'         => $user->getUsername(),
+			),
+			$submissionLocale
+		);
+	}
+
+	/**
 	 * Return path associated with a file stage code.
 	 * @param $fileStage string
 	 * @return string
@@ -540,7 +663,7 @@ class SubmissionFile extends PKPFile {
 				SUBMISSION_FILE_PROOF => 'submission/proof',
 				SUBMISSION_FILE_PRODUCTION_READY => 'submission/productionReady',
 				SUBMISSION_FILE_ATTACHMENT => 'attachment',
-				SUBMISSION_FILE_SIGNOFF => 'submission/signoff',
+				SUBMISSION_FILE_QUERY => 'submission/query',
 		);
 
 		assert(isset($fileStageToPath[$fileStage]));
@@ -551,15 +674,22 @@ class SubmissionFile extends PKPFile {
 	// Public methods
 	//
 	/**
-	 * Check if the file may be displayed inline.
-	 * FIXME: Move to DAO to remove coupling of the domain
-	 *  object to its DAO.
-	 * @return boolean
+	 * Get the metadata form for this submission file.
+	 * @param $stageId int FILE_STAGE_...
+	 * @param $reviewRound ReviewRound
+	 * @return Form
 	 */
-	function isInlineable() {
-		$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO'); /* @var $submissionFileDao SubmissionFileDAO */
-		return $submissionFileDao->isInlineable($this);
+	function getMetadataForm($stageId, $reviewRound) {
+		import('lib.pkp.controllers.wizard.fileUpload.form.SubmissionFilesMetadataForm');
+		return new SubmissionFilesMetadataForm($this, $stageId, $reviewRound);
+	}
+
+	/**
+	 * @copydoc DataObject::getDAO()
+	 */
+	function getDAO() {
+		return DAORegistry::getDAO('SubmissionFileDAO');
 	}
 }
 
-?>
+

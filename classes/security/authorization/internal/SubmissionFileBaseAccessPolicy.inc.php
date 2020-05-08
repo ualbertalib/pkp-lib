@@ -2,9 +2,9 @@
 /**
  * @file classes/security/authorization/internal/SubmissionFileBaseAccessPolicy.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubmissionFileBaseAccessPolicy
  * @ingroup security_authorization_internal
@@ -28,8 +28,8 @@ class SubmissionFileBaseAccessPolicy extends AuthorizationPolicy {
 	 * @param $fileIdAndRevision string If passed, this policy will try to
 	 * get the submission file from this data.
 	 */
-	function SubmissionFileBaseAccessPolicy($request, $fileIdAndRevision = null) {
-		parent::AuthorizationPolicy('user.authorization.submissionFile');
+	function __construct($request, $fileIdAndRevision = null) {
+		parent::__construct('user.authorization.submissionFile');
 		$this->_request = $request;
 		$this->_fileIdAndRevision = $fileIdAndRevision;
 	}
@@ -70,7 +70,7 @@ class SubmissionFileBaseAccessPolicy extends AuthorizationPolicy {
 			// Get the identifying info from the request
 			$fileId = (int) $request->getUserVar('fileId');
 			$revision = (int) $request->getUserVar('revision');
-			assert($fileId);
+			assert($fileId>0);
 			$cacheId = "$fileId-$revision"; // -0 for most recent revision
 		}
 
@@ -78,7 +78,7 @@ class SubmissionFileBaseAccessPolicy extends AuthorizationPolicy {
 		$cache =& $this->_getCache();
 		if (!isset($cache[$cacheId])) {
 			// Cache miss
-			$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO');
+			$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO'); /* @var $submissionFileDao SubmissionFileDAO */
 			if ($revision) {
 				$cache[$cacheId] = $submissionFileDao->getRevision($fileId, $revision);
 			} else {
@@ -98,4 +98,4 @@ class SubmissionFileBaseAccessPolicy extends AuthorizationPolicy {
 	}
 }
 
-?>
+

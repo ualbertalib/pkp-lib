@@ -3,9 +3,9 @@
 /**
  * @file classes/user/form/ChangePasswordForm.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ChangePasswordForm
  * @ingroup user_form
@@ -27,20 +27,28 @@ class ChangePasswordForm extends Form {
 	/**
 	 * Constructor.
 	 */
-	function ChangePasswordForm($user, $site) {
-		parent::Form('user/changePassword.tpl');
+	function __construct($user, $site) {
+		parent::__construct('user/changePassword.tpl');
 
 		$this->_user = $user;
 		$this->_site = $site;
 
 		// Validation checks for this form
-		$this->addCheck(new FormValidatorCustom($this, 'oldPassword', 'required', 'user.profile.form.oldPasswordInvalid', create_function('$password,$username', 'return Validation::checkCredentials($username,$password);'), array($user->getUsername())));
-		$this->addCheck(new FormValidatorLength($this, 'password', 'required', 'user.register.form.passwordLengthTooShort', '>=', $site->getMinPasswordLength()));
+		$this->addCheck(new FormValidatorCustom($this, 'oldPassword', 'required', 'user.profile.form.oldPasswordInvalid', function($password) use ($user) {
+			return Validation::checkCredentials($user->getUsername(),$password);
+		}));
+		$this->addCheck(new FormValidatorLength($this, 'password', 'required', 'user.register.form.passwordLengthRestriction', '>=', $site->getMinPasswordLength()));
 		$this->addCheck(new FormValidator($this, 'password', 'required', 'user.profile.form.newPasswordRequired'));
-		$this->addCheck(new FormValidatorCustom($this, 'password', 'required', 'user.register.form.passwordsDoNotMatch', create_function('$password,$form', 'return $password == $form->getData(\'password2\');'), array($this)));
-		$this->addCheck(new FormValidatorCustom($this, 'password', 'required', 'user.profile.form.passwordSameAsOld', create_function('$password,$form', 'return $password != $form->getData(\'oldPassword\');'), array($this)));
+		$form = $this;
+		$this->addCheck(new FormValidatorCustom($this, 'password', 'required', 'user.register.form.passwordsDoNotMatch', function($password) use ($form) {
+			return $password == $form->getData('password2');
+		}));
+		$this->addCheck(new FormValidatorCustom($this, 'password', 'required', 'user.profile.form.passwordSameAsOld', function($password) use ($form) {
+			return $password != $form->getData('oldPassword');
+		}));
 
 		$this->addCheck(new FormValidatorPost($this));
+		$this->addCheck(new FormValidatorCSRF($this));
 	}
 
 	/**
@@ -58,15 +66,15 @@ class ChangePasswordForm extends Form {
 	}
 
 	/**
-	 * Display the form.
+	 * @copydoc Form::fetch
 	 */
-	function display() {
-		$user = $this->getUser();
+	function fetch($request, $template = null, $display = false) {
 		$templateMgr = TemplateManager::getManager();
-		$site = $this->getSite();
-		$templateMgr->assign('minPasswordLength', $site->getMinPasswordLength());
-		$templateMgr->assign('username', $user->getUsername());
-		parent::display();
+		$templateMgr->assign(array(
+			'minPasswordLength' => $this->getSite()->getMinPasswordLength(),
+			'username' =>  $this->getUser()->getUsername(),
+		));
+		return parent::fetch($request, $template, $display);
 	}
 
 	/**
@@ -77,13 +85,13 @@ class ChangePasswordForm extends Form {
 	}
 
 	/**
-	 * Save new password.
+	 * @copydoc Form::execute()
 	 */
-	function execute() {
+	function execute(...$functionArgs) {
 		$user = $this->getUser();
 
 		if ($user->getAuthId()) {
-			$authDao = DAORegistry::getDAO('AuthSourceDAO');
+			$authDao = DAORegistry::getDAO('AuthSourceDAO'); /* @var $authDao AuthSourceDAO */
 			$auth = $authDao->getPlugin($user->getAuthId());
 		}
 
@@ -94,9 +102,11 @@ class ChangePasswordForm extends Form {
 			$user->setPassword(Validation::encryptCredentials($user->getUsername(), $this->getData('password')));
 		}
 
-		$userDao = DAORegistry::getDAO('UserDAO');
+		parent::execute(...$functionArgs);
+
+		$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 		$userDao->updateObject($user);
 	}
 }
 
-?>
+

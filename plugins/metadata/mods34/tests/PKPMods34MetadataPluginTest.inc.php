@@ -7,9 +7,9 @@
 /**
  * @file plugins/metadata/mods34/tests/PKPMods34MetadataPluginTest.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPMods34MetadataPluginTest
  * @ingroup plugins_metadata_mods34_tests
@@ -26,7 +26,7 @@ class PKPMods34MetadataPluginTest extends MetadataPluginTestCase {
 	 * @covers Mods34MetadataPlugin
 	 * @covers PKPMods34MetadataPlugin
 	 */
-	public function testMods34MetadataPlugin($appSpecificFilters) {
+	public function testMods34MetadataPlugin($appSpecificFilters = array()) {
 		$this->executeMetadataPluginTest(
 			'mods34',
 			'Mods34MetadataPlugin',
@@ -36,4 +36,4 @@ class PKPMods34MetadataPluginTest extends MetadataPluginTestCase {
 		);
 	}
 }
-?>
+

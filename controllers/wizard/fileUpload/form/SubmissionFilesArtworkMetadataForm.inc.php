@@ -6,9 +6,9 @@
 /**
  * @file controllers/wizard/fileUpload/form/SubmissionFilesArtworkMetadataForm.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubmissionFilesArtworkMetadataForm
  * @ingroup controllers_wizard_fileUpload_form
@@ -25,8 +25,8 @@ class SubmissionFilesArtworkMetadataForm extends SubmissionFilesMetadataForm {
 	 * @param $stageId integer One of the WORKFLOW_STAGE_ID_* constants.
 	 * @param $reviewRound ReviewRound (optional) Current review round, if any.
 	 */
-	function SubmissionFilesArtworkMetadataForm(&$submissionFile, $stageId, $reviewRound = null) {
-		parent::SubmissionFilesMetadataForm($submissionFile, $stageId, $reviewRound);
+	function __construct($submissionFile, $stageId, $reviewRound = null) {
+		parent::__construct($submissionFile, $stageId, $reviewRound, 'controllers/wizard/fileUpload/form/submissionArtworkFileMetadataForm.tpl');
 		AppLocale::requireComponents(LOCALE_COMPONENT_PKP_GRID);
 	}
 
@@ -48,7 +48,7 @@ class SubmissionFilesArtworkMetadataForm extends SubmissionFilesMetadataForm {
 	/**
 	 * @copydoc Form::execute()
 	 */
-	function execute($args, $request) {
+	function execute(...$functionArgs) {
 		//
 		// FIXME: Should caption, credit, or any other fields be
 		// localized?
@@ -66,8 +66,8 @@ class SubmissionFilesArtworkMetadataForm extends SubmissionFilesMetadataForm {
 		$submissionFile->setPermissionTerms($this->getData('artworkPermissionTerms'));
 
 		// Persist the submission file.
-		parent::execute($args, $request);
+		parent::execute(...$functionArgs);
 	}
 }
 
-?>
+

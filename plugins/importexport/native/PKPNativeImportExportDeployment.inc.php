@@ -6,9 +6,9 @@
 /**
  * @file plugins/importexport/native/PKPNativeImportExportDeployment.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPNativeImportExportDeployment
  * @ingroup plugins_importexport_native
@@ -25,8 +25,8 @@ class PKPNativeImportExportDeployment extends PKPImportExportDeployment {
 	 * @param $context Context
 	 * @param $user User
 	 */
-	function PKPNativeImportExportDeployment($context, $user) {
-		parent::PKPImportExportDeployment($context, $user);
+	function __construct($context, $user) {
+		parent::__construct($context, $user);
 	}
 
 	//
@@ -83,11 +83,11 @@ class PKPNativeImportExportDeployment extends PKPImportExportDeployment {
 			'proof' => SUBMISSION_FILE_PROOF,
 			'production_ready' => SUBMISSION_FILE_PRODUCTION_READY,
 			'attachment' => SUBMISSION_FILE_ATTACHMENT,
-			'signoff' => SUBMISSION_FILE_SIGNOFF,
 			'review_revision' => SUBMISSION_FILE_REVIEW_REVISION,
 			'dependent' => SUBMISSION_FILE_DEPENDENT,
+			'query' => SUBMISSION_FILE_QUERY,
 		);
 	}
 }
 
-?>
+

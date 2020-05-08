@@ -3,9 +3,9 @@
 /**
  * @file classes/security/UserGroupDAO.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class UserGroupDAO
  * @ingroup security
@@ -28,8 +28,8 @@ class UserGroupDAO extends DAO {
 	/**
 	 * Constructor.
 	 */
-	function UserGroupDAO() {
-		parent::DAO();
+	function __construct() {
+		parent::__construct();
 		$this->userDao = DAORegistry::getDAO('UserDAO');
 		$this->userGroupAssignmentDao = DAORegistry::getDAO('UserGroupAssignmentDAO');
 	}
@@ -55,6 +55,7 @@ class UserGroupDAO extends DAO {
 		$userGroup->setDefault($row['is_default']);
 		$userGroup->setShowTitle($row['show_title']);
 		$userGroup->setPermitSelfRegistration($row['permit_self_registration']);
+		$userGroup->setPermitMetadataEdit($row['permit_metadata_edit']);
 
 		$this->getDataObjectSettings('user_group_settings', 'user_group_id', $row['user_group_id'], $userGroup);
 
@@ -71,21 +72,22 @@ class UserGroupDAO extends DAO {
 	function insertObject($userGroup) {
 		$this->update(
 			'INSERT INTO user_groups
-				(role_id, context_id, is_default, show_title, permit_self_registration)
+				(role_id, context_id, is_default, show_title, permit_self_registration, permit_metadata_edit)
 				VALUES
-				(?, ?, ?, ?, ?)',
+				(?, ?, ?, ?, ?, ?)',
 			array(
 				(int) $userGroup->getRoleId(),
 				(int) $userGroup->getContextId(),
 				$userGroup->getDefault()?1:0,
 				$userGroup->getShowTitle()?1:0,
 				$userGroup->getPermitSelfRegistration()?1:0,
+				$userGroup->getPermitMetadataEdit()?1:0,
 			)
 		);
 
 		$userGroup->setId($this->getInsertId());
 		$this->updateLocaleFields($userGroup);
-		return $this->getInsertId();
+		return $userGroup->getId();
 	}
 
 	/**
@@ -99,7 +101,8 @@ class UserGroupDAO extends DAO {
 				context_id = ?,
 				is_default = ?,
 				show_title = ?,
-				permit_self_registration = ?
+				permit_self_registration = ?,
+				permit_metadata_edit = ?
 			WHERE	user_group_id = ?',
 			array(
 				(int) $userGroup->getRoleId(),
@@ -107,6 +110,7 @@ class UserGroupDAO extends DAO {
 				$userGroup->getDefault()?1:0,
 				$userGroup->getShowTitle()?1:0,
 				$userGroup->getPermitSelfRegistration()?1:0,
+				$userGroup->getPermitMetadataEdit()?1:0,
 				(int) $userGroup->getId(),
 			)
 		);
@@ -169,6 +173,16 @@ class UserGroupDAO extends DAO {
 	 */
 	function getLocaleFieldNames() {
 		return array('name', 'abbrev');
+	}
+
+	/**
+	 * @copydoc DAO::getAdditionalFieldNames()
+	 */
+	function getAdditionalFieldNames() {
+		return array_merge(parent::getAdditionalFieldNames(), array(
+			'recommendOnly',
+
+		));
 	}
 
 	/**
@@ -246,7 +260,8 @@ class UserGroupDAO extends DAO {
 			FROM	user_groups
 			WHERE	context_id = ? AND
 				role_id = ?
-				' . ($default?' AND is_default = ?':''),
+				' . ($default?' AND is_default = ?':'')
+			. ' ORDER BY user_group_id',
 			$params,
 			$dbResultRange
 		);
@@ -438,27 +453,37 @@ class UserGroupDAO extends DAO {
 
 	/**
 	 * Find users that don't have a given role
-	 * @param $contextId int optional
-	 * @param ROLE_ID_... int (const)
-	 * @param $search string
+	 * @param $roleId ROLE_ID_... int (const)
+	 * @param $contextId int Optional context ID
+	 * @param $search string Optional search string
+	 * @param $rangeInfo RangeInfo Optional range info
 	 * @return DAOResultFactory
 	 */
-	function getUsersNotInRole($roleId, $contextId = null, $search = null) {
-		$params = array((int) $roleId);
+	function getUsersNotInRole($roleId, $contextId = null, $search = null, $rangeInfo = null) {
+		$params = isset($search) ? array(IDENTITY_SETTING_GIVENNAME, IDENTITY_SETTING_FAMILYNAME) : array();
+		$params[] = (int) $roleId;
 		if ($contextId) $params[] = (int) $contextId;
-		if(isset($search)) $params = array_merge($params, array_pad(array(), 5, '%' . $search . '%'));
+		if(isset($search)) $params = array_merge($params, array_pad(array(), 4, '%' . $search . '%'));
 
-		$result = $this->retrieve(
-			'SELECT DISTINCT u.*
-			FROM	users u, user_groups ug, user_user_groups uug
-			WHERE	ug.user_group_id = uug.user_group_id AND
-				u.user_id = uug.user_id AND
-				ug.role_id <> ?' .
-				($contextId?' AND ug.context_id = ?':'') .
-				(isset($search) ? ' AND (u.first_name LIKE ? OR u.middle_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ? OR u.username LIKE ?)':''),
-			$params
+		$result = $this->retrieveRange(
+			'SELECT	DISTINCT u.*
+			FROM	users u
+			' .(isset($search) ? '
+					LEFT JOIN user_settings usgs ON (usgs.user_id = u.user_id AND usgs.setting_name = ?)
+					LEFT JOIN user_settings usfs ON (usfs.user_id = u.user_id AND usfs.setting_name = ?)
+				':'') .'
+			WHERE	u.user_id NOT IN (
+				SELECT	DISTINCT u.user_id
+				FROM	users u, user_user_groups uug, user_groups ug
+				WHERE	u.user_id = uug.user_id
+					AND ug.user_group_id = uug.user_group_id
+					AND ug.role_id = ?' .
+				($contextId ? ' AND ug.context_id = ?' : '') .
+				')' .
+			(isset($search) ? ' AND (usgs.setting_value LIKE ? OR usfs.setting_value LIKE ? OR u.email LIKE ? OR u.username LIKE ?)' : ''),
+			$params,
+			$rangeInfo
 		);
-
 		return new DAOResultFactory($result, $this->userDao, '_returnUserFromRowWithData');
 	}
 
@@ -473,23 +498,31 @@ class UserGroupDAO extends DAO {
 	 * @return DAOResultFactory
 	 */
 	function getUsersById($userGroupId = null, $contextId = null, $searchType = null, $search = null, $searchMatch = null, $dbResultRange = null) {
-		$params = array();
-
+		$params = $this->userDao->getFetchParameters();
+		$params = array_merge($params, array(IDENTITY_SETTING_GIVENNAME, IDENTITY_SETTING_FAMILYNAME));
 		if ($contextId) $params[] = (int) $contextId;
 		if ($userGroupId) $params[] = (int) $userGroupId;
 
-		$result = $this->retrieveRange(
-			'SELECT DISTINCT u.*
+		$sql =
+			'SELECT DISTINCT u.*,
+				' . $this->userDao->getFetchColumns() .'
 			FROM	users AS u
 				LEFT JOIN user_settings us ON (us.user_id = u.user_id AND us.setting_name = \'affiliation\')
 				LEFT JOIN user_interests ui ON (u.user_id = ui.user_id)
 				LEFT JOIN controlled_vocab_entry_settings cves ON (ui.controlled_vocab_entry_id = cves.controlled_vocab_entry_id)
 				LEFT JOIN user_user_groups uug ON (uug.user_id = u.user_id)
 				LEFT JOIN user_groups ug ON (ug.user_group_id = uug.user_group_id)
-			WHERE	1=1' .
-				($contextId?' AND ug.context_id = ?':'') .
-				($userGroupId?' AND ug.user_group_id = ?':'') .
-				$this->_getSearchSql($searchType, $search, $searchMatch, $params),
+				' . $this->userDao->getFetchJoins() .'
+				LEFT JOIN user_settings usgs ON (usgs.user_id = u.user_id AND usgs.setting_name = ?)
+				LEFT JOIN user_settings usfs ON (usfs.user_id = u.user_id AND usfs.setting_name = ?)
+
+			WHERE	1=1 ' .
+				($contextId?'AND ug.context_id = ? ':'') .
+				($userGroupId?'AND ug.user_group_id = ? ':'') .
+				$this->_getSearchSql($searchType, $search, $searchMatch, $params);
+
+		$result = $this->retrieveRange(
+			$sql,
 			$params,
 			$dbResultRange
 		);
@@ -682,24 +715,32 @@ class UserGroupDAO extends DAO {
 		$xmlParser = new XMLParser();
 		$tree = $xmlParser->parse($filename);
 
-		if (!$tree) {
-			$xmlParser->destroy();
-			return false;
-		}
+		$siteDao = DAORegistry::getDAO('SiteDAO'); /* @var $siteDao SiteDAO */
+		$site = $siteDao->getSite();
+		$installedLocales = $site->getInstalledLocales();
+
+		if (!$tree) return false;
 
 		foreach ($tree->getChildren() as $setting) {
 			$roleId = hexdec($setting->getAttribute('roleId'));
 			$nameKey = $setting->getAttribute('name');
 			$abbrevKey = $setting->getAttribute('abbrev');
 			$permitSelfRegistration = $setting->getAttribute('permitSelfRegistration');
+			$permitMetadataEdit = $setting->getAttribute('permitMetadataEdit');
+
+			// If has manager role then permitMetadataEdit can't be overriden
+			if (in_array($roleId, array(ROLE_ID_MANAGER))) {
+				$permitMetadataEdit = $setting->getAttribute('permitMetadataEdit');
+			}
+
 			$defaultStages = explode(',', $setting->getAttribute('stages'));
-			$userGroup = $this->newDataObject();
 
 			// create a role associated with this user group
 			$userGroup = $this->newDataObject();
 			$userGroup->setRoleId($roleId);
 			$userGroup->setContextId($contextId);
 			$userGroup->setPermitSelfRegistration($permitSelfRegistration);
+			$userGroup->setPermitMetadataEdit($permitMetadataEdit);
 			$userGroup->setDefault(true);
 
 			// insert the group into the DB
@@ -720,7 +761,9 @@ class UserGroupDAO extends DAO {
 			$this->updateSetting($userGroup->getId(), 'abbrevLocaleKey', $abbrevKey);
 
 			// install the settings in the current locale for this context
-			$this->installLocale(AppLocale::getLocale(), $contextId);
+			foreach ($installedLocales as $locale) {
+				$this->installLocale($locale, $contextId);
+			}
 		}
 
 		return true;
@@ -772,8 +815,8 @@ class UserGroupDAO extends DAO {
 	 */
 	function _getSearchSql($searchType, $search, $searchMatch, &$params) {
 		$searchTypeMap = array(
-			USER_FIELD_FIRSTNAME => 'u.first_name',
-			USER_FIELD_LASTNAME => 'u.last_name',
+			IDENTITY_SETTING_GIVENNAME => 'usgs.setting_value',
+			IDENTITY_SETTING_FAMILYNAME => 'usfs.setting_value',
 			USER_FIELD_USERNAME => 'u.username',
 			USER_FIELD_EMAIL => 'u.email',
 			USER_FIELD_AFFILIATION => 'us.setting_value',
@@ -784,7 +827,7 @@ class UserGroupDAO extends DAO {
 		if (!empty($search)) {
 
 			if (!isset($searchTypeMap[$searchType])) {
-				$str = $this->concat('u.first_name', 'u.last_name', 'u.email', 'us.setting_value');
+				$str = $this->concat('COALESCE(usgs.setting_value,\'\')', 'COALESCE(usfs.setting_value,\'\')', 'u.email', 'COALESCE(us.setting_value,\'\')');
 				$concatFields = ' ( LOWER(' . $str . ') LIKE ? OR LOWER(cves.setting_value) LIKE ? ) ';
 
 				$search = strtolower($search);
@@ -821,13 +864,10 @@ class UserGroupDAO extends DAO {
 				case USER_FIELD_USERID:
 					$searchSql = 'AND u.user_id = ?';
 					break;
-				case USER_FIELD_INITIAL:
-					$searchSql = 'AND LOWER(u.last_name) LIKE LOWER(?)';
-					break;
 			}
 		}
 
-		$searchSql .= ' ORDER BY u.last_name, u.first_name'; // FIXME Add "sort field" parameter?
+		$searchSql .= $this->userDao->getOrderBy(); // FIXME Add "sort field" parameter?
 
 		return $searchSql;
 	}
@@ -837,36 +877,31 @@ class UserGroupDAO extends DAO {
 	//
 
 	/**
-	 * Get the user groups assigned to each stage. Provide the ability to omit authors and reviewers
-	 * Since these are typically stored differently and displayed in different circumstances
-	 * @param Integer $contextId
-	 * @param Integer $stageId
-	 * @param boolean (optional) $omitAuthors
-	 * @param boolean (optional) $omitReviewers
-	 * @param Integer (optional) $roleId
+	 * Get the user groups assigned to each stage.
+	 * @param int $contextId Context ID
+	 * @param int $stageId WORKFLOW_STAGE_ID_...
+	 * @param int $roleId Optional ROLE_ID_... to filter results by
 	 * @param DBResultRange (optional) $dbResultRange
 	 * @return DAOResultFactory
 	 */
-	function getUserGroupsByStage($contextId, $stageId, $omitAuthors = false, $omitReviewers = false, $roleId = null, $dbResultRange = null) {
+	function getUserGroupsByStage($contextId, $stageId, $roleId = null, $dbResultRange = null) {
 		$params = array((int) $contextId, (int) $stageId);
-		if ($omitAuthors) $params[] = ROLE_ID_AUTHOR;
-		if ($omitReviewers) $params[] = ROLE_ID_REVIEWER;
-		if ($roleId) $params[] = $roleId;
-		$result = $this->retrieveRange(
-			'SELECT	ug.*
-			FROM	user_groups ug
-			JOIN user_group_stage ugs ON (ug.user_group_id = ugs.user_group_id AND ug.context_id = ugs.context_id)
-			WHERE	ugs.context_id = ? AND
-			ugs.stage_id = ?' .
-			($omitAuthors?' AND ug.role_id <> ?':'') .
-			($omitReviewers?' AND ug.role_id <> ?':'') .
-			($roleId?' AND ug.role_id = ?':'') .
-			' ORDER BY role_id ASC',
-			$params,
-			$dbResultRange
+		if ($roleId) $params[] = (int) $roleId;
+		return new DAOResultFactory(
+			$this->retrieveRange(
+				'SELECT	ug.*
+				FROM	user_groups ug
+					JOIN user_group_stage ugs ON (ug.user_group_id = ugs.user_group_id AND ug.context_id = ugs.context_id)
+				WHERE	ugs.context_id = ? AND
+					ugs.stage_id = ?
+					' . ($roleId?'AND ug.role_id = ?':'') . '
+				ORDER BY ug.role_id ASC',
+				$params,
+				$dbResultRange
+			),
+			$this,
+			'_returnFromRow'
 		);
-
-		return new DAOResultFactory($result, $this, '_returnFromRow');
 	}
 
 	/**
@@ -939,6 +974,72 @@ class UserGroupDAO extends DAO {
 		$result->Close();
 		return $returner;
 	}
+
+	/**
+	 * Get all user group IDs with recommendOnly option enabled.
+	 * @param $contextId integer
+	 * @param $roleId integer (optional)
+	 * @return array
+	 */
+	function getRecommendOnlyGroupIds($contextId, $roleId = null) {
+		$params = array((int) $contextId);
+		if ($roleId) $params[] = (int) $roleId;
+
+		$result = $this->retrieve(
+			'SELECT	ug.user_group_id
+			FROM user_groups ug
+			JOIN user_group_settings ugs ON (ugs.user_group_id = ug.user_group_id AND ugs.setting_name = \'recommendOnly\' AND ugs.setting_value = \'1\')
+			WHERE ug.context_id = ?
+			' . ($roleId?' AND ug.role_id = ?':''),
+			$params
+		);
+
+		$userGroupIds = array();
+		while (!$result->EOF) {
+			$userGroupIds[] = (int) $result->fields[0];
+			$result->MoveNext();
+		}
+
+		$result->Close();
+		return $userGroupIds;
+	}
+
+	/**
+	 * Get all user group IDs with permit_metadata_edit option enabled.
+	 * @param $contextId integer
+	 * @param $roleId integer (optional)
+	 * @return array
+	 */
+	function getPermitMetadataEditGroupIds($contextId, $roleId = null) {
+		$params = array((int) $contextId);
+		if ($roleId) $params[] = (int) $roleId;
+
+		$result = $this->retrieve(
+			'SELECT	ug.user_group_id
+			FROM user_groups ug
+			WHERE permit_metadata_edit = 1 AND
+			ug.context_id = ?
+			' . ($roleId?' AND ug.role_id = ?':''),
+			$params
+		);
+
+		$userGroupIds = array();
+		while (!$result->EOF) {
+			$userGroupIds[] = (int) $result->fields[0];
+			$result->MoveNext();
+		}
+
+		$result->Close();
+		return $userGroupIds;
+	}
+
+	/**
+	 * Get a list of roles not able to change submissionMetadataEdit permission option.
+	 * @return array
+	 */
+	static function getNotChangeMetadataEditPermissionRoles() {
+		return array(ROLE_ID_MANAGER);
+	}
 }
 
-?>
+

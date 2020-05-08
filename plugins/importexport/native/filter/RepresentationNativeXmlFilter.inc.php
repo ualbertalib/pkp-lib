@@ -3,9 +3,9 @@
 /**
  * @file plugins/importexport/native/filter/RepresentationNativeXmlFilter.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class RepresentationNativeXmlFilter
  * @ingroup plugins_importexport_native
@@ -20,9 +20,9 @@ class RepresentationNativeXmlFilter extends NativeExportFilter {
 	 * Constructor
 	 * @param $filterGroup FilterGroup
 	 */
-	function RepresentationNativeXmlFilter($filterGroup) {
+	function __construct($filterGroup) {
 		$this->setDisplayName('Native XML representation export');
-		parent::NativeExportFilter($filterGroup);
+		parent::__construct($filterGroup);
 	}
 
 
@@ -48,6 +48,8 @@ class RepresentationNativeXmlFilter extends NativeExportFilter {
 	function &process(&$representation) {
 		// Create the XML document
 		$doc = new DOMDocument('1.0');
+		$doc->preserveWhiteSpace = false;
+		$doc->formatOutput = true;
 		$deployment = $this->getDeployment();
 		$rootNode = $this->createRepresentationNode($doc, $representation);
 		$doc->appendChild($rootNode);
@@ -73,23 +75,81 @@ class RepresentationNativeXmlFilter extends NativeExportFilter {
 		// Create the representation node
 		$representationNode = $doc->createElementNS($deployment->getNamespace(), $deployment->getRepresentationNodeName());
 
+		$representationNode->setAttribute('locale', $representation->getData('locale'));
+
+		$this->addIdentifiers($doc, $representationNode, $representation);
+
 		// Add metadata
 		$this->createLocalizedNodes($doc, $representationNode, 'name', $representation->getName(null));
 		$sequenceNode = $doc->createElementNS($deployment->getNamespace(), 'seq');
-		$sequenceNode->appendChild($doc->createTextNode($representation->getSeq()));
+		$sequenceNode->appendChild($doc->createTextNode((int) $representation->getSequence()));
 		$representationNode->appendChild($sequenceNode);
 
-		// Add files
-		foreach ($this->getFiles($representation) as $submissionFile) {
-			$fileRefNode = $doc->createElementNS($deployment->getNamespace(), 'submission_file_ref');
-			$fileRefNode->setAttribute('id', $submissionFile->getFileId());
-			$fileRefNode->setAttribute('revision', $submissionFile->getRevision());
-			$representationNode->appendChild($fileRefNode);
+		$urlRemote = $representation->getData('urlRemote');
+		if ($urlRemote) {
+			$remoteNode = $doc->createElementNS($deployment->getNamespace(), 'remote');
+			$remoteNode->setAttribute('src', $urlRemote);
+			$representationNode->appendChild($remoteNode);
+		} else {
+			// Add files
+			foreach ($this->getFiles($representation) as $submissionFile) {
+				$fileRefNode = $doc->createElementNS($deployment->getNamespace(), 'submission_file_ref');
+				$fileRefNode->setAttribute('id', $submissionFile->getFileId());
+				$fileRefNode->setAttribute('revision', $submissionFile->getRevision());
+				$representationNode->appendChild($fileRefNode);
+			}
 		}
 
 		return $representationNode;
 	}
 
+	/**
+	 * Create and add identifier nodes to a representation node.
+	 * @param $doc DOMDocument
+	 * @param $representationNode DOMElement
+	 * @param $representation Representation
+	 */
+	function addIdentifiers($doc, $representationNode, $representation) {
+		$deployment = $this->getDeployment();
+
+		// Add internal ID
+		$representationNode->appendChild($node = $doc->createElementNS($deployment->getNamespace(), 'id', $representation->getId()));
+		$node->setAttribute('type', 'internal');
+		$node->setAttribute('advice', 'ignore');
+
+		// Add public ID
+		if ($pubId = $representation->getStoredPubId('publisher-id')) {
+			$representationNode->appendChild($node = $doc->createElementNS($deployment->getNamespace(), 'id', htmlspecialchars($pubId, ENT_COMPAT, 'UTF-8')));
+			$node->setAttribute('type', 'public');
+			$node->setAttribute('advice', 'update');
+		}
+
+		// Add pub IDs by plugin
+		$pubIdPlugins = PluginRegistry::loadCategory('pubIds', true, $deployment->getContext()->getId());
+		foreach ($pubIdPlugins as $pubIdPlugin) {
+			$this->addPubIdentifier($doc, $representationNode, $representation, $pubIdPlugin);
+		}
+	}
+
+	/**
+	 * Add a single pub ID element for a given plugin to the representation.
+	 * @param $doc DOMDocument
+	 * @param $representationNode DOMElement
+	 * @param $representation Representation
+	 * @param $pubIdPlugin PubIdPlugin
+	 * @return DOMElement|null
+	 */
+	function addPubIdentifier($doc, $representationNode, $representation, $pubIdPlugin) {
+		$pubId = $representation->getStoredPubId($pubIdPlugin->getPubIdType());
+		if ($pubId) {
+			$deployment = $this->getDeployment();
+			$representationNode->appendChild($node = $doc->createElementNS($deployment->getNamespace(), 'id', htmlspecialchars($pubId, ENT_COMPAT, 'UTF-8')));
+			$node->setAttribute('type', $pubIdPlugin->getPubIdType());
+			$node->setAttribute('advice', 'update');
+			return $node;
+		}
+		return null;
+	}
 
 	//
 	// Abstract methods to be implemented by subclasses
@@ -104,4 +164,4 @@ class RepresentationNativeXmlFilter extends NativeExportFilter {
 	}
 }
 
-?>
+

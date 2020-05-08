@@ -1,9 +1,9 @@
 /**
  * @file js/controllers/NotificationHandler.js
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class NotificationHandler
  * @ingroup js_controllers
@@ -34,6 +34,10 @@
 
 		// Trigger the notify user event without bubbling up.
 		this.getHtmlElement().triggerHandler('notifyUser');
+
+		if (this.options_.refreshOn) {
+			this.bindGlobal(this.options_.refreshOn, this.fetchNotificationHandler_);
+		}
 	};
 	$.pkp.classes.Helper.inherits(
 			$.pkp.controllers.NotificationHandler,
@@ -110,6 +114,7 @@
 			newNotificationsData = this.removeAlreadyShownNotifications_(
 					/** @type {Object} */ (workingJsonData));
 
+			this.unbindPartial($notificationElement);
 			$notificationElement.html(inPlaceNotificationsData);
 
 			// We need to show the notification element now so the
@@ -128,8 +133,11 @@
 				// Remove in place trivial notifications.
 				for (i in trivialNotificationsId) {
 					notificationId = trivialNotificationsId[i];
-					$('#pkp_notification_' + notificationId,
-							this.getHtmlElement()).remove();
+					$notificationElement =
+							$('#pkp_notification_' + notificationId,
+							this.getHtmlElement());
+					this.unbindPartial($notificationElement);
+					$notificationElement.remove();
 				}
 			}
 
@@ -145,6 +153,7 @@
 			}
 
 		} else {
+			this.unbindPartial(this.getHtmlElement());
 			this.getHtmlElement().empty();
 			this.getHtmlElement().hide();
 		}
@@ -165,7 +174,7 @@
 				windowBottom = windowScrollTop + $(window).height(),
 				// Consider modals and its own scroll functionality.
 				$parentModalContentWrapper = $notificationElement
-					.parents('.ui-dialog-content'),
+						.parents('.ui-dialog-content'),
 				modalContentTop, modalContentBottom;
 
 		if ($parentModalContentWrapper.length > 0) {
@@ -278,9 +287,14 @@
 	$.pkp.controllers.NotificationHandler.prototype.
 			addTimerToNotifications = function(notificationsId) {
 
-		var removeNotification = function() {
-			// "this" represents the notification element here.
-			$(this).remove();
+		var self, removeNotification;
+
+		self = this; // remember "this" reference for later use in callback
+
+		removeNotification = function() {
+			var $notification = $(this);
+			self.unbindPartial($notification);
+			$notification.remove();
 		};
 
 		if (notificationsId.length) {
@@ -289,11 +303,10 @@
 				for (notificationId in notificationsId) {
 					$notification = $('#pkp_notification_' +
 							notificationsId[notificationId]);
-					$notification.fadeOut(400, removeNotification());
+					$notification.fadeOut(400, removeNotification);
 				}
 			}, 6000);
 		}
 	};
 
-/** @param {jQuery} $ jQuery closure. */
 }(jQuery));

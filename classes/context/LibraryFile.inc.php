@@ -3,9 +3,9 @@
 /**
  * @file classes/context/LibraryFile.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class LibraryFile
  * @ingroup context
@@ -23,12 +23,6 @@ define('LIBRARY_FILE_TYPE_OTHER',	0x00005);
 import('lib.pkp.classes.file.FileManager');
 
 class LibraryFile extends DataObject {
-	/**
-	 * Constructor.
-	 */
-	function LibraryFile() {
-		parent::DataObject();
-	}
 
 	/**
 	 * Return absolute path to the file on the host filesystem.
@@ -37,7 +31,7 @@ class LibraryFile extends DataObject {
 	function getFilePath() {
 		$contextId = $this->getContextId();
 
-		return Config::getVar('files', 'public_files_dir') . '/contexts/' . $contextId . '/library/' . $this->getServerFileName();
+		return Config::getVar('files', 'files_dir') . '/contexts/' . $contextId . '/library/' . $this->getServerFileName();
 	}
 
 	//
@@ -56,7 +50,7 @@ class LibraryFile extends DataObject {
 	 * @param $contextId int
 	 */
 	function setContextId($contextId) {
-		return $this->setData('contextId', $contextId);
+		$this->setData('contextId', $contextId);
 	}
 
 	/**
@@ -72,7 +66,7 @@ class LibraryFile extends DataObject {
 	 * @param $submission int
 	 */
 	function setSubmissionId($submissionId) {
-		return $this->setData('submissionId', $submissionId);
+		$this->setData('submissionId', $submissionId);
 	}
 
 	/**
@@ -88,7 +82,7 @@ class LibraryFile extends DataObject {
 	 * @param $fileName string
 	 */
 	function setServerFileName($fileName) {
-		return $this->setData('fileName', $fileName);
+		$this->setData('fileName', $fileName);
 	}
 
 	/**
@@ -104,7 +98,7 @@ class LibraryFile extends DataObject {
 	 * @param $originalFileName string
 	 */
 	function setOriginalFileName($originalFileName) {
-		return $this->setData('originalFileName', $originalFileName);
+		$this->setData('originalFileName', $originalFileName);
 	}
 
 	/**
@@ -146,7 +140,7 @@ class LibraryFile extends DataObject {
 	 * @param $fileType string
 	 */
 	function setFileType($fileType) {
-		return $this->setData('fileType', $fileType);
+		$this->setData('fileType', $fileType);
 	}
 
 	/**
@@ -162,7 +156,7 @@ class LibraryFile extends DataObject {
 	 * @param $type string
 	 */
 	function setType($type) {
-		return $this->setData('type', $type);
+		$this->setData('type', $type);
 	}
 
 	/**
@@ -231,6 +225,22 @@ class LibraryFile extends DataObject {
 		$fileManager = new FileManager();
 		return $fileManager->getDocumentType($this->getFileType());
 	}
+
+	/**
+	 * Get public access indication
+	 * @return boolean
+	 */
+	function getPublicAccess() {
+		return $this->getData('publicAccess');
+	}
+
+	/**
+	 * Set public access indication
+	 * @param $publicAccess boolean
+	 */
+	function setPublicAccess($publicAccess) {
+		$this->setData('publicAccess', $publicAccess);
+	}
 }
 
-?>
+

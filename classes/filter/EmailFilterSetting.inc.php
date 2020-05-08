@@ -3,9 +3,9 @@
 /**
  * @file classes/filter/EmailFilterSetting.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class EmailFilterSetting
  * @ingroup classes_filter
@@ -26,8 +26,8 @@ class EmailFilterSetting extends FilterSetting {
 	 * @param $validationMessage string
 	 * @param $required boolean
 	 */
-	function EmailFilterSetting($name, $displayName, $validationMessage, $required = FORM_VALIDATOR_REQUIRED_VALUE) {
-		parent::FilterSetting($name, $displayName, $validationMessage, $required);
+	function __construct($name, $displayName, $validationMessage, $required = FORM_VALIDATOR_REQUIRED_VALUE) {
+		parent::__construct($name, $displayName, $validationMessage, $required);
 	}
 
 	//
@@ -41,4 +41,4 @@ class EmailFilterSetting extends FilterSetting {
 		return $check;
 	}
 }
-?>
+

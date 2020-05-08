@@ -4,9 +4,9 @@
 /**
  * @file js/controllers/wizard/WizardHandler.js
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class WizardHandler
  * @ingroup js_controllers_wizard
@@ -27,13 +27,21 @@
 	 *
 	 * @param {jQueryObject} $wizard A wrapped HTML element that
 	 *  represents the wizard.
-	 * @param {Object} options Wizard options.
+	 * @param {{
+	 *  enforceLinear: boolean,
+	 *  cancelButtonText: string,
+	 *  continueButtonTest: string,
+	 *  finishButtonText: string
+	 *  }} options options to configure the form handler.
 	 */
 	$.pkp.controllers.wizard.WizardHandler = function($wizard, options) {
 		this.parent($wizard, options);
 
 		// Add the wizard buttons
 		this.addWizardButtons_($wizard, options);
+
+		this.enforceLinear_ = options.hasOwnProperty('enforceLinear') ?
+				options.enforceLinear : true;
 
 		// Start the wizard.
 		this.startWizard();
@@ -57,7 +65,7 @@
 	/**
 	 * The continue button.
 	 * @private
-	 * @type {jQueryObject}
+	 * @type {jQueryObject?}
 	 */
 	$.pkp.controllers.wizard.WizardHandler.prototype.$continueButton_ = null;
 
@@ -65,7 +73,7 @@
 	/**
 	 * The progress indicator.
 	 * @private
-	 * @type {jQueryObject}
+	 * @type {jQueryObject?}
 	 */
 	$.pkp.controllers.wizard.WizardHandler.prototype.$progressIndicator_ = null;
 
@@ -84,6 +92,39 @@
 	 * @type {?string}
 	 */
 	$.pkp.controllers.wizard.WizardHandler.prototype.finishButtonText_ = null;
+
+
+	/**
+	 * Whether or not to enforce linear progress through the wizard.
+	 * @private
+	 * @type {?boolean}
+	 */
+	$.pkp.controllers.wizard.WizardHandler.prototype.enforceLinear_ = null;
+
+
+	//
+	// Private methods
+	//
+	/**
+	 * Show the loading spinner
+	 *
+	 * @private
+	 */
+	$.pkp.controllers.wizard.WizardHandler.prototype.showProgressIndicator_ =
+			function() {
+		this.getProgressIndicator().css('opacity', 1);
+	};
+
+
+	/**
+	 * Hide the loading spinner
+	 *
+	 * @private
+	 */
+	$.pkp.controllers.wizard.WizardHandler.prototype.hideProgressIndicator_ =
+			function() {
+		this.getProgressIndicator().css('opacity', 0);
+	};
 
 
 	//
@@ -130,7 +171,7 @@
 
 		// The default implementation enables the continue button
 		// as soon as the form validates.
-		this.getContinueButton().button('enable');
+		this.enableContinueButton();
 	};
 
 
@@ -146,7 +187,7 @@
 
 		// The default implementation disables the continue button
 		// as if the form no longer validates.
-		this.getContinueButton().button('disable');
+		this.disableContinueButton();
 	};
 
 
@@ -250,8 +291,8 @@
 		if ($form) {
 			// Try to submit the form.
 			if ($form.submit()) {
-				this.getContinueButton().button('disable');
-				this.getProgressIndicator().show();
+				this.disableContinueButton();
+				this.showProgressIndicator_();
 			}
 
 			// Prevent default event handling so that the form
@@ -297,19 +338,21 @@
 		// Advance to the target step.
 		$wizard.tabs('option', 'active', targetStep);
 
-		// Disable the previous step.
-		$wizard.tabs('disable', currentStep);
+		if (this.enforceLinear_) {
+			// Disable the previous step.
+			$wizard.tabs('disable', currentStep);
+		}
 
 		// If this is the last step then change the text on the
 		// continue button to finish.
 		$continueButton = this.getContinueButton();
 		if (targetStep === lastStep) {
-			$continueButton.button('option', 'label',
+			$continueButton.text(
 					/** @type {string} */ (this.getFinishButtonText()));
 		}
 
-		this.getProgressIndicator().hide();
-		$continueButton.button('enable');
+		this.hideProgressIndicator_();
+		this.enableContinueButton();
 	};
 
 
@@ -337,16 +380,18 @@
 
 			// Reset the continue button label.
 			$continueButton = this.getContinueButton();
-			$continueButton.button('option', 'label',
+			$continueButton.text(
 					/** @type {string} */ (this.getContinueButtonText()));
 		}
 
-		// Disable all but the first step.
-		disabledSteps = [];
-		for (i = 1; i < this.getNumberOfSteps(); i++) {
-			disabledSteps.push(i);
+		if (this.enforceLinear_) {
+			// Disable all but the first step.
+			disabledSteps = [];
+			for (i = 1; i < this.getNumberOfSteps(); i++) {
+				disabledSteps.push(i);
+			}
+			$wizard.tabs('option', 'disabled', disabledSteps);
 		}
-		$wizard.tabs('option', 'disabled', disabledSteps);
 	};
 
 
@@ -520,36 +565,25 @@
 
 		// Add space before wizard buttons.
 		var $wizardButtons =
-				$('<div id="wizardButtons" class="modal-buttons"></div>'),
+				$('<div id="wizardButtons" class="modal_buttons"></div>'),
 				$cancelButton, $continueButton, $progressIndicator;
-
-		if (options.cancelButtonText) {
-			// Add cancel button.
-			$cancelButton = $(['<a id="cancelButton" href="#">',
-				options.cancelButtonText, '</a>'].join(''));
-			$wizardButtons.append($cancelButton);
-
-			// Attach the cancel request handler.
-			$cancelButton.bind('click',
-					this.callbackWrapper(this.cancelRequest));
-		}
 
 		if (options.continueButtonText) {
 			// Add continue/finish button.
-			$continueButton = $(['<button id="continueButton"',
-				'class="button pkp_helpers_align_right">', options.continueButtonText,
-				'</button>'].join('')).button();
+			$continueButton = $(
+					'<button id="continueButton" class="pkp_button"></button>')
+					.text(options.continueButtonText);
 			$wizardButtons.append($continueButton);
 
 			$progressIndicator = $(
-					'<div class="pkp_helpers_progressIndicator"></div>');
+					'<span class="pkp_spinner"></span>');
 			$wizardButtons.append($progressIndicator);
 
 			$continueButton.
 					// Attach the continue request handler.
 					bind('click',
 							this.callbackWrapper(this.continueRequest));
-			this.$continueButton_ = $continueButton;
+			this.$continueButton_ = /** @type {jQueryObject} */ ($continueButton);
 			this.$progressIndicator_ = $progressIndicator;
 
 			// Remember the button labels.
@@ -561,10 +595,38 @@
 			}
 		}
 
+		if (options.cancelButtonText) {
+			// Add cancel button.
+			$cancelButton = $('<a id="cancelButton" class="cancel" href="#"></a>')
+					.text(options.cancelButtonText);
+			$wizardButtons.append($cancelButton);
+
+			// Attach the cancel request handler.
+			$cancelButton.bind('click',
+					this.callbackWrapper(this.cancelRequest));
+		}
+
 		// Insert wizard buttons.
 		$wizard.after($wizardButtons);
 	};
 
 
-/** @param {jQuery} $ jQuery closure. */
+	/**
+	 * Disable the continue button
+	 */
+	$.pkp.controllers.wizard.WizardHandler.prototype.disableContinueButton =
+			function() {
+		this.getContinueButton().attr('disabled', 'disabled');
+	};
+
+
+	/**
+	 * Enable the continue button
+	 */
+	$.pkp.controllers.wizard.WizardHandler.prototype.enableContinueButton =
+			function() {
+		this.getContinueButton().removeAttr('disabled');
+	};
+
+
 }(jQuery));

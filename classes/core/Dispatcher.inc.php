@@ -3,9 +3,9 @@
 /**
  * @file classes/core/Dispatcher.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class Dispatcher
  * @ingroup core
@@ -42,8 +42,8 @@ class Dispatcher {
 	 * Set the application
 	 * @param $application PKPApplication
 	 */
-	function setApplication(&$application) {
-		$this->_application =& $application;
+	function setApplication($application) {
+		$this->_application = $application;
 	}
 
 	/**
@@ -130,6 +130,15 @@ class Dispatcher {
 
 		AppLocale::initialize($request);
 		PluginRegistry::loadCategory('generic', true);
+		PluginRegistry::loadCategory('pubIds', true);
+
+		HookRegistry::call('Dispatcher::dispatch', $request);
+
+		// Reload the context after generic plugins have loaded so that changes to
+		// the context schema can take place
+		import('classes.core.Services');
+		$contextSchema = \Services::get('schema')->get(SCHEMA_CONTEXT, true);
+		$request->getRouter()->getContext($request, 1, true);
 
 		$router->route($request);
 	}
@@ -242,11 +251,9 @@ class Dispatcher {
 	 * Handle a 404 error (page not found).
 	 */
 	function handle404() {
-		PKPRequest::_checkThis();
-
 		header('HTTP/1.0 404 Not Found');
 		fatalError('404 Not Found');
 	}
 }
 
-?>
+

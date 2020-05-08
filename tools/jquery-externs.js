@@ -33,14 +33,14 @@ var jQuerySelector;
  * @param {(Element|jQueryObject|Document|Object)=} arg2
  * @return {jQueryObject}
  */
-function $(arg1, arg2) {};
+function $(arg1, arg2) {}
 
 /**
  * @param {(jQuerySelector|Element|Array|Object|string|function())=} arg1
  * @param {(Element|jQueryObject|Document|Object)=} arg2
  * @return {jQueryObject}
  */
-function jQuery(arg1, arg2) {};
+function jQuery(arg1, arg2) {}
 
 /**
  * @param {Object.<string,*>} settings
@@ -74,9 +74,21 @@ jQuery.cssHooks;
  * @param {Element} elem
  * @param {string=} key
  * @param {Object=} value
- * @return {(jQueryObject|Object)}
+ * @return {*}
  */
 jQuery.data = function(elem, key, value) {};
+
+/**
+ * @param {Object=} func
+ * @return {*}
+ */
+jQuery.when = function(func) {};
+
+/**
+ * @param {Object=} func
+ * @return {*}
+ */
+jQuery.then = function(func) {};
 
 /**
  * @param {Element} elem
@@ -398,11 +410,14 @@ jQuery.type = function(obj) {};
  */
 jQuery.unique = function(arr) {};
 
+/** @type {number} */
+jQuery.active;
+
 /**
  * @constructor
  * @private
  */
-function jQueryObject() { };
+function jQueryObject() {}
 
 /**
  * @param {(jQuerySelector|Array.<Element>|string)} arg1
@@ -459,12 +474,6 @@ jQueryObject.prototype.ajaxStop = function(handler) {};
  * @return {jQueryObject}
  */
 jQueryObject.prototype.ajaxSuccess = function(handler) {};
-
-/**
- * @return {jQueryObject}
- * @nosideeffects
- */
-jQueryObject.prototype.andSelf = function() {};
 
 /**
  * @param {Object.<string,*>} properties
@@ -700,6 +709,22 @@ jQueryObject.prototype.filter = function(arg1) {};
 jQueryObject.prototype.find = function(selector) {};
 
 /**
+ * @param {(string|Object)=} arg1
+ * @param {(string|function(!jQuery.Event))=} selector
+ * @param {function(!jQuery.Event)=} handler
+ * @return {!jQueryObject}
+ */
+ jQueryObject.prototype.off = function(arg1, selector, handler) {};
+
+/**
+ * @param {string} arg1
+ * @param {Function|string} arg2
+ * @param {Function=} arg3
+ * @returns {jQueryObject}
+ */
+jQueryObject.prototype.on = function(arg1, arg2, arg3) {};
+
+/**
  * @return {jQueryObject}
  * @nosideeffects
  */
@@ -770,7 +795,7 @@ jQueryObject.prototype.hover = function(arg1, handlerOut) {};
 
 /**
  * @param {(string|function(number,string))=} arg1
- * @return {(string|jQueryObject)}
+ * @return {(string)}
  */
 jQueryObject.prototype.html = function(arg1) {};
 
@@ -805,11 +830,10 @@ jQueryObject.prototype.insertAfter = function(target) {};
 jQueryObject.prototype.insertBefore = function(target) {};
 
 /**
- * @param {jQuerySelector} selector
+ * @param {(jQuerySelector|function(number)|jQueryObject|Element)} arg1
  * @return {boolean}
- * @nosideeffects
  */
-jQueryObject.prototype.is = function(selector) {};
+jQueryObject.prototype.is = function(arg1) {};
 
 /**
  * @param {(function(jQuery.Event)|Object)=} arg1
@@ -1269,8 +1293,8 @@ jQueryObject.prototype.unload = function(arg1, handler) {};
 jQueryObject.prototype.unwrap = function() {};
 
 /**
- * @param {(string|function(number,*))=} arg1
- * @return {(string|Array|jQueryObject)}
+ * @param {(string|Array.<string>|function(number,*))=} arg1
+ * @return {(string|number|Array.<string>|!jQueryObject)}
  */
 jQueryObject.prototype.val = function(arg1) {};
 
@@ -1297,3 +1321,9 @@ jQueryObject.prototype.wrapAll = function(wrappingElement) {};
  * @return {jQueryObject}
  */
 jQueryObject.prototype.wrapInner = function(arg1) {};
+
+var define = {amd: null};
+
+var exports = {};
+var module = {};
+var require = {};

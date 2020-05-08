@@ -3,9 +3,9 @@
 /**
  * @file classes/log/EmailLogEntry.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class EmailLogEntry
  * @ingroup log
@@ -16,12 +16,6 @@
 
 
 class EmailLogEntry extends DataObject {
-	/**
-	 * Constructor.
-	 */
-	function EmailLogEntry() {
-		parent::DataObject();
-	}
 
 	//
 	// Get/set methods
@@ -40,7 +34,7 @@ class EmailLogEntry extends DataObject {
 	 * @param $senderId int
 	 */
 	function setSenderId($senderId) {
-		return $this->setData('senderId', $senderId);
+		$this->setData('senderId', $senderId);
 	}
 
 	/**
@@ -56,23 +50,7 @@ class EmailLogEntry extends DataObject {
 	 * @param $dateSent datestamp
 	 */
 	function setDateSent($dateSent) {
-		return $this->setData('dateSent', $dateSent);
-	}
-
-	/**
-	 * Get IP address of sender.
-	 * @return string
-	 */
-	function getIPAddress() {
-		return $this->getData('ipAddress');
-	}
-
-	/**
-	 * Set IP address of sender.
-	 * @param $ipAddress string
-	 */
-	function setIPAddress($ipAddress) {
-		return $this->setData('ipAddress', $ipAddress);
+		$this->setData('dateSent', $dateSent);
 	}
 
 	/**
@@ -88,7 +66,7 @@ class EmailLogEntry extends DataObject {
 	 * @param $eventType int
 	 */
 	function setEventType($eventType) {
-		return $this->setData('eventType', $eventType);
+		$this->setData('eventType', $eventType);
 	}
 
 	/**
@@ -104,7 +82,7 @@ class EmailLogEntry extends DataObject {
 	 * @param $assocType int
 	 */
 	function setAssocType($assocType) {
-		return $this->setData('assocType', $assocType);
+		$this->setData('assocType', $assocType);
 	}
 
 	/**
@@ -120,7 +98,7 @@ class EmailLogEntry extends DataObject {
 	 * @param $assocId int
 	 */
 	function setAssocId($assocId) {
-		return $this->setData('assocId', $assocId);
+		$this->setData('assocId', $assocId);
 	}
 
 	/**
@@ -131,7 +109,7 @@ class EmailLogEntry extends DataObject {
 		$senderFullName =& $this->getData('senderFullName');
 
 		if(!isset($senderFullName)) {
-			$userDao = DAORegistry::getDAO('UserDAO');
+			$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 			$senderFullName = $userDao->getUserFullName($this->getSenderId(), true);
 		}
 
@@ -146,7 +124,7 @@ class EmailLogEntry extends DataObject {
 		$senderEmail =& $this->getData('senderEmail');
 
 		if(!isset($senderEmail)) {
-			$userDao = DAORegistry::getDAO('UserDAO');
+			$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 			$senderEmail = $userDao->getUserEmail($this->getSenderId(), true);
 		}
 
@@ -163,7 +141,7 @@ class EmailLogEntry extends DataObject {
 	}
 
 	function setFrom($from) {
-		return $this->setData('from', $from);
+		$this->setData('from', $from);
 	}
 
 	function getRecipients() {
@@ -171,7 +149,7 @@ class EmailLogEntry extends DataObject {
 	}
 
 	function setRecipients($recipients) {
-		return $this->setData('recipients', $recipients);
+		$this->setData('recipients', $recipients);
 	}
 
 	function getCcs() {
@@ -179,7 +157,7 @@ class EmailLogEntry extends DataObject {
 	}
 
 	function setCcs($ccs) {
-		return $this->setData('ccs', $ccs);
+		$this->setData('ccs', $ccs);
 	}
 
 	function getBccs() {
@@ -187,7 +165,7 @@ class EmailLogEntry extends DataObject {
 	}
 
 	function setBccs($bccs) {
-		return $this->setData('bccs', $bccs);
+		$this->setData('bccs', $bccs);
 	}
 
 	function getSubject() {
@@ -195,7 +173,7 @@ class EmailLogEntry extends DataObject {
 	}
 
 	function setSubject($subject) {
-		return $this->setData('subject', $subject);
+		$this->setData('subject', $subject);
 	}
 
 	function getBody() {
@@ -203,7 +181,7 @@ class EmailLogEntry extends DataObject {
 	}
 
 	function setBody($body) {
-		return $this->setData('body', $body);
+		$this->setData('body', $body);
 	}
 
 	/**
@@ -215,4 +193,4 @@ class EmailLogEntry extends DataObject {
 	}
 }
 
-?>
+

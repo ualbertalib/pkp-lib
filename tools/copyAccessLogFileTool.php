@@ -3,9 +3,9 @@
 /**
  * @file tools/CopyAcessLogFileTool.php
  *
- * Copyright (c) 2013 Simon Fraser University Library
- * Copyright (c) 2003-2013 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2013-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class CopyAccessLogFileTool
  * @ingroup tools
@@ -31,37 +31,29 @@ class CopyAccessLogFileTool extends CommandLineTool {
 
 	var $_egrepPath;
 
-	var $_gunzipPath;
-
 	/**
 	 * Constructor.
 	 * @param $argv array command-line arguments
 	 */
-	function CopyAccessLogFileTool($argv = array()) {
-		parent::CommandLineTool($argv);
+	function __construct($argv = array()) {
+		parent::__construct($argv);
 
-		AppLocale::requireComponents(LOCALE_COMPONENT_OJS_ADMIN);
+		AppLocale::requireComponents(LOCALE_COMPONENT_PKP_ADMIN);
 
 		if (count($this->argv) < 1 || count($this->argv) > 2) {
 			$this->usage();
 			exit(1);
 		}
 
-		$plugin =& PluginRegistry::getPlugin('generic', 'usagestatsplugin'); /* @var $plugin UsageStatsPlugin */
+		$plugin = PluginRegistry::getPlugin('generic', 'usagestatsplugin'); /* @var $plugin UsageStatsPlugin */
 
 		$this->_usageStatsDir = $plugin->getFilesPath();
 		$this->_tmpDir = $this->_usageStatsDir . DIRECTORY_SEPARATOR . 'tmp';
 
-		// This tool needs egrep and gunzip path configured.
+		// This tool needs egrep path configured.
 		$this->_egrepPath = escapeshellarg(Config::getVar('cli', 'egrep'));
 		if ($this->_egrepPath == "''") {
-			printf(__('admin.copyAccessLogFileTool.error.noEgrep') . "\n");
-			exit(1);
-		}
-
-		$this->_gunzipPath = escapeshellarg(Config::getVar('cli', 'gunzip'));
-		if ($this->_gunzipPath == "''") {
-			printf(__('admin.copyAccessLogFileTool.error.noGunzip') . "\n");
+			printf(__('admin.error.executingUtil', array('utilPath' => $this->_egrepPath, 'utilVar' => 'egrep')) . "\n");
 			exit(1);
 		}
 
@@ -191,10 +183,13 @@ class CopyAccessLogFileTool extends CommandLineTool {
 		}
 
 		// Uncompress it, if needed.
-		$gunzipPath = $this->_gunzipPath;
 		if ($isCompressed) {
-			exec($gunzipPath . ' ' . $tmpFilePath);
-			$tmpFilePath = substr($tmpFilePath, 0, -3);
+			$fileMgr = new FileManager();
+			$errorMsg = null;
+			if (!$tmpFilePath = $fileMgr->decompressFile($tmpFilePath, $errorMsg)) {
+				printf($errorMsg . "\n");
+				exit(1);
+			}
 		}
 
 		// Filter only entries that contains context paths.
@@ -203,9 +198,14 @@ class CopyAccessLogFileTool extends CommandLineTool {
 		FILE_LOADER_PATH_STAGING . DIRECTORY_SEPARATOR .
 		pathinfo($tmpFilePath, PATHINFO_BASENAME);
 		// Each context path is already escaped, see the constructor.
-		exec($egrepPath . " -i '" . $this->_contextPaths . "' " . escapeshellarg($tmpFilePath) . " > " . escapeshellarg($destinationPath));
-
-		if (!$fileMgr->deleteFile($tmpFilePath)) {
+		$output = null;
+		$returnValue = 0;
+		exec($egrepPath . " -i '" . $this->_contextPaths . "' " . escapeshellarg($tmpFilePath) . " > " . escapeshellarg($destinationPath), $output, $returnValue);
+		if ($returnValue > 1) {
+			printf(__('admin.error.executingUtil', array('utilPath' => $egrepPath, 'utilVar' => 'egrep')) . "\n");
+ 			exit(1);
+ 		}
+		if (!$fileMgr->deleteByPath($tmpFilePath)) {
 			printf(__('admin.copyAccessLogFileTool.error.deletingFile', array('tmpFilePath' => $tmpFilePath)) . "\n");
 			exit(1);
 		}
@@ -216,4 +216,4 @@ class CopyAccessLogFileTool extends CommandLineTool {
 
 $tool = new CopyAccessLogFileTool(isset($argv) ? $argv : array());
 $tool->execute();
-?>
+

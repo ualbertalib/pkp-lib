@@ -2,9 +2,9 @@
 /**
  * @file controllers/api/file/linkAction/DeleteFileLinkAction.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class DeleteFileLinkAction
  * @ingroup controllers_api_file_linkAction
@@ -24,25 +24,23 @@ class DeleteFileLinkAction extends FileLinkAction {
 	 * @param $localeKey string (optional) Locale key to use for delete link
 	 *  be deleted.
 	 */
-	function DeleteFileLinkAction($request, $submissionFile, $stageId, $localeKey = 'grid.action.delete') {
-		// Instantiate the confirmation modal.
+	function __construct($request, $submissionFile, $stageId, $localeKey = 'grid.action.delete') {
 		$router = $request->getRouter();
 		import('lib.pkp.classes.linkAction.request.RemoteActionConfirmationModal');
-		$confirmationModal = new RemoteActionConfirmationModal(
-			__('common.confirmDelete'), __('common.delete'),
-			$router->url(
-				$request, null, 'api.file.ManageFileApiHandler',
-				'deleteFile', null, $this->getActionArgs($submissionFile, $stageId)
+		parent::__construct(
+			'deleteFile',
+			new RemoteActionConfirmationModal(
+				$request->getSession(),
+				__('common.confirmDelete'), __('common.delete'),
+				$router->url(
+					$request, null, 'api.file.ManageFileApiHandler',
+					'deleteFile', null, $this->getActionArgs($submissionFile, $stageId)
+				),
+				'modal_delete'
 			),
-			'modal_delete'
-		);
-
-		// Configure the file link action.
-		parent::FileLinkAction(
-			'deleteFile', $confirmationModal,
 			__($localeKey), 'delete'
 		);
 	}
 }
 
-?>
+

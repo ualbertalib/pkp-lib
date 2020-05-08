@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/files/SelectableSubmissionFileListCategoryGridHandler.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SelectableSubmissionFileListCategoryGridHandler
  * @ingroup controllers_grid_files
@@ -42,7 +42,7 @@ class SelectableSubmissionFileListCategoryGridHandler extends CategoryGridHandle
 	 * @param $capabilities integer A bit map with zero or more
 	 *  FILE_GRID_* capabilities set.
 	 */
-	function SelectableSubmissionFileListCategoryGridHandler($dataProvider, $stageId, $capabilities) {
+	function __construct($dataProvider, $stageId, $capabilities = 0) {
 		// the StageId can be set later if necessary.
 		if ($stageId) {
 			$this->_stageId = (int)$stageId;
@@ -50,7 +50,7 @@ class SelectableSubmissionFileListCategoryGridHandler extends CategoryGridHandle
 
 		$this->_capabilities = new FilesGridCapabilities($capabilities);
 
-		parent::CategoryGridHandler($dataProvider);
+		parent::__construct($dataProvider);
 	}
 
 
@@ -91,7 +91,7 @@ class SelectableSubmissionFileListCategoryGridHandler extends CategoryGridHandle
 	/**
 	 * @copydoc GridHandler::loadData()
 	 */
-	function loadData($request, $filter) {
+	protected function loadData($request, $filter) {
 		// Let parent class get data from data provider.
 		$workflowStages = parent::loadData($request, $filter);
 
@@ -106,8 +106,15 @@ class SelectableSubmissionFileListCategoryGridHandler extends CategoryGridHandle
 	/**
 	 * @copydoc GridHandler::getFilterForm()
 	 */
-	function getFilterForm() {
+	protected function getFilterForm() {
 		return 'controllers/grid/files/selectableSubmissionFileListCategoryGridFilter.tpl';
+	}
+
+	/**
+	 * @copydoc GridHandler::isFilterFormCollapsible()
+	 */
+	protected function isFilterFormCollapsible() {
+		return false;
 	}
 
 	/**
@@ -124,7 +131,7 @@ class SelectableSubmissionFileListCategoryGridHandler extends CategoryGridHandle
 	/**
 	 * @copydoc CategoryGridHandler::getCategoryRowInstance()
 	 */
-	function getCategoryRowInstance() {
+	protected function getCategoryRowInstance() {
 		return new SelectableSubmissionFileListCategoryGridRow();
 	}
 
@@ -151,10 +158,10 @@ class SelectableSubmissionFileListCategoryGridHandler extends CategoryGridHandle
 	}
 
 	/**
-	 * @copydoc PKPHandler::initialize()
+	 * @copydoc CategoryGridHandler::initialize()
 	 */
-	function initialize($request) {
-		parent::initialize($request);
+	function initialize($request, $args = null) {
+		parent::initialize($request, $args);
 
 		// Load translations.
 		AppLocale::requireComponents(
@@ -175,11 +182,11 @@ class SelectableSubmissionFileListCategoryGridHandler extends CategoryGridHandle
 		}
 
 		if($capabilities->canAdd()) {
-			assert($dataProvider);
+			assert(isset($dataProvider));
 			$this->addAction($dataProvider->getAddFileAction($request));
 		}
 
-		// Test whether the tar binary is available for the export to work, if so, add 'download all' grid action
+		// Test whether an archive tool is available for the export to work, if so, add 'download all' grid action
 		if ($capabilities->canDownloadAll() && $this->hasGridDataElements($request)) {
 			$submission = $this->getSubmission();
 			$stageId = $this->getStageId();
@@ -215,9 +222,8 @@ class SelectableSubmissionFileListCategoryGridHandler extends CategoryGridHandle
 	/**
 	 * @copydoc GridHandler::getRowInstance()
 	 */
-	function getRowInstance() {
-		$capabilities = $this->getCapabilities();
-		return new SubmissionFilesGridRow($capabilities->canDelete(), $capabilities->canViewNotes(), $this->getStageId());
+	protected function getRowInstance() {
+		return new SubmissionFilesGridRow($this->getCapabilities(), $this->getStageId());
 	}
 
 
@@ -236,7 +242,10 @@ class SelectableSubmissionFileListCategoryGridHandler extends CategoryGridHandle
 		// Get the submission files to be downloaded.
 		$submissionFiles = array();
 		foreach ($workflowStages as $stageId) {
-			$submissionFiles = array_merge($submissionFiles, $dataProvider->loadCategoryData($request, $stageId));
+			$submissionFiles = array_merge(
+				$submissionFiles,
+				$this->getGridCategoryDataElements($request, $stageId)
+			);
 		}
 		return $submissionFiles;
 	}
@@ -271,4 +280,4 @@ class SelectableSubmissionFileListCategoryGridHandler extends CategoryGridHandle
 	}
 }
 
-?>
+

@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/eventLog/linkAction/EmailLinkAction.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class EmailLinkAction
  * @ingroup controllers_api_submission
@@ -23,7 +23,7 @@ class EmailLinkAction extends LinkAction {
 	 * @param $modalTitle string Title of the modal
 	 * @param $actionArgs array The action arguments.
 	 */
-	function EmailLinkAction($request, $modalTitle, $actionArgs) {
+	function __construct($request, $modalTitle, $actionArgs) {
 		$router = $request->getRouter();
 
 		// Instantiate the view email modal.
@@ -34,7 +34,7 @@ class EmailLinkAction extends LinkAction {
 		);
 
 		// Configure the link action.
-		parent::LinkAction(
+		parent::__construct(
 			'viewEmail',
 			$ajaxModal,
 			$modalTitle,
@@ -43,4 +43,4 @@ class EmailLinkAction extends LinkAction {
 	}
 }
 
-?>
+

@@ -3,9 +3,9 @@
 /**
  * @file classes/form/validation/FormValidatorORCID.inc.php
  *
- * Copyright (c) 2013 Simon Fraser University Library
- * Copyright (c) 2000-2013 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2013-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class FormValidatorORCID
  * @ingroup form_validation
@@ -23,11 +23,11 @@ class FormValidatorORCID extends FormValidator {
 	 * @param $type string the type of check, either "required" or "optional"
 	 * @param $message string the error message for validation failures (i18n key)
 	 */
-	function FormValidatorORCID($form, $field, $type, $message) {
+	function __construct($form, $field, $type, $message) {
 		import('lib.pkp.classes.validation.ValidatorORCID');
 		$validator = new ValidatorORCID();
-		parent::FormValidator($form, $field, $type, $message, $validator);
+		parent::__construct($form, $field, $type, $message, $validator);
 	}
 }
 
-?>
+

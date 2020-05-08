@@ -6,9 +6,9 @@
 /**
  * @file classes/submission/form/SubmissionSubmitForm.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubmissionSubmitForm
  * @ingroup submission_form
@@ -31,50 +31,29 @@ class SubmissionSubmitForm extends Form {
 	/** @var int the current step */
 	var $step;
 
-	/** @var boolean whether or not the user has the ability to expedite this submission */
-	var $_canExpedite;
-
 	/**
 	 * Constructor.
 	 * @param $submission object
 	 * @param $step int
 	 */
-	function SubmissionSubmitForm($context, $submission, $step) {
-		parent::Form(sprintf('submission/form/step%d.tpl', $step));
+	function __construct($context, $submission, $step) {
+		parent::__construct(sprintf('submission/form/step%d.tpl', $step));
 		$this->addCheck(new FormValidatorPost($this));
+		$this->addCheck(new FormValidatorCSRF($this));
 		$this->step = (int) $step;
 		$this->submission = $submission;
 		$this->submissionId = $submission ? $submission->getId() : null;
 		$this->context = $context;
-
-		// Determine whether or not the current user belongs to a manager, editor, or assistant group
-		// and could potentially expedite this submission.
-		$request = Application::getRequest();
-		$user = $request->getUser();
-		$userGroupAssignmentDao = DAORegistry::getDAO('UserGroupAssignmentDAO');
-		$userGroupDao = DAORegistry::getDAO('UserGroupDAO');
-		$userGroupAssignments = $userGroupAssignmentDao->getByUserId($user->getId(), $context->getId());
-		if (!$userGroupAssignments->wasEmpty()) {
-			while ($userGroupAssignment = $userGroupAssignments->next()) {
-				$userGroup = $userGroupDao->getById($userGroupAssignment->getUserGroupId());
-				if (in_array($userGroup->getRoleId(), array(ROLE_ID_MANAGER, ROLE_ID_SUB_EDITOR, ROLE_ID_ASSISTANT))) {
-					$this->_canExpedite = true;
-					break;
-				}
-			}
-		}
-
 	}
 
 	/**
-	 * Fetch the form.
+	 * @copydoc Form::fetch
 	 */
-	function fetch($request) {
+	function fetch($request, $template = null, $display = false) {
 		$templateMgr = TemplateManager::getManager($request);
 
 		$templateMgr->assign('submissionId', $this->submissionId);
 		$templateMgr->assign('submitStep', $this->step);
-		$templateMgr->assign('canExpedite', $this->canExpedite());
 
 		if (isset($this->submission)) {
 			$submissionProgress = $this->submission->getSubmissionProgress();
@@ -82,16 +61,8 @@ class SubmissionSubmitForm extends Form {
 			$submissionProgress = 1;
 		}
 		$templateMgr->assign('submissionProgress', $submissionProgress);
-		return parent::fetch($request);
-	}
-
-	/**
-	 * Whether or not this user can expedite this submission.
-	 * @return boolean
-	 */
-	function canExpedite() {
-		return $this->_canExpedite;
+		return parent::fetch($request, $template, $display);
 	}
 }
 
-?>
+

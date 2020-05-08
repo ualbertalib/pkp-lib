@@ -2,9 +2,9 @@
 /**
  * @file controllers/api/file/linkAction/DownloadFileLinkAction.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class DownloadFileLinkAction
  * @ingroup controllers_api_file_linkAction
@@ -26,7 +26,7 @@ class DownloadFileLinkAction extends FileLinkAction {
 	 * @param $stageId int (optional)
 	 * @param $label string (optional) Label to use instead of filename
 	 */
-	function DownloadFileLinkAction($request, $submissionFile, $stageId = null, $label = null) {
+	function __construct($request, $submissionFile, $stageId = null, $label = null) {
 		// Instantiate the redirect action request.
 		$router = $request->getRouter();
 		import('lib.pkp.classes.linkAction.request.PostAndRedirectAction');
@@ -41,9 +41,10 @@ class DownloadFileLinkAction extends FileLinkAction {
 		);
 
 		// Configure the file link action.
-		parent::FileLinkAction(
-			'downloadFile', $redirectRequest, $this->getLabel($submissionFile),
-			$submissionFile->getDocumentType()
+		parent::__construct(
+			'downloadFile', $redirectRequest, htmlspecialchars($this->getLabel($submissionFile)),
+			$submissionFile->getDocumentType(),
+			$submissionFile->getFileId() . '-' . $submissionFile->getRevision()
 		);
 	}
 
@@ -58,4 +59,4 @@ class DownloadFileLinkAction extends FileLinkAction {
 	}
 }
 
-?>
+

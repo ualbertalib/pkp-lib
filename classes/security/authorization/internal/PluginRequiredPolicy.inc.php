@@ -2,9 +2,9 @@
 /**
  * @file classes/security/authorization/internal/PluginRequiredPolicy.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PluginRequiredPolicy
  * @ingroup security_authorization_internal
@@ -24,8 +24,8 @@ class PluginRequiredPolicy extends AuthorizationPolicy {
 	 * Constructor
 	 * @param $request PKPRequest
 	 */
-	function PluginRequiredPolicy($request) {
-		parent::AuthorizationPolicy();
+	function __construct($request) {
+		parent::__construct('user.authorization.pluginRequired');
 		$this->_request = $request;
 	}
 
@@ -41,7 +41,7 @@ class PluginRequiredPolicy extends AuthorizationPolicy {
 		$pluginName = $this->_request->getUserVar('plugin');
 
 		// Load the plugin.
-		$plugins =& PluginRegistry::loadCategory($category);
+		$plugins = PluginRegistry::loadCategory($category);
 		$foundPlugin = null;
 		foreach ($plugins as $plugin) { /* @var $plugin Plugin */
 			if ($plugin->getName() == $pluginName) {
@@ -57,4 +57,4 @@ class PluginRequiredPolicy extends AuthorizationPolicy {
 	}
 }
 
-?>
+

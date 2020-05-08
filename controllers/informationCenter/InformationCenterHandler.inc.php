@@ -3,9 +3,9 @@
 /**
  * @file controllers/informationCenter/InformationCenterHandler.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class InformationCenterHandler
  * @ingroup controllers_informationCenter
@@ -17,33 +17,22 @@ import('classes.handler.Handler');
 import('lib.pkp.classes.core.JSONMessage');
 import('classes.log.SubmissionEventLogEntry');
 
-class InformationCenterHandler extends Handler {
+abstract class InformationCenterHandler extends Handler {
 	/** @var Submission */
 	var $_submission;
 
 	/**
 	 * Constructor
 	 */
-	function InformationCenterHandler() {
-		parent::Handler();
-
-		// Author can do everything except delete notes.
-		// (Review-related log entries are hidden from the author, but
-		// that's not implemented here.)
+	function __construct() {
+		parent::__construct();
 		$this->addRoleAssignment(
-			array(ROLE_ID_AUTHOR),
-			$authorOps = array(
-				'viewInformationCenter', // Information Center
-				'metadata', 'saveForm', // Metadata
-				'viewNotes', 'listNotes', 'saveNote', // Notes
-				'viewHistory', // History tab
+			array(ROLE_ID_SUB_EDITOR, ROLE_ID_MANAGER),
+			array(
+				'viewInformationCenter',
+				'viewHistory',
+				'viewNotes', 'listNotes', 'saveNote', 'deleteNote',
 			)
-		);
-		$this->addRoleAssignment(
-			array(ROLE_ID_SUB_EDITOR, ROLE_ID_MANAGER, ROLE_ID_ASSISTANT),
-			array_merge($authorOps, array(
-				'deleteNote' // Notes tab
-			))
 		);
 	}
 
@@ -56,20 +45,17 @@ class InformationCenterHandler extends Handler {
 	 */
 	function authorize($request, &$args, $roleAssignments) {
 		// Require a submission
-		import('classes.security.authorization.SubmissionAccessPolicy');
+		import('lib.pkp.classes.security.authorization.SubmissionAccessPolicy');
 		$this->addPolicy(new SubmissionAccessPolicy($request, $args, $roleAssignments, 'submissionId'));
-
-
 		return parent::authorize($request, $args, $roleAssignments);
 	}
 
 	/**
 	 * Fetch and store away objects
 	 * @param $request PKPRequest
-	 * @param $args array optional
 	 */
-	function initialize($request, $args = null) {
-		parent::initialize($request, $args);
+	function initialize($request) {
+		parent::initialize($request);
 
 		// Fetch the submission and file to display information about
 		$this->_submission = $this->getAuthorizedContextObject(ASSOC_TYPE_SUBMISSION);
@@ -81,39 +67,21 @@ class InformationCenterHandler extends Handler {
 	//
 	/**
 	 * Display the main information center modal.
+	 * @param $args array
 	 * @param $request PKPRequest
+	 * @return JSONMessage JSON object
 	 */
-	function viewInformationCenter($request) {
+	function viewInformationCenter($args, $request) {
 		$this->setupTemplate($request);
 		$templateMgr = TemplateManager::getManager($request);
 		return $templateMgr->fetchJson('controllers/informationCenter/informationCenter.tpl');
 	}
 
 	/**
-	 * Display the metadata tab.
-	 * @param $args array
-	 * @param $request PKPRequest
-	 */
-	function metadata($args, $request) {
-		assert(false);
-	}
-
-	/**
-	 * Save the metadata tab.
-	 * @param $args array
-	 * @param $request PKPRequest
-	 */
-	function saveForm($args, $request) {
-		assert(false);
-	}
-
-	/**
 	 * View a list of notes posted on the item.
 	 * Subclasses must implement.
 	 */
-	function viewNotes($args, $request) {
-		assert(false);
-	}
+	abstract function viewNotes($args, $request);
 
 	/**
 	 * Save a note.
@@ -121,20 +89,46 @@ class InformationCenterHandler extends Handler {
 	 * @param $args array
 	 * @param $request PKPRequest
 	 */
-	function saveNote($args, $request) {
-		assert(false);
+	abstract function saveNote($args, $request);
+
+	/**
+	 * Delete a note.
+	 * @param $args array
+	 * @param $request PKPRequest
+	 * @return JSONMessage JSON object
+	 */
+	function deleteNote($args, $request) {
+		$this->setupTemplate($request);
+
+		$noteId = (int) $request->getUserVar('noteId');
+		$noteDao = DAORegistry::getDAO('NoteDAO'); /* @var $noteDao NoteDAO */
+		$note = $noteDao->getById($noteId);
+
+		if (!$request->checkCSRF() || !$note || $note->getAssocType() != $this->_getAssocType() || $note->getAssocId() != $this->_getAssocId()) fatalError('Invalid note!');
+		$noteDao->deleteById($noteId);
+
+		$user = $request->getUser();
+		NotificationManager::createTrivialNotification($user->getId(), NOTIFICATION_TYPE_SUCCESS, array('contents' => __('notification.removedNote')));
+
+		$json = new JSONMessage(true);
+		$jsonViewNotesResponse = $this->viewNotes($args, $request);
+		$json->setEvent('dataChanged');
+		$json->setEvent('noteDeleted', $jsonViewNotesResponse->_content);
+
+		return $json;
 	}
 
 	/**
 	 * Display the list of existing notes.
 	 * @param $args array
 	 * @param $request PKPRequest
+	 * @return JSONMessage JSON object
 	 */
-	function listNotes($args, $request) {
+	function _listNotes($args, $request) {
 		$this->setupTemplate($request);
 
 		$templateMgr = TemplateManager::getManager($request);
-		$noteDao = DAORegistry::getDAO('NoteDAO');
+		$noteDao = DAORegistry::getDAO('NoteDAO'); /* @var $noteDao NoteDAO */
 		$templateMgr->assign('notes', $noteDao->getByAssoc($this->_getAssocType(), $this->_getAssocId()));
 
 		$user = $request->getUser();
@@ -142,40 +136,8 @@ class InformationCenterHandler extends Handler {
 		$templateMgr->assign('notesDeletable', true);
 
 		$templateMgr->assign('notesListId', 'notesList');
-		$json = new JSONMessage(true, $templateMgr->fetch('controllers/informationCenter/notesList.tpl'));
-		$json->setEvent('dataChanged');
-		return $json->getString();
-	}
 
-	/**
-	 * Delete a note.
-	 * @param $args array
-	 * @param $request PKPRequest
-	 */
-	function deleteNote($args, $request) {
-		$this->setupTemplate($request);
-
-		$noteId = (int) $request->getUserVar('noteId');
-		$noteDao = DAORegistry::getDAO('NoteDAO');
-		$note = $noteDao->getById($noteId);
-		if (!$note || $note->getAssocType() != $this->_getAssocType() || $note->getAssocId() != $this->_getAssocId()) fatalError('Invalid note!');
-		$noteDao->deleteById($noteId);
-
-		$user = $request->getUser();
-		NotificationManager::createTrivialNotification($user->getId(), NOTIFICATION_TYPE_SUCCESS, array('contents' => __('notification.removedNote')));
-
-		$json = new JSONMessage(true);
-		return $json->getString();
-	}
-
-	/**
-	 * Log an event for this item.
-	 * NB: sub-classes must implement this method.
-	 * @param $args array
-	 * @param $request PKPRequest
-	 */
-	function _logEvent ($itemId, $eventType, $userId) {
-		assert(false);
+		return $templateMgr->fetch('controllers/informationCenter/notesList.tpl');
 	}
 
 	/**
@@ -188,6 +150,29 @@ class InformationCenterHandler extends Handler {
 		return array(
 			'submissionId' => $this->_submission->getId(),
 		);
+	}
+
+	/**
+	 * Log an event for this file or submission
+	 * @param $request PKPRequest
+	 * @param $object Submission or SubmissionFile
+	 * @param $eventType int SUBMISSION_LOG_...
+	 * @param $logClass SubmissionLog or SubmissionFileLog
+	 */
+	function _logEvent($request, $object, $eventType, $logClass) {
+		// Get the log event message
+		switch($eventType) {
+			case SUBMISSION_LOG_NOTE_POSTED:
+				$logMessage = 'informationCenter.history.notePosted';
+				break;
+			case SUBMISSION_LOG_MESSAGE_SENT:
+				$logMessage = 'informationCenter.history.messageSent';
+				break;
+			default:
+				assert(false);
+		}
+		import('lib.pkp.classes.log.SubmissionFileLog');
+		$logClass::logEvent($request, $object, $eventType, $logMessage);
 	}
 
 	function setupTemplate($request) {
@@ -222,17 +207,13 @@ class InformationCenterHandler extends Handler {
 	 * Get the association ID for this information center view
 	 * @return int
 	 */
-	function _getAssocId() {
-		assert(false);
-	}
+	abstract function _getAssocId();
 
 	/**
 	 * Get the association type for this information center view
 	 * @return int
 	 */
-	function _getAssocType() {
-		assert(false);
-	}
+	abstract function _getAssocType();
 }
 
-?>
+

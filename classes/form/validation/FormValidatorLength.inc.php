@@ -3,9 +3,9 @@
 /**
  * @file classes/form/validation/FormValidatorLength.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class FormValidatorLength
  * @ingroup form_validation
@@ -32,10 +32,22 @@ class FormValidatorLength extends FormValidator {
 	 * @param $comparator
 	 * @param $length
 	 */
-	function FormValidatorLength(&$form, $field, $type, $message, $comparator, $length) {
-		parent::FormValidator($form, $field, $type, $message);
+	function __construct(&$form, $field, $type, $message, $comparator, $length) {
+		parent::__construct($form, $field, $type, $message);
 		$this->_comparator = $comparator;
 		$this->_length = $length;
+	}
+
+
+	//
+	// Setters and Getters
+	//
+	/**
+	 * @see FormValidator::getMessage()
+	 * @return string
+	 */
+	function getMessage() {
+		return __($this->_message, array('length' => $this->_length));
 	}
 
 
@@ -52,7 +64,7 @@ class FormValidatorLength extends FormValidator {
 			return true;
 
 		} else {
-			$length = String::strlen($this->getFieldValue());
+			$length = PKPString::strlen($this->getFieldValue());
 			switch ($this->_comparator) {
 				case '==':
 					return $length == $this->_length;
@@ -72,4 +84,4 @@ class FormValidatorLength extends FormValidator {
 	}
 }
 
-?>
+

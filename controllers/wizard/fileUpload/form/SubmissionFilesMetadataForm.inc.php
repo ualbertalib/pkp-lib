@@ -3,9 +3,9 @@
 /**
  * @file controllers/wizard/fileUpload/form/SubmissionFilesMetadataForm.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubmissionFilesMetadataForm
  * @ingroup controllers_wizard_fileUpload_form
@@ -26,26 +26,32 @@ class SubmissionFilesMetadataForm extends Form {
 	/** @var ReviewRound */
 	var $_reviewRound;
 
-
 	/**
 	 * Constructor.
 	 * @param $submissionFile SubmissionFile
-	 * @param $stageId integer One of the WORKFLOW_STAGE_ID_* constants.
+	 * @param $stageId int One of the WORKFLOW_STAGE_ID_* constants.
 	 * @param $reviewRound ReviewRound (optional) Current review round, if any.
+	 * @param $template string Path and filename to template file (optional).
 	 */
-	function SubmissionFilesMetadataForm(&$submissionFile, $stageId, $reviewRound = null) {
-		parent::Form('controllers/wizard/fileUpload/form/metadataForm.tpl');
+	function __construct($submissionFile, $stageId, $reviewRound = null, $template = null) {
+		if ($template === null) $template = 'controllers/wizard/fileUpload/form/submissionFileMetadataForm.tpl';
+		parent::__construct($template);
+		AppLocale::requireComponents(LOCALE_COMPONENT_PKP_SUBMISSION);
 
 		// Initialize the object.
-		$this->_submissionFile =& $submissionFile;
+		$this->_submissionFile = $submissionFile;
 		$this->_stageId = $stageId;
 		if (is_a($reviewRound, 'ReviewRound')) {
-			$this->_reviewRound =& $reviewRound;
+			$this->_reviewRound = $reviewRound;
 		}
 
+		$submissionLocale = $submissionFile->getSubmissionLocale();
+		$this->setDefaultFormLocale($submissionLocale);
+
 		// Add validation checks.
-		$this->addCheck(new FormValidator($this, 'name', 'required', 'submission.submit.fileNameRequired'));
+		$this->addCheck(new FormValidatorLocale($this, 'name', 'required', 'submission.submit.fileNameRequired', $submissionLocale));
 		$this->addCheck(new FormValidatorPost($this));
+		$this->addCheck(new FormValidatorCSRF($this));
 	}
 
 
@@ -76,6 +82,22 @@ class SubmissionFilesMetadataForm extends Form {
 		return $this->_reviewRound;
 	}
 
+	/**
+	 * Set the "show buttons" flag
+	 * @param $showButtons boolean
+	 */
+	function setShowButtons($showButtons) {
+		$this->setData('showButtons', $showButtons);
+	}
+
+	/**
+	 * Get the "show buttons" flag
+	 * @return boolean
+	 */
+	function getShowButtons() {
+		return $this->getData('showButtons');
+	}
+
 
 	//
 	// Implement template methods from Form
@@ -91,61 +113,35 @@ class SubmissionFilesMetadataForm extends Form {
 	 * @copydoc Form::readInputData()
 	 */
 	function readInputData() {
-		$this->readUserVars(array('name', 'note'));
+		$this->readUserVars(array('name', 'showButtons'));
 	}
 
 	/**
 	 * @copydoc Form::fetch()
 	 */
-	function fetch($request) {
+	function fetch($request, $template = null, $display = false) {
 		$templateMgr = TemplateManager::getManager($request);
-
-		// Submission file.
-		$submissionFile = $this->getSubmissionFile();
-		$templateMgr->assign('submissionFile', $submissionFile);
-
-		// Workflow stage.
-		$templateMgr->assign('stageId', $this->getStageId());
-
-		// Review round if we are in review stage.
 		$reviewRound = $this->getReviewRound();
-		if (is_a($reviewRound, 'ReviewRound')) {
-			$templateMgr->assign('reviewRoundId', $reviewRound->getId());
-		}
-
-		return parent::fetch($request);
+		$templateMgr->assign(array(
+			'submissionFile' => $this->getSubmissionFile(),
+			'stageId' => $this->getStageId(),
+			'reviewRoundId' => $reviewRound?$reviewRound->getId():null
+		));
+		return parent::fetch($request, $template, $display);
 	}
 
 	/**
 	 * @copydoc Form::execute()
 	 */
-	function execute($args, $request) {
+	function execute(...$functionParams) {
+		parent::execute(...$functionParams);
+
 		// Update the submission file with data from the form.
 		$submissionFile = $this->getSubmissionFile();
-		$submissionFile->setName($this->getData('name'), AppLocale::getLocale());
+		$submissionFile->setName($this->getData('name'), null); // Localized
 		$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO'); /* @var $submissionFileDao SubmissionFileDAO */
 		$submissionFileDao->updateObject($submissionFile);
-
-		// Save the note if it exists.
-		if ($this->getData('note')) {
-			$noteDao = DAORegistry::getDAO('NoteDAO'); /* @var $noteDao NoteDAO */
-			$note = $noteDao->newDataObject();
-
-			$user = $request->getUser();
-			$note->setUserId($user->getId());
-
-			$note->setContents($this->getData('note'));
-			$note->setAssocType(ASSOC_TYPE_SUBMISSION_FILE);
-			$note->setAssocId($submissionFile->getFileId());
-
-			$noteId = $noteDao->insertObject($note);
-
-			// Mark the note as viewed by this user
-			$user = $request->getUser();
-			$viewsDao = DAORegistry::getDAO('ViewsDAO');
-			$viewsDao->recordView(ASSOC_TYPE_NOTE, $noteId, $user->getId());
-		}
 	}
 }
 
-?>
+

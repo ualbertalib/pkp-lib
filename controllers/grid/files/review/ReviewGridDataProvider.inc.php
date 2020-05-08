@@ -2,9 +2,9 @@
 /**
  * @file controllers/grid/files/review/ReviewGridDataProvider.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ReviewGridDataProvider
  * @ingroup controllers_grid_files_review
@@ -15,12 +15,17 @@
 import('lib.pkp.controllers.grid.files.SubmissionFilesGridDataProvider');
 
 class ReviewGridDataProvider extends SubmissionFilesGridDataProvider {
+	/** @var boolean */
+	protected $_showAll;
 
 	/**
 	 * Constructor
+	 * @copydoc SubmissionFilesGridDataProvider::__construct()
+	 * @param $showAll boolean True iff all review round files should be included.
 	 */
-	function ReviewGridDataProvider($fileStageId, $viewableOnly = false) {
-		parent::SubmissionFilesGridDataProvider($fileStageId, $viewableOnly);
+	function __construct($fileStageId, $viewableOnly = false, $showAll = false) {
+		$this->_showAll = $showAll;
+		parent::__construct($fileStageId, $viewableOnly);
 	}
 
 
@@ -55,12 +60,12 @@ class ReviewGridDataProvider extends SubmissionFilesGridDataProvider {
 	/**
 	 * @copydoc GridDataProvider::loadData()
 	 */
-	function loadData() {
+	function loadData($filter = array()) {
 		// Get all review files assigned to this submission.
 		$reviewRound = $this->getReviewRound();
 		$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO'); /* @var $submissionFileDao SubmissionFileDAO */
-		$submissionFiles = $submissionFileDao->getLatestRevisionsByReviewRound($reviewRound, $this->getFileStage());
-		return $this->prepareSubmissionFileData($submissionFiles, $this->_viewableOnly);
+		$submissionFiles = $submissionFileDao->getLatestRevisionsByReviewRound($reviewRound, $this->_showAll?null:$this->getFileStage());
+		return $this->prepareSubmissionFileData($submissionFiles, $this->_viewableOnly, $filter);
 	}
 
 	//
@@ -90,7 +95,7 @@ class ReviewGridDataProvider extends SubmissionFilesGridDataProvider {
 
 		return new AddFileLinkAction(
 			$request, $submission->getId(), $this->getStageId(),
-			$this->getUploaderRoles(), null, $this->getFileStage(),
+			$this->getUploaderRoles(), $this->getFileStage(),
 			null, null, $reviewRound->getId()
 		);
 	}
@@ -105,4 +110,4 @@ class ReviewGridDataProvider extends SubmissionFilesGridDataProvider {
 	}
 }
 
-?>
+

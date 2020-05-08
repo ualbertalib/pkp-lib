@@ -3,9 +3,9 @@
 /**
  * @file classes/controllers/grid/DateGridCellProvider.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class DateGridCellProvider
  * @ingroup controllers_grid
@@ -27,8 +27,8 @@ class DateGridCellProvider extends GridCellProvider {
 	 * @param $dataProvider DataProvider The object to wrap
 	 * @param $format string See strftime
 	 */
-	function DateGridCellProvider($dataProvider, $format) {
-		parent::GridCellProvider();
+	function __construct($dataProvider, $format) {
+		parent::__construct();
 		$this->_dataProvider = $dataProvider;
 		$this->_format = $format;
 	}
@@ -50,4 +50,4 @@ class DateGridCellProvider extends GridCellProvider {
 	}
 }
 
-?>
+

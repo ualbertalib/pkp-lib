@@ -1,9 +1,9 @@
 {**
  * templates/controllers/grid/gridCellContents.tpl
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * a regular grid cell's contents
  *}
@@ -23,7 +23,9 @@
 {/if}
 
 {* Handle escaping as needed *}
-{if $column->hasFlag('html')}
+{if $column->hasFlag('anyhtml')}
+	{* Any HTML is allowed; do not escape anything *}
+{elseif $column->hasFlag('html')}
 	{* Limited HTML is allowed *}
 	{assign var=_label value=$_label|strip_unsafe_html}
 {else}
@@ -32,7 +34,7 @@
 {/if}
 
 {if $_label != ''}
-	<span{if count($actions) gt 0} class="pkp_helpers_align_left gridLabelBeforeActions"{/if}>
+	<span class="label{if count($actions) gt 0} before_actions{/if}">
 		{if $column->hasFlag('maxLength')}
 			{assign var="maxLength" value=$column->getFlag('maxLength')}
 			{$_label|truncate:$maxLength}
@@ -44,6 +46,6 @@
 
 {if count($actions) gt 0}
 	{foreach from=$actions item=action}
-		{include file="linkAction/linkAction.tpl" action=$action contextId=$cellId}
+		{include file="linkAction/linkAction.tpl" action=$action contextId=$cellId anyhtml=$column->hasFlag('anyhtml')}
 	{/foreach}
 {/if}

@@ -3,9 +3,9 @@
 /**
  * @file classes/controllers/grid/GridColumn.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class GridColumn
  * @ingroup controllers_grid
@@ -43,13 +43,13 @@ class GridColumn extends GridBodyElement {
 	 * @param $cellProvider GridCellProvider Optional grid cell provider for this column
 	 * @param $flags array Optional set of flags for this grid column
 	 */
-	function GridColumn($id = '', $title = null, $titleTranslated = null,
+	function __construct($id = '', $title = null, $titleTranslated = null,
 			$template = null, $cellProvider = null, $flags = array()) {
 
 		// Use default template if none specified
 		if ($template === null) $template = 'controllers/grid/gridCell.tpl';
 
-		parent::GridBodyElement($id, $cellProvider, $flags);
+		parent::__construct($id, $cellProvider, $flags);
 
 		$this->_title = $title;
 		$this->_titleTranslated = $titleTranslated;
@@ -111,7 +111,7 @@ class GridColumn extends GridBodyElement {
 	/**
 	 * @see GridBodyElement::getCellProvider()
 	 */
-	function &getCellProvider() {
+	function getCellProvider() {
 		if (is_null(parent::getCellProvider())) {
 			// provide a sensible default cell provider
 			import('lib.pkp.classes.controllers.grid.ArrayGridCellProvider');
@@ -139,4 +139,4 @@ class GridColumn extends GridBodyElement {
 	}
 }
 
-?>
+

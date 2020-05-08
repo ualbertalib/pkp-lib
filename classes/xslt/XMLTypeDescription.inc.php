@@ -3,9 +3,9 @@
 /**
  * @file classes/xslt/XMLTypeDescription.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class XMLTypeDescription
  * @ingroup xslt
@@ -45,8 +45,8 @@ class XMLTypeDescription extends TypeDescription {
 	 * @param $typeName string Allowed primitive types are
 	 *  'integer', 'string', 'float' and 'boolean'.
 	 */
-	function XMLTypeDescription($typeName) {
-		parent::TypeDescription($typeName);
+	function __construct($typeName) {
+		parent::__construct($typeName);
 	}
 
 
@@ -60,6 +60,13 @@ class XMLTypeDescription extends TypeDescription {
 		return TYPE_DESCRIPTION_NAMESPACE_XML;
 	}
 
+	/**
+	 * Set the validation strategy
+	 * @param $validationStrategy string XML_TYPE_DESCRIPTION_VALIDATE_...
+	 */
+	function setValidationStrategy($validationStrategy) {
+		$this->_validationStrategy = $validationStrategy;
+	}
 
 	//
 	// Implement abstract template methods from TypeDescription
@@ -123,7 +130,12 @@ class XMLTypeDescription extends TypeDescription {
 				break;
 
 			case XML_TYPE_DESCRIPTION_VALIDATE_SCHEMA:
-				if (!$xmlDom->schemaValidate($this->_validationSource)) return false;
+				libxml_use_internal_errors(true);
+				if (!$xmlDom->schemaValidate($this->_validationSource)) {
+					$errors = libxml_get_errors();
+					return false;
+				}
+				
 				break;
 
 			case XML_TYPE_DESCRIPTION_VALIDATE_RELAX_NG:
@@ -137,4 +149,4 @@ class XMLTypeDescription extends TypeDescription {
 		return true;
 	}
 }
-?>
+

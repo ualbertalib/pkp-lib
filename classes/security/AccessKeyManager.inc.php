@@ -3,9 +3,9 @@
 /**
  * @file classes/security/AccessKeyManager.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class AccessKeyManager
  * @ingroup security
@@ -22,7 +22,7 @@ class AccessKeyManager {
 	 * Constructor.
 	 * Create a manager for access keys.
 	 */
-	function AccessKeyManager() {
+	function __construct() {
 		$this->accessKeyDao = DAORegistry::getDAO('AccessKeyDAO');
 		$this->_performPeriodicCleanup();
 	}
@@ -78,10 +78,10 @@ class AccessKeyManager {
 	 */
 	function _performPeriodicCleanup() {
 		if (time() % 100 == 0) {
-			$accessKeyDao = DAORegistry::getDAO('AccessKeyDAO');
+			$accessKeyDao = DAORegistry::getDAO('AccessKeyDAO'); /* @var $accessKeyDao AccessKeyDAO */
 			$accessKeyDao->deleteExpiredKeys();
 		}
 	}
 }
 
-?>
+

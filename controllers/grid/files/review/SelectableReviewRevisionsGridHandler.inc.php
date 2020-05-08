@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/files/review/SelectableReviewRevisionsGridHandler.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SelectableReviewRevisionsGridHandler
  * @ingroup controllers_grid_files_review
@@ -20,13 +20,13 @@ class SelectableReviewRevisionsGridHandler extends SelectableFileListGridHandler
 	/**
 	 * Constructor
 	 */
-	function SelectableReviewRevisionsGridHandler() {
+	function __construct() {
 		import('lib.pkp.controllers.grid.files.review.ReviewRevisionsGridDataProvider');
 		// Pass in null stageId to be set in initialize from request var.
-		parent::SelectableFileListGridHandler(
+		parent::__construct(
 			new ReviewRevisionsGridDataProvider(),
 			null,
-			FILE_GRID_DELETE|FILE_GRID_VIEW_NOTES
+			FILE_GRID_DELETE|FILE_GRID_VIEW_NOTES|FILE_GRID_EDIT
 		);
 
 		$this->addRoleAssignment(
@@ -36,8 +36,17 @@ class SelectableReviewRevisionsGridHandler extends SelectableFileListGridHandler
 
 		// Set the grid information.
 		$this->setTitle('editor.submission.revisions');
-		$this->setInstructions('editor.submission.selectPromoteRevisions');
+	}
+
+	//
+	// Implemented methods from GridHandler.
+	//
+	/**
+	 * @copydoc GridHandler::isDataElementSelected()
+	 */
+	function isDataElementSelected($gridDataElement) {
+		return true;
 	}
 }
 
-?>
+

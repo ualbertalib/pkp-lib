@@ -3,9 +3,9 @@
 /**
  * @file classes/workflow/WorkflowStageDAO.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class WorkflowStageDAO
  * @ingroup workflow
@@ -15,13 +15,6 @@
  */
 
 class WorkflowStageDAO extends DAO {
-
-	/**
-	 * Constructor.
-	 */
-	function WorkflowStageDAO() {
-		parent::DAO();
-	}
 
 	/**
 	 * Convert a stage id into a stage path
@@ -78,8 +71,8 @@ class WorkflowStageDAO extends DAO {
 	 * @return array
 	 */
 	static function getWorkflowStageTranslationKeys() {
-		$applicationStages = Application::getApplicationStages();
-		AppLocale::requireComponents(LOCALE_COMPONENT_PKP_SUBMISSION);
+		$applicationStages = Application::get()->getApplicationStages();
+		AppLocale::requireComponents(LOCALE_COMPONENT_PKP_SUBMISSION, LOCALE_COMPONENT_APP_SUBMISSION);
 		static $stageMapping = array(
 			WORKFLOW_STAGE_ID_SUBMISSION => 'submission.submission',
 			WORKFLOW_STAGE_ID_INTERNAL_REVIEW => 'workflow.review.internalReview',
@@ -118,7 +111,7 @@ class WorkflowStageDAO extends DAO {
 	 * @param $stageNotifications array
 	 * @return array
 	 */
-	function getStageStatusesBySubmission($submission, $stagesWithDecisions, $stageNotifications) {
+	static function getStageStatusesBySubmission($submission, $stagesWithDecisions, $stageNotifications) {
 
 		$currentStageId = $submission->getStageId();
 		$workflowStages = self::getWorkflowStageKeysAndPaths();
@@ -149,4 +142,4 @@ class WorkflowStageDAO extends DAO {
 
 	}
 }
-?>
+

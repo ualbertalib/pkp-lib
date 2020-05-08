@@ -3,9 +3,9 @@
 /**
  * @file plugins/importexport/users/filter/NativeXmlUserGroupFilter.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class NativeXmlUserGroupFilter
  * @ingroup plugins_importexport_users
@@ -20,9 +20,9 @@ class NativeXmlUserGroupFilter extends NativeImportFilter {
 	 * Constructor
 	 * @param $filterGroup FilterGroup
 	 */
-	function NativeXmlUserGroupFilter($filterGroup) {
-		$this->setDisplayName('Native XML userGroup import');
-		parent::NativeImportFilter($filterGroup);
+	function __construct($filterGroup) {
+		$this->setDisplayName('Native XML user group import');
+		parent::__construct($filterGroup);
 	}
 
 	//
@@ -65,13 +65,13 @@ class NativeXmlUserGroupFilter extends NativeImportFilter {
 		$context = $deployment->getContext();
 
 		// Create the UserGroup object.
-		$userGroupDao = DAORegistry::getDAO('UserGroupDAO');
+		$userGroupDao = DAORegistry::getDAO('UserGroupDAO'); /* @var $userGroupDao UserGroupDAO */
 		$userGroup = $userGroupDao->newDataObject();
 		$userGroup->setContextId($context->getId());
 
 		// Extract the name node element to see if this user group exists already.
 		$nodeList = $node->getElementsByTagNameNS($deployment->getNamespace(), 'name');
-		if ($nodeList->length == 1) {
+		if ($nodeList->length > 0) {
 			$content = $this->parseLocalizedContent($nodeList->item(0)); // $content[1] contains the localized name.
 			$userGroups = $userGroupDao->getByContextId($context->getId());
 			while ($testGroup = $userGroups->next()) {
@@ -87,6 +87,7 @@ class NativeXmlUserGroupFilter extends NativeImportFilter {
 				case 'name': $userGroup->setName($n->textContent, $n->getAttribute('locale')); break;
 				case 'abbrev': $userGroup->setAbbrev($n->textContent, $n->getAttribute('locale')); break;
 				case 'permit_self_registration': $userGroup->setPermitSelfRegistration($n->textContent); break;
+				case 'permit_metadata_edit': $userGroup->setPermitMetadataEdit($n->textContent); break;
 			}
 
 			$userGroupId = $userGroupDao->insertObject($userGroup);
@@ -109,4 +110,4 @@ class NativeXmlUserGroupFilter extends NativeImportFilter {
 	}
 }
 
-?>
+

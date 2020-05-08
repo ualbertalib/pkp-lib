@@ -1,9 +1,9 @@
 /**
  * @file js/controllers/TabHandler.js
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class TabHandler
  * @ingroup js_controllers
@@ -27,7 +27,8 @@
 	 * @param {Object} options Handler options.
 	 */
 	$.pkp.controllers.TabHandler = function($tabs, options) {
-		var pageUrl, pageAnchor, pattern, pageAnchors, tabAnchors, i;
+		var pageUrl, pageAnchor, pattern, pageAnchors, tabAnchors, i,
+				self = this;
 
 		this.parent($tabs, options);
 
@@ -63,13 +64,30 @@
 		// Render the tabs as jQueryUI tabs.
 		$tabs.tabs({
 			// Enable AJAX-driven tabs with JSON messages.
-			ajaxOptions: {
-				cache: false,
-				dataFilter: this.callbackWrapper(this.dataFilter)
+			beforeLoad: function(event, ui) {
+				ui.ajaxSettings.dataType = 'json';
+				ui.jqXHR.setRequestHeader('Accept', 'application/json');
+				ui.ajaxSettings.dataFilter = self.callbackWrapper(self.dataFilter);
 			},
 			disabled: options.disabled,
 			active: options.selected
 		});
+
+		// Load a tab when the URL hash changes to a named tab
+		// Original issue: https://github.com/pkp/pkp-lib/issues/1787
+		// This technique introduced to resolve tab activation errors from #1787.
+		// See: https://github.com/pkp/pkp-lib/issues/4352
+		window.addEventListener('hashchange', function(e) {
+			var parts = e.newURL.split('#'), hash, $tab;
+			if (parts.length < 2) {
+				return;
+			}
+			hash = parts[1];
+			$tab = $tabs.find('li > a[name="' + hash + '"]');
+			if ($tab.length) {
+				$tab.click();
+			}
+		}, false);
 	};
 	$.pkp.classes.Helper.inherits(
 			$.pkp.controllers.TabHandler, $.pkp.classes.Handler);
@@ -92,14 +110,6 @@
 	 * @type {number}
 	 */
 	$.pkp.controllers.TabHandler.prototype.currentTabIndex_ = 0;
-
-
-	/**
-	 * Whether to empty the previous tab when switching to a new one
-	 * @private
-	 * @type {boolean}
-	 */
-	$.pkp.controllers.TabHandler.prototype.emptyLastTab_ = false;
 
 
 	//
@@ -144,6 +154,9 @@
 			// an Error.
 			$(window).one('error', function(msg, url, line) { return false; });
 			if (this.$currentTab_) {
+				// Unbind global events for handlers embedded in this tab's
+				// content.
+				this.unbindPartial(this.$currentTab_);
 				this.$currentTab_.empty();
 			}
 		}
@@ -221,6 +234,12 @@
 	$.pkp.controllers.TabHandler.prototype.tabsBeforeLoad =
 			function(tabsElement, event, ui) {
 
+		// We must unbind global events before the new tab content is loaded.
+		// This reaches out to the tab content element and unbinds any events
+		// attached to that element or any embedded handlers before it gets
+		// destroyed.
+		this.unbindPartial($('#' + ui.tab.attr('aria-controls')));
+
 		// Initialize AJAX settings for loading tab content remotely
 		ui.ajaxSettings.cache = false;
 		ui.ajaxSettings.dataFilter = this.callbackWrapper(this.dataFilter);
@@ -243,7 +262,7 @@
 		if (jsonData === false) {
 			return '';
 		}
-		return jsonData.content;
+		return JSON.stringify(jsonData.content);
 	};
 
 
@@ -265,10 +284,10 @@
 	$.pkp.controllers.TabHandler.prototype.tabsReloadRequested =
 			function(divElement, event, jsonContent) {
 
-		var $element = this.getHtmlElement();
+		var $element = this.getHtmlElement(),
+				self = this;
 		$.get(jsonContent.tabsUrl, function(data) {
-			var jsonData = $.parseJSON(data);
-			$element.replaceWith(jsonData.content);
+			self.replaceWith(data.content);
 		});
 	};
 
@@ -291,16 +310,15 @@
 		var $element = this.getHtmlElement(),
 				numTabs = $element.children('ul').children('li').length + 1,
 				$anchorElement = $('<a/>')
-					.text(jsonContent.title)
-					.attr('href', jsonContent.url),
-				$closeSpanElement = $('<span/>')
-					.addClass('ui-icon')
-					.addClass('ui-icon-close')
-					.text($.pkp.locale.common_close)
-					.attr('role', 'presentation'),
+						.text(jsonContent.title)
+						.attr('href', jsonContent.url),
+				$closeSpanElement = $('<a/>')
+						.addClass('close')
+						.text($.pkp.locale.common_close)
+						.attr('href', '#'),
 				$liElement = $('<li/>')
-					.append($anchorElement)
-					.append($closeSpanElement);
+						.append($anchorElement)
+						.append($closeSpanElement);
 
 		// Get the "close" button working
 		$closeSpanElement.click(function() {
@@ -372,5 +390,4 @@
 	};
 
 
-/** @param {jQuery} $ jQuery closure. */
 }(jQuery));

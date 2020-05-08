@@ -3,9 +3,9 @@
 /**
  * @file classes/submission/SubmissionArtworkFileDAODelegate.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubmissionArtworkFileDAODelegate
  * @ingroup submission
@@ -18,15 +18,9 @@
  */
 
 import('lib.pkp.classes.submission.SubmissionFileDAODelegate');
+import('lib.pkp.classes.submission.SubmissionArtworkFile');
 
 class SubmissionArtworkFileDAODelegate extends SubmissionFileDAODelegate {
-	/**
-	 * Constructor
-	 */
-	function SubmissionArtworkFileDAODelegate() {
-		parent::SubmissionFileDAODelegate();
-	}
-
 
 	//
 	// Public methods
@@ -34,12 +28,14 @@ class SubmissionArtworkFileDAODelegate extends SubmissionFileDAODelegate {
 	/**
 	 * @see SubmissionFileDAODelegate::insert()
 	 * @param $artworkFile ArtworkFile
-	 * @return ArtworkFile
+	 * @param $sourceFile object Source file
+	 * @param $isUpload boolean True iff this is a new upload.
+	 * @return ArtworkFile|null
 	 */
-	function &insertObject($artworkFile, $sourceFile, $isUpload = false) {
+	function insertObject($artworkFile, $sourceFile, $isUpload = false) {
 		// First insert the data for the super-class.
 		$artworkFile = parent::insertObject($artworkFile, $sourceFile, $isUpload);
-		if (is_null($artworkFile)) return $artworkFile;
+		if (!$artworkFile) return null;
 
 		// Now insert the artwork-specific data.
 		$this->update(
@@ -68,8 +64,9 @@ class SubmissionArtworkFileDAODelegate extends SubmissionFileDAODelegate {
 	 * @see SubmissionFileDAODelegate::update()
 	 * @param $artworkFile ArtworkFile
 	 * @param $previousFile ArtworkFile
+	 * @return boolean True if success.
 	 */
-	function updateObject(&$artworkFile, &$previousFile) {
+	function updateObject($artworkFile, $previousFile) {
 		// Update the parent class table first.
 		if (!parent::updateObject($artworkFile, $previousFile)) return false;
 
@@ -109,7 +106,7 @@ class SubmissionArtworkFileDAODelegate extends SubmissionFileDAODelegate {
 	/**
 	 * @see SubmissionFileDAODelegate::deleteObject()
 	 */
-	function deleteObject(&$submissionFile) {
+	function deleteObject($submissionFile) {
 		// First delete the submission file entry.
 		if (!parent::deleteObject($submissionFile)) return false;
 
@@ -120,7 +117,8 @@ class SubmissionArtworkFileDAODelegate extends SubmissionFileDAODelegate {
 			array(
 				(int)$submissionFile->getFileId(),
 				(int)$submissionFile->getRevision()
-			));
+			)
+		);
 	}
 
 	/**
@@ -142,12 +140,11 @@ class SubmissionArtworkFileDAODelegate extends SubmissionFileDAODelegate {
 	}
 
 	/**
-	 * @see SubmissionFileDAODelegate::newDataObject()
-	 *  Must be implemented by subclasses.
+	 * @copydoc SubmissionFileDAODelegate::newDataObject()
 	 */
 	function newDataObject() {
-		assert(false);
+		return new SubmissionArtworkFile();
 	}
 }
 
-?>
+

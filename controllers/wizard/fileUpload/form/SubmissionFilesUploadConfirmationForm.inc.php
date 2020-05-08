@@ -3,9 +3,9 @@
 /**
  * @file controllers/wizard/fileUpload/form/SubmissionFilesUploadConfirmationForm.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubmissionFilesUploadConfirmationForm
  * @ingroup controllers_wizard_fileUpload_form
@@ -14,23 +14,26 @@
  */
 
 
-import('controllers.wizard.fileUpload.form.SubmissionFilesUploadBaseForm');
+import('lib.pkp.controllers.wizard.fileUpload.form.PKPSubmissionFilesUploadBaseForm');
 
-class SubmissionFilesUploadConfirmationForm extends SubmissionFilesUploadBaseForm {
+class SubmissionFilesUploadConfirmationForm extends PKPSubmissionFilesUploadBaseForm {
 	/**
 	 * Constructor.
 	 * @param $request Request
 	 * @param $submissionId integer
 	 * @param $stageId integer One of the WORKFLOW_STAGE_ID_* constants.
 	 * @param $fileStage integer
+	 * @param $reviewRound object
 	 * @param $revisedFileId integer
+	 * @param $assocType int optional
+	 * @param $assocId int optional
 	 * @param $uploadedFile integer
 	 */
-	function SubmissionFilesUploadConfirmationForm($request, $submissionId, $stageId, $fileStage,
-			&$reviewRound, $revisedFileId = null, $assocType = null, $assocId = null, $uploadedFile = null) {
+	function __construct($request, $submissionId, $stageId, $fileStage,
+			$reviewRound, $revisedFileId = null, $assocType = null, $assocId = null, $uploadedFile = null) {
 
 		// Initialize class.
-		parent::SubmissionFilesUploadBaseForm(
+		parent::__construct(
 			$request, 'controllers/wizard/fileUpload/form/fileUploadConfirmationForm.tpl',
 			$submissionId, $stageId, $fileStage, false, $reviewRound, $revisedFileId, $assocType, $assocId
 		);
@@ -55,22 +58,33 @@ class SubmissionFilesUploadConfirmationForm extends SubmissionFilesUploadBaseFor
 	/**
 	 * Save the submission file upload confirmation form.
 	 * @see Form::execute()
-	 * @param $request Request
 	 * @return SubmissionFile if successful, otherwise null
 	 */
-	function execute($request) {
+	function execute(...$functionArgs) {
 		// Retrieve the file ids of the revised and the uploaded files.
 		$revisedFileId = $this->getRevisedFileId();
 		$uploadedFileId = (int)$this->getData('uploadedFileId');
-		if (!($revisedFileId && $uploadedFileId)) fatalError('Invalid file ids!');
 		if ($revisedFileId == $uploadedFileId) fatalError('The revised file id and the uploaded file id cannot be the same!');
+
+		parent::execute(...$functionArgs);
 
 		// Assign the new file as the latest revision of the old file.
 		$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO'); /* @var $submissionFileDao SubmissionFileDAO */
 		$submissionId = $this->getData('submissionId');
 		$fileStage = $this->getData('fileStage');
-		return $submissionFileDao->setAsLatestRevision($revisedFileId, $uploadedFileId, $submissionId, $fileStage);
+		$newFileLatestRevision = $submissionFileDao->getLatestRevision($uploadedFileId, $fileStage, $submissionId);
+		// detach the latest attached revision, because the file returned here will then be attached
+		import('controllers.api.file.ManageFileApiHandler');
+		$mangeFileApiHandler = new ManageFileApiHandler();
+		$mangeFileApiHandler->detachEntities($newFileLatestRevision, $newFileLatestRevision->getSubmissionId(), $this->getStageId());
+		if ($revisedFileId) {
+			// The file was revised; update revision information
+			return $submissionFileDao->setAsLatestRevision($revisedFileId, $uploadedFileId, $submissionId, $fileStage);
+		} else {
+			// This is a new upload, not a revision; don't do anything.
+			return $newFileLatestRevision;
+		}
 	}
 }
 
-?>
+

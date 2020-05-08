@@ -3,9 +3,9 @@
 /**
  * @file classes/form/validation/FormValidatorBoolean.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class FormValidatorBoolean
  * @ingroup form_validation
@@ -24,8 +24,8 @@ class FormValidatorBoolean extends FormValidator {
 	 * @param $field string the name of the associated field
 	 * @param $message string the error message for validation failures (i18n key)
 	 */
-	function FormValidatorBoolean(&$form, $field, $message) {
-		parent::FormValidator($form, $field, FORM_VALIDATOR_OPTIONAL_VALUE, $message);
+	function __construct(&$form, $field, $message) {
+		parent::__construct($form, $field, FORM_VALIDATOR_OPTIONAL_VALUE, $message);
 	}
 
 
@@ -58,4 +58,4 @@ class FormValidatorBoolean extends FormValidator {
 	}
 }
 
-?>
+

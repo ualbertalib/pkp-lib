@@ -3,9 +3,9 @@
 /**
  * @file classes/controllers/grid/feature/OrderGridItemsFeature.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class OrderGridItemsFeature
  * @ingroup controllers_grid_feature
@@ -16,17 +16,14 @@
 
 import('lib.pkp.classes.controllers.grid.feature.OrderItemsFeature');
 
-class OrderGridItemsFeature extends OrderItemsFeature{
+class OrderGridItemsFeature extends OrderItemsFeature {
 
 	/**
 	 * Constructor.
-	 * @param $overrideRowTemplate boolean This feature uses row
-	 * actions and it will force the usage of the gridRow.tpl.
-	 * If you want to use a different grid row template file, set this flag to
-	 * false and make sure to use a template file that adds row actions.
+	 * @copydoc OrderItemsFeature::OrderItemsFeature()
 	 */
-	function OrderGridItemsFeature($overrideRowTemplate = true) {
-		parent::OrderItemsFeature($overrideRowTemplate);
+	function __construct($overrideRowTemplate = true, $nonOrderableItemsMessage = null) {
+		parent::__construct($overrideRowTemplate, $nonOrderableItemsMessage);
 	}
 
 
@@ -55,6 +52,7 @@ class OrderGridItemsFeature extends OrderItemsFeature{
 		$data = json_decode($request->getUserVar('data'));
 
 		$gridElements = $grid->getGridDataElements($request);
+		if (empty($gridElements)) return;
 		$firstSeqValue = $grid->getDataElementSequence(reset($gridElements));
 		foreach ($gridElements as $rowId => $element) {
 			$rowPosition = array_search($rowId, $data);
@@ -67,4 +65,4 @@ class OrderGridItemsFeature extends OrderItemsFeature{
 	}
 }
 
-?>
+

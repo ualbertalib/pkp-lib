@@ -3,9 +3,9 @@
 /**
  * @file controllers/modals/editorDecision/form/SendReviewsForm.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SendReviewsForm
  * @ingroup controllers_modals_editorDecision_form
@@ -27,14 +27,14 @@ class SendReviewsForm extends EditorDecisionWithEmailForm {
 	 * @param $stageId int
 	 * @param $reviewRound ReviewRound
 	 */
-	function SendReviewsForm($submission, $decision, $stageId, $reviewRound = null) {
+	function __construct($submission, $decision, $stageId, $reviewRound = null) {
 		if (!in_array($decision, $this->_getDecisions())) {
 			fatalError('Invalid decision!');
 		}
 
 		$this->setSaveFormOperation('saveSendReviews');
 
-		parent::EditorDecisionWithEmailForm(
+		parent::__construct(
 			$submission, $decision, $stageId,
 			'controllers/modals/editorDecision/form/sendReviewsForm.tpl', $reviewRound
 		);
@@ -45,23 +45,64 @@ class SendReviewsForm extends EditorDecisionWithEmailForm {
 	// Implement protected template methods from Form
 	//
 	/**
-	 * @copydoc Form::initData()
+	 * @copydoc EditorDecisionWithEmailForm::initData()
 	 */
-	function initData($args, $request) {
-		$actionLabels = EditorDecisionActionsManager::getActionLabels($this->_getDecisions());
+	function initData($actionLabels = array()) {
+		$request = Application::get()->getRequest();
+		$actionLabels = (new EditorDecisionActionsManager())->getActionLabels($request->getContext(), $this->getStageId(), $this->_getDecisions());
 
-		return parent::initData($args, $request, $actionLabels);
+		return parent::initData($actionLabels);
+	}
+
+	/**
+	 * @copydoc Form::readInputData()
+	 */
+	function readInputData() {
+		$this->readUserVars(array('decision'));
+		parent::readInputData();
+	}
+
+	/**
+	 * @copydoc EditorDecisionWithEmailForm::fetch()
+	 */
+	function fetch($request, $template = null, $display = false) {
+		$templateMgr = TemplateManager::getManager($request);
+		$router = $request->getRouter();
+		$dispatcher = $router->getDispatcher();
+		$submission = $this->getSubmission();
+		$user = $request->getUser();
+
+		import('lib.pkp.classes.mail.SubmissionMailTemplate');
+		$revisionsEmail = new SubmissionMailTemplate($submission, 'EDITOR_DECISION_REVISIONS');
+		$resubmitEmail = new SubmissionMailTemplate($submission, 'EDITOR_DECISION_RESUBMIT');
+
+		foreach (array($revisionsEmail, $resubmitEmail) as &$email) {
+			$email->assignParams(array(
+				'authorName' => $submission->getAuthorString(),
+				'submissionUrl' => $dispatcher->url($request, ROUTE_PAGE, null, 'authorDashboard', 'submission', $submission->getId()),
+			));
+			$email->replaceParams();
+		}
+
+		$templateMgr->assign(array(
+			'revisionsEmail' => $revisionsEmail->getBody(),
+			'resubmitEmail' => $resubmitEmail->getBody(),
+		));
+
+		return parent::fetch($request, $template, $display);
 	}
 
 	/**
 	 * @copydoc Form::execute()
 	 */
-	function execute($args, $request) {
+	function execute(...$functionArgs) {
+		$request = Application::get()->getRequest();
+
 		// Retrieve the submission.
 		$submission = $this->getSubmission();
 
 		// Get this form decision actions labels.
-		$actionLabels = EditorDecisionActionsManager::getActionLabels($this->_getDecisions());
+		$actionLabels = (new EditorDecisionActionsManager())->getActionLabels($request->getContext(), $this->getStageId(), $this->_getDecisions());
 
 		// Record the decision.
 		$reviewRound = $this->getReviewRound();
@@ -70,6 +111,8 @@ class SendReviewsForm extends EditorDecisionWithEmailForm {
 		import('lib.pkp.classes.submission.action.EditorAction');
 		$editorAction = new EditorAction();
 		$editorAction->recordDecision($request, $submission, $decision, $actionLabels, $reviewRound, $stageId);
+
+		parent::execute(...$functionArgs);
 
 		// Identify email key and status of round.
 		switch ($decision) {
@@ -80,23 +123,21 @@ class SendReviewsForm extends EditorDecisionWithEmailForm {
 
 			case SUBMISSION_EDITOR_DECISION_RESUBMIT:
 				$emailKey = 'EDITOR_DECISION_RESUBMIT';
-				$status = REVIEW_ROUND_STATUS_RESUBMITTED;
+				$status = REVIEW_ROUND_STATUS_RESUBMIT_FOR_REVIEW;
 				break;
 
 			case SUBMISSION_EDITOR_DECISION_DECLINE:
-				$emailKey = 'SUBMISSION_UNSUITABLE';
+				$emailKey = 'EDITOR_DECISION_DECLINE';
+				$status = REVIEW_ROUND_STATUS_DECLINED;
+				break;
+
+			case SUBMISSION_EDITOR_DECISION_INITIAL_DECLINE:
+				$emailKey = 'EDITOR_DECISION_INITIAL_DECLINE';
 				$status = REVIEW_ROUND_STATUS_DECLINED;
 				break;
 
 			default:
 				fatalError('Unsupported decision!');
-		}
-
-		// Update the submission status
-		if ($decision == SUBMISSION_EDITOR_DECISION_DECLINE) {
-			$submission->setStatus(STATUS_DECLINED);
-			$submissionDao = Application::getSubmissionDAO();
-			$submissionDao->updateObject($submission);
 		}
 
 		$this->_updateReviewRoundStatus($submission, $status, $reviewRound);
@@ -116,9 +157,10 @@ class SendReviewsForm extends EditorDecisionWithEmailForm {
 		return array(
 			SUBMISSION_EDITOR_DECISION_PENDING_REVISIONS,
 			SUBMISSION_EDITOR_DECISION_RESUBMIT,
-			SUBMISSION_EDITOR_DECISION_DECLINE
+			SUBMISSION_EDITOR_DECISION_DECLINE,
+			SUBMISSION_EDITOR_DECISION_INITIAL_DECLINE
 		);
 	}
 }
 
-?>
+

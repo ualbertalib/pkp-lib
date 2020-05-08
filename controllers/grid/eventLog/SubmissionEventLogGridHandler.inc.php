@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/eventLog/SubmissionEventLogGridHandler.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubmissionEventLogGridHandler
  * @ingroup controllers_grid_eventLog
@@ -28,11 +28,14 @@ class SubmissionEventLogGridHandler extends GridHandler {
 	/** @var Submission */
 	var $_submission;
 
+	/** @var boolean Is the current user assigned as an author to this submission */
+	var $_isCurrentUserAssignedAuthor;
+
 	/**
 	 * Constructor
 	 */
-	function SubmissionEventLogGridHandler() {
-		parent::GridHandler();
+	function __construct() {
+		parent::__construct();
 		$this->addRoleAssignment(
 			array(ROLE_ID_MANAGER, ROLE_ID_SUB_EDITOR),
 			array('fetchGrid', 'fetchRow', 'viewEmail')
@@ -70,17 +73,33 @@ class SubmissionEventLogGridHandler extends GridHandler {
 	 * @param $roleAssignments array
 	 */
 	function authorize($request, &$args, $roleAssignments) {
-		import('classes.security.authorization.SubmissionAccessPolicy');
+		import('lib.pkp.classes.security.authorization.SubmissionAccessPolicy');
 		$this->addPolicy(new SubmissionAccessPolicy($request, $args, $roleAssignments));
-		return parent::authorize($request, $args, $roleAssignments);
+
+		import('lib.pkp.classes.security.authorization.internal.UserAccessibleWorkflowStageRequiredPolicy');
+		$this->addPolicy(new UserAccessibleWorkflowStageRequiredPolicy($request, WORKFLOW_TYPE_EDITORIAL));
+
+		$success = parent::authorize($request, $args, $roleAssignments);
+
+		// Prevent authors from accessing review details, even if they are also
+		// assigned as an editor, sub-editor or assistant.
+		$userAssignedRoles = $this->getAuthorizedContextObject(ASSOC_TYPE_ACCESSIBLE_WORKFLOW_STAGES);
+		$this->_isCurrentUserAssignedAuthor = false;
+		foreach ($userAssignedRoles as $stageId => $roles) {
+			if (in_array(ROLE_ID_AUTHOR, $roles)) {
+				$this->_isCurrentUserAssignedAuthor = true;
+				break;
+			}
+		}
+
+		return $success;
 	}
 
 	/**
-	 * Configure the grid
-	 * @param $request PKPRequest
+	 * @copydoc GridHandler::initialize()
 	 */
-	function initialize($request) {
-		parent::initialize($request);
+	function initialize($request, $args = null) {
+		parent::initialize($request, $args);
 
 		// Retrieve the authorized monograph.
 		$submission = $this->getAuthorizedContextObject(ASSOC_TYPE_SUBMISSION);
@@ -89,11 +108,13 @@ class SubmissionEventLogGridHandler extends GridHandler {
 		// Load submission-specific translations
 		AppLocale::requireComponents(
 			LOCALE_COMPONENT_APP_SUBMISSION,
-			LOCALE_COMPONENT_PKP_SUBMISSION
+			LOCALE_COMPONENT_PKP_SUBMISSION,
+			LOCALE_COMPONENT_APP_EDITOR,
+			LOCALE_COMPONENT_PKP_EDITOR
 		);
 
 		// Columns
-		$cellProvider = new EventLogGridCellProvider();
+		$cellProvider = new EventLogGridCellProvider($this->_isCurrentUserAssignedAuthor);
 		$this->addColumn(
 			new GridColumn(
 				'date',
@@ -135,8 +156,8 @@ class SubmissionEventLogGridHandler extends GridHandler {
 	 * @see GridHandler::getRowInstance()
 	 * @return EventLogGridRow
 	 */
-	function getRowInstance() {
-		return new EventLogGridRow($this->getSubmission());
+	protected function getRowInstance() {
+		return new EventLogGridRow($this->getSubmission(), $this->_isCurrentUserAssignedAuthor);
 	}
 
 	/**
@@ -155,9 +176,9 @@ class SubmissionEventLogGridHandler extends GridHandler {
 	/**
 	 * @copydoc GridHandler::loadData
 	 */
-	function loadData($request, $filter = null) {
-		$submissionEventLogDao = DAORegistry::getDAO('SubmissionEventLogDAO');
-		$submissionEmailLogDao = DAORegistry::getDAO('SubmissionEmailLogDAO');
+	protected function loadData($request, $filter = null) {
+		$submissionEventLogDao = DAORegistry::getDAO('SubmissionEventLogDAO'); /* @var $submissionEventLogDao SubmissionEventLogDAO */
+		$submissionEmailLogDao = DAORegistry::getDAO('SubmissionEmailLogDAO'); /* @var $submissionEmailLogDao SubmissionEmailLogDAO */
 
 		$submission = $this->getSubmission();
 
@@ -166,14 +187,14 @@ class SubmissionEventLogGridHandler extends GridHandler {
 
 		$entries = array_merge($eventLogEntries->toArray(), $emailLogEntries->toArray());
 
-		// Sort the merged data by date
+		// Sort the merged data by date, most recent first
 		usort($entries, function($a, $b) {
 			$aDate = is_a($a, 'EventLogEntry') ? $a->getDateLogged() : $a->getDateSent();
 			$bDate = is_a($b, 'EventLogEntry') ? $b->getDateLogged() : $b->getDateSent();
 
 			if ($aDate == $bDate) return 0;
 
-			return $aDate > $bDate ? 1 : -1;
+			return $aDate < $bDate ? 1 : -1;
 		});
 
 		return $entries;
@@ -183,13 +204,12 @@ class SubmissionEventLogGridHandler extends GridHandler {
 	 * Get the contents of the email
 	 * @param $args array
 	 * @param $request PKPRequest
-	 * @return string Serialized JSON object
+	 * @return JSONMessage JSON object
 	 */
 	function viewEmail($args, $request) {
-		$submissionEmailLogDao = DAORegistry::getDAO('SubmissionEmailLogDAO');
+		$submissionEmailLogDao = DAORegistry::getDAO('SubmissionEmailLogDAO'); /* @var $submissionEmailLogDao SubmissionEmailLogDAO */
 		$emailLogEntry = $submissionEmailLogDao->getById((int) $args['emailLogEntryId']);
-		$json = new JSONMessage(true, $this->_formatEmail($emailLogEntry));
-		return $json->getString();
+		return new JSONMessage(true, $this->_formatEmail($emailLogEntry));
 	}
 
 	/**
@@ -201,13 +221,13 @@ class SubmissionEventLogGridHandler extends GridHandler {
 		assert(is_a($emailLogEntry, 'EmailLogEntry'));
 
 		$text = array();
-		$text[] = __('email.from') . ': ' . $emailLogEntry->getFrom();
-		$text[] =  __('email.to') . ': ' . $emailLogEntry->getRecipients();
-		$text[] =  __('email.subject') . ': ' . $emailLogEntry->getSubject();
+		$text[] = __('email.from') . ': ' . htmlspecialchars($emailLogEntry->getFrom());
+		$text[] =  __('email.to') . ': ' . htmlspecialchars($emailLogEntry->getRecipients());
+		$text[] =  __('email.subject') . ': ' . htmlspecialchars($emailLogEntry->getSubject());
 		$text[] = $emailLogEntry->getBody();
 
-		return nl2br(htmlentities(implode(PHP_EOL . PHP_EOL, $text)));
+		return nl2br(PKPString::stripUnsafeHtml(implode(PHP_EOL . PHP_EOL, $text)));
 	}
 }
 
-?>
+

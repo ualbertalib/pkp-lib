@@ -3,9 +3,9 @@
 /**
  * @file lib/pkp/classes/plugins/OAIMetadataFormatPlugin.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class OAIMetadataFormatPlugin
  * @ingroup plugins
@@ -16,48 +16,16 @@
 import('lib.pkp.classes.plugins.Plugin');
 import('lib.pkp.classes.oai.OAIStruct');
 
-class OAIMetadataFormatPlugin extends Plugin {
-	function OAIMetadataFormatPlugin() {
-		parent::Plugin();
-	}
+abstract class OAIMetadataFormatPlugin extends Plugin {
 
 	/**
-	 * Called as a plugin is registered to the registry
-	 * @param $category String Name of category plugin was registered to
-	 * @return boolean True if plugin initialized successfully; if false,
-	 * 	the plugin will not be registered.
+	 * @copydoc Plugin::register()
 	 */
-	function register($category, $path) {
-		if (parent::register($category, $path)) {
-			$this->addLocaleData();
-			HookRegistry::register('OAI::metadataFormats', array($this, 'callback_formatRequest'));
-			return true;
-		}
-		return false;
-	}
-
-	/**
-	 * Get the name of this plugin. The name must be unique within
-	 * its category, and should be suitable for part of a filename
-	 * (ie short, no spaces, and no dependencies on cases being unique).
-	 * @return String name of plugin
-	 */
-	function getName() {
-		assert(false); // Should always be overridden
-	}
-
-	/**
-	 * Get the display name for this plugin.
-	 */
-	function getDisplayName() {
-		assert(false); // Should always be overridden
-	}
-
-	/**
-	 * Get a description of this plugin.
-	 */
-	function getDescription() {
-		assert(false); // Should always be overridden
+	function register($category, $path, $mainContextId = null) {
+		if (!parent::register($category, $path, $mainContextId)) return false;
+		$this->addLocaleData();
+		if ($this->getEnabled()) HookRegistry::register('OAI::metadataFormats', array($this, 'callback_formatRequest'));
+		return true;
 	}
 
 	/**
@@ -100,4 +68,4 @@ class OAIMetadataFormatPlugin extends Plugin {
 	}
 }
 
-?>
+

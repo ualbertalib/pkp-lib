@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/admin/context/ContextGridHandler.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ContextGridHandler
  * @ingroup controllers_grid_admin_context
@@ -20,11 +20,11 @@ class ContextGridHandler extends GridHandler {
 	/**
 	 * Constructor
 	 */
-	function ContextGridHandler() {
-		parent::GridHandler();
+	function __construct() {
+		parent::__construct();
 		$this->addRoleAssignment(array(
 			ROLE_ID_SITE_ADMIN),
-			array('fetchGrid', 'fetchRow', 'createContext', 'editContext', 'updateContext',
+			array('fetchGrid', 'fetchRow', 'createContext', 'editContext', 'updateContext', 'users',
 				'deleteContext', 'saveSequence')
 		);
 	}
@@ -50,15 +50,17 @@ class ContextGridHandler extends GridHandler {
 	}
 
 	/**
-	 * @copydoc PKPHandler::initialize()
+	 * @copydoc GridHandler::initialize()
 	 */
-	function initialize($request) {
-		parent::initialize($request);
+	function initialize($request, $args = null) {
+		parent::initialize($request, $args);
 
 		// Load user-related translations.
 		AppLocale::requireComponents(
 			LOCALE_COMPONENT_PKP_USER,
 			LOCALE_COMPONENT_APP_MANAGER,
+			LOCALE_COMPONENT_PKP_MANAGER,
+			LOCALE_COMPONENT_PKP_ADMIN,
 			LOCALE_COMPONENT_APP_ADMIN
 		);
 
@@ -73,8 +75,10 @@ class ContextGridHandler extends GridHandler {
 					$router->url($request, null, null, 'createContext', null, null),
 					__('admin.contexts.create'),
 					'modal_add_item',
-					true
-					),
+					true,
+					'context',
+					['editContext']
+				),
 				__('admin.contexts.create'),
 				'add_item'
 			)
@@ -100,7 +104,7 @@ class ContextGridHandler extends GridHandler {
 		// Context path.
 		$this->addColumn(
 			new GridColumn(
-				'path',
+				'urlPath',
 				'context.path',
 				null,
 				null,
@@ -117,16 +121,14 @@ class ContextGridHandler extends GridHandler {
 	 * @copydoc GridHandler::getRowInstance()
 	 * @return UserGridRow
 	 */
-	function getRowInstance() {
+	protected function getRowInstance() {
 		return new ContextGridRow();
 	}
 
 	/**
 	 * @copydoc GridHandler::loadData()
-	 * @param $request PKPRequest
-	 * @return array Grid data.
 	 */
-	function loadData($request) {
+	protected function loadData($request, $filter = null) {
 		// Get all contexts.
 		$contextDao = Application::getContextDAO();
 		$contexts = $contextDao->getAll();
@@ -137,17 +139,17 @@ class ContextGridHandler extends GridHandler {
 	/**
 	 * @copydoc GridHandler::setDataElementSequence()
 	 */
-	function setDataElementSequence($request, $rowId, $context, $newSequence) {
+	function setDataElementSequence($request, $rowId, $gridDataElement, $newSequence) {
 		$contextDao = Application::getContextDAO();
-		$context->setSequence($newSequence);
-		$contextDao->updateObject($context);
+		$gridDataElement->setSequence($newSequence);
+		$contextDao->updateObject($gridDataElement);
 	}
 
 	/**
 	 * @copydoc GridHandler::getDataElementSequence()
 	 */
-	function getDataElementSequence($context) {
-		return $context->getSequence();
+	function getDataElementSequence($gridDataElement) {
+		return $gridDataElement->getSequence();
 	}
 
 	/**
@@ -181,22 +183,100 @@ class ContextGridHandler extends GridHandler {
 		return $this->editContext($args, $request);
 	}
 
-
-	//
-	// Protected helper methods.
-	//
 	/**
-	 * Return a redirect event.
-	 * @param $request Request
-	 * @param $newContextPath string
-	 * @param $openWizard boolean
+	 * Edit an existing context.
+	 * @param $args array
+	 * @param $request PKPRequest
+	 * @return JSONMessage JSON object
 	 */
-	protected function _getRedirectEvent($request, $newContextPath, $openWizard) {
-		$dispatcher = $request->getDispatcher();
+	function editContext($args, $request) {
+		import('classes.core.Services');
+		$contextService = Services::get('context');
+		$context = null;
 
-		$url = $dispatcher->url($request, ROUTE_PAGE, $newContextPath, 'admin', 'contexts', null, array('openWizard' => $openWizard));
-		return $request->redirectUrlJson($url);
+		if ($request->getUserVar('rowId')) {
+			$context = $contextService->get((int) $request->getUserVar('rowId'));
+			if (!$context) {
+				return new JSONMessage(false);
+			}
+		}
+
+		$dispatcher = $request->getDispatcher();
+		if ($context) {
+			$apiUrl = $dispatcher->url($request, ROUTE_API, $context->getPath(), 'contexts/' . $context->getId());
+			$successMessage = __('admin.contexts.form.edit.success');
+			$supportedLocales = $context->getSupportedFormLocales();
+		} else {
+			$apiUrl = $dispatcher->url($request, ROUTE_API, CONTEXT_ID_ALL, 'contexts');
+			$successMessage = __('admin.contexts.form.create.success');
+			$supportedLocales = $request->getSite()->getSupportedLocales();
+		}
+
+		$localeNames = AppLocale::getAllLocales();
+		$locales = array_map(function($localeKey) use ($localeNames) {
+			return ['key' => $localeKey, 'label' => $localeNames[$localeKey]];
+		}, $supportedLocales);
+
+		$contextForm = new \APP\components\forms\context\ContextForm($apiUrl, $successMessage, $locales, $request->getBaseUrl(), $context);
+		$contextFormConfig = $contextForm->getConfig();
+
+		// Pass the URL to the context settings wizard so that the AddContextForm
+		// component can redirect to it when a new context is added.
+		if (!$context) {
+			$contextFormConfig['editContextUrl'] = $request->getDispatcher()->url($request, ROUTE_PAGE, 'index', 'admin', 'wizard', '__id__');
+		}
+
+		$containerData = [
+			'components' => [
+				FORM_CONTEXT => $contextFormConfig,
+			],
+		];
+
+		$templateMgr = TemplateManager::getManager($request);
+		$templateMgr->assign([
+			'containerData' => $containerData,
+			'isAddingNewContext' => !$context,
+		]);
+
+		return new JSONMessage(true, $templateMgr->fetch('admin/editContext.tpl'));
+	}
+
+	/**
+	 * Delete a context.
+	 * @param $args array
+	 * @param $request PKPRequest
+	 * @return JSONMessage JSON object
+	 */
+	function deleteContext($args, $request) {
+
+		if (!$request->checkCSRF()) {
+			return new JSONMessage(false);
+		}
+
+		import('classes.core.Services');
+		$contextService = Services::get('context');
+
+		$context = $contextService->get((int) $request->getUserVar('rowId'));
+
+		if (!$context) {
+			return new JSONMessage(false);
+		}
+
+		$contextService->delete($context);
+
+		return DAO::getDataChangedEvent($context->getId());
+	}
+
+	/**
+	 * Display users management grid for the given context.
+	 * @param $args array
+	 * @param $request PKPRequest
+	 * @return JSONMessage JSON object
+	 */
+	function users($args, $request) {
+		$templateMgr = TemplateManager::getManager($request);
+		$templateMgr->assign('oldUserId', (int) $request->getUserVar('oldUserId')); // for merging users.
+		parent::setupTemplate($request);
+		return $templateMgr->fetchJson('management/accessUsers.tpl');
 	}
 }
-
-?>

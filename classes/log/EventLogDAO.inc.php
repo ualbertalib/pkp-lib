@@ -3,9 +3,9 @@
 /**
  * @file classes/log/EventLogDAO.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class EventLogDAO
  * @ingroup log
@@ -18,12 +18,6 @@
 import ('lib.pkp.classes.log.EventLogEntry');
 
 class EventLogDAO extends DAO {
-	/**
-	 * Constructor
-	 */
-	function EventLogDAO() {
-		parent::DAO();
-	}
 
 	/**
 	 * Retrieve a log entry by ID.
@@ -89,7 +83,6 @@ class EventLogDAO extends DAO {
 		$entry->setId($row['log_id']);
 		$entry->setUserId($row['user_id']);
 		$entry->setDateLogged($this->datetimeFromDB($row['date_logged']));
-		$entry->setIPAddress($row['ip_address']);
 		$entry->setEventType($row['event_type']);
 		$entry->setAssocType($row['assoc_type']);
 		$entry->setAssocId($row['assoc_id']);
@@ -121,13 +114,12 @@ class EventLogDAO extends DAO {
 	function insertObject($entry) {
 		$this->update(
 			sprintf('INSERT INTO event_log
-				(user_id, date_logged, ip_address, event_type, assoc_type, assoc_id, message, is_translated)
+				(user_id, date_logged, event_type, assoc_type, assoc_id, message, is_translated)
 				VALUES
-				(?, %s, ?, ?, ?, ?, ?, ?)',
+				(?, %s, ?, ?, ?, ?, ?)',
 				$this->datetimeToDB($entry->getDateLogged())),
 			array(
 				(int) $entry->getUserId(),
-				$entry->getIPAddress(),
 				(int) $entry->getEventType(),
 				(int) $entry->getAssocType(),
 				(int) $entry->getAssocId(),
@@ -206,4 +198,4 @@ class EventLogDAO extends DAO {
 	}
 }
 
-?>
+

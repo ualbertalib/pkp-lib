@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/files/LibraryFileGridHandler.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class LibraryFileGridHandler
  * @ingroup controllers_grid_files
@@ -32,8 +32,8 @@ class LibraryFileGridHandler extends CategoryGridHandler {
 	/**
 	 * Constructor
 	 */
-	function LibraryFileGridHandler($dataProvider) {
-		parent::CategoryGridHandler($dataProvider);
+	function __construct($dataProvider) {
+		parent::__construct($dataProvider);
 		$this->addRoleAssignment(
 			array(ROLE_ID_MANAGER, ROLE_ID_SUB_EDITOR, ROLE_ID_ASSISTANT, ROLE_ID_AUTHOR),
 			array(
@@ -76,10 +76,10 @@ class LibraryFileGridHandler extends CategoryGridHandler {
 
 	/*
 	 * Configure the grid
-	 * @param $request PKPRequest
+	 * @see CategoryGridHandler::initialize
 	 */
-	function initialize($request) {
-		parent::initialize($request);
+	function initialize($request, $args = null) {
+		parent::initialize($request, $args);
 
 		$router = $request->getRouter();
 		$this->_context = $router->getContext($request);
@@ -125,14 +125,14 @@ class LibraryFileGridHandler extends CategoryGridHandler {
 	/**
 	 * @copydoc CategoryGridHandler::getCategoryRowInstance()
 	 */
-	function getCategoryRowInstance() {
+	protected function getCategoryRowInstance() {
 		return new LibraryFileGridCategoryRow($this->getContext());
 	}
 
 	/**
 	 * @copydoc GridHandler::loadData()
 	 */
-	function loadData($request, $filter) {
+	protected function loadData($request, $filter) {
 
 		$context = $this->getContext();
 		$libraryFileManager = new LibraryFileManager($context->getId());
@@ -150,7 +150,7 @@ class LibraryFileGridHandler extends CategoryGridHandler {
 	 * Get the row handler - override the default row handler
 	 * @return LibraryFileGridRow
 	 */
-	function getRowInstance() {
+	protected function getRowInstance() {
 		return new LibraryFileGridRow($this->canEdit());
 	}
 
@@ -176,6 +176,7 @@ class LibraryFileGridHandler extends CategoryGridHandler {
 	 * An action to add a new file
 	 * @param $args array
 	 * @param $request PKPRequest
+	 * @return JSONMessage JSON object
 	 */
 	function addFile($args, $request) {
 		$this->initialize($request);
@@ -185,40 +186,37 @@ class LibraryFileGridHandler extends CategoryGridHandler {
 		$fileForm = $this->_getNewFileForm($context);
 		$fileForm->initData();
 
-		$json = new JSONMessage(true, $fileForm->fetch($request));
-		return $json->getString();
+		return new JSONMessage(true, $fileForm->fetch($request));
 	}
 
 	/**
 	 * Save a new library file.
 	 * @param $args array
 	 * @param $request PKPRequest
-	 * @return string
+	 * @return JSONMessage JSON object
 	 */
 	function saveFile($args, $request) {
 		$router = $request->getRouter();
 		$context = $request->getContext();
-		$user = $request->getUser();
 
 		$fileForm = $this->_getNewFileForm($context);
 		$fileForm->readInputData();
 
 		if ($fileForm->validate()) {
-			$fileId = $fileForm->execute($user->getId());
+			$fileId = $fileForm->execute();
 
 			// Let the calling grid reload itself
 			return DAO::getDataChangedEvent();
 		}
 
-		$json = new JSONMessage(false);
-		return $json->getString();
+		return new JSONMessage(false);
 	}
 
 	/**
 	 * An action to add a new file
 	 * @param $args array
 	 * @param $request PKPRequest
-	 * @return string Serialized JSON object
+	 * @return JSONMessage JSON object
 	 */
 	function editFile($args, $request) {
 		$this->initialize($request);
@@ -231,15 +229,14 @@ class LibraryFileGridHandler extends CategoryGridHandler {
 		$fileForm = $this->_getEditFileForm($context, $fileId);
 		$fileForm->initData();
 
-		$json = new JSONMessage(true, $fileForm->fetch($request));
-		return $json->getString();
+		return new JSONMessage(true, $fileForm->fetch($request));
 	}
 
 	/**
 	 * Save changes to an existing library file.
 	 * @param $args array
 	 * @param $request PKPRequest
-	 * @return string
+	 * @return JSONMessage JSON object
 	 */
 	function updateFile($args, $request) {
 		assert(isset($args['fileId']));
@@ -258,37 +255,35 @@ class LibraryFileGridHandler extends CategoryGridHandler {
 			return DAO::getDataChangedEvent();
 		}
 
-		$json = new JSONMessage(false);
-		return $json->getString();
+		return new JSONMessage(false);
 	}
 
 	/**
 	 * Delete a file
 	 * @param $args array
 	 * @param $request PKPRequest
-	 * @return string Serialized JSON object
+	 * @return JSONMessage JSON object
 	 */
 	function deleteFile($args, $request) {
 		$fileId = isset($args['fileId']) ? $args['fileId'] : null;
 		$router = $request->getRouter();
 		$context = $router->getContext($request);
 
-		if ($fileId) {
+		if ($request->checkCSRF() && $fileId) {
 			$libraryFileManager = new LibraryFileManager($context->getId());
-			$libraryFileManager->deleteFile($fileId);
+			$libraryFileManager->deleteById($fileId);
 
 			return DAO::getDataChangedEvent();
 		}
 
-		$json = new JSONMessage(false);
-		return $json->getString();
+		return new JSONMessage(false);
 	}
 
 	/**
 	 * Upload a new library file.
 	 * @param $args array
 	 * @param $request PKPRequest
-	 * @return string
+	 * @return JSONMessage JSON object
 	 */
 	function uploadFile($args, $request) {
 		$router = $request->getRouter();
@@ -303,11 +298,10 @@ class LibraryFileGridHandler extends CategoryGridHandler {
 			$json->setAdditionalAttributes(array(
 				'temporaryFileId' => $temporaryFile->getId()
 			));
+			return $json;
 		} else {
-			$json = new JSONMessage(false, __('common.uploadFailed'));
+			return new JSONMessage(false, __('common.uploadFailed'));
 		}
-
-		return $json->getString();
 	}
 
 	/**
@@ -338,4 +332,4 @@ class LibraryFileGridHandler extends CategoryGridHandler {
 	}
 }
 
-?>
+

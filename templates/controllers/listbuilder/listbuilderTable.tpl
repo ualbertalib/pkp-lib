@@ -1,20 +1,28 @@
 {**
  * templates/controllers/listbuilder/listbuilderBody.tpl
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * The table part of a Listbuilder object
  *}
 
 <table id="{$gridTableId|escape}">
 	{if $columns|@count > 1}{* include column titles as th elements if there is more than one column *}
+		{include file="controllers/grid/columnGroup.tpl" columns=$columns}
 		<thead>
 			<tr>
-			{foreach from=$columns item=column}
-				<th>{$column->getLocalizedTitle()|escape}</th>
-			{/foreach}
+				{foreach from=$columns item=column}
+					{if $column->hasFlag('alignment')}
+						{assign var=alignment value=$column->getFlag('alignment')}
+					{else}
+						{assign var=alignment value=$smarty.const.COLUMN_ALIGNMENT_LEFT}
+					{/if}
+					<th scope="col" style="text-align: {$alignment};">
+						{$column->getLocalizedTitle()|escape}
+					</th>
+				{/foreach}
 			</tr>
 		</thead>
 	{/if}

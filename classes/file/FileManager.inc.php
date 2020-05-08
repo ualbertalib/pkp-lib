@@ -9,9 +9,9 @@
 /**
  * @file classes/file/FileManager.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  * ePUB mime type added  Leah M Root (rootl) SUNY Geneseo
  * @class FileManager
  * @ingroup file
@@ -36,7 +36,7 @@ class FileManager {
 	/**
 	 * Constructor
 	 */
-	function FileManager() {
+	function __construct() {
 	}
 
 	/**
@@ -58,7 +58,26 @@ class FileManager {
 	 * @return boolean
 	 */
 	function uploadError($fileName) {
-		return (isset($_FILES[$fileName]) && $_FILES[$fileName]['error'] != 0);
+		return (isset($_FILES[$fileName]) && $_FILES[$fileName]['error'] != UPLOAD_ERR_OK);
+	}
+
+	/**
+	 * Get the error code of a file upload
+	 * @see http://php.net/manual/en/features.file-upload.errors.php
+	 * @param $fileName string the name of the file used in the POST form
+	 * @return integer
+	 */
+	function getUploadErrorCode($fileName) {
+		return $_FILES[$fileName]['error'];
+	}
+
+	/**
+	 * Get the filename of the first uploaded file in the $_FILES array. The
+	 * returned filename is the value used in the form that submitted the request.
+	 * @return string
+	 */
+	function getFirstUploadedPostName() {
+		return key($_FILES);
 	}
 
 	/**
@@ -92,7 +111,14 @@ class FileManager {
 	 */
 	function getUploadedFileType($fileName) {
 		if (isset($_FILES[$fileName])) {
-			$type = String::mime_content_type($_FILES[$fileName]['tmp_name']);
+			// The result of "explode" can't be passed directly to "array_pop" in PHP 7.
+			$exploded = explode('.',$_FILES[$fileName]['name']);
+
+			$type = PKPString::mime_content_type(
+				$_FILES[$fileName]['tmp_name'], // Location on server
+				array_pop($exploded) // Extension on client machine
+			);
+
 			if (!empty($type)) return $type;
 			return $_FILES[$fileName]['type'];
 		}
@@ -199,9 +225,10 @@ class FileManager {
 	 * @param $output boolean output the file's contents instead of returning a string
 	 * @return string|boolean
 	 */
-	function readFile($filePath, $output = false) {
+	function readFileFromPath($filePath, $output = false) {
 		if (is_readable($filePath)) {
 			$f = fopen($filePath, 'rb');
+			if (!$f) return false;
 			$data = '';
 			while (!feof($f)) {
 				$data .= fread($f, 4096);
@@ -212,15 +239,10 @@ class FileManager {
 			}
 			fclose($f);
 
-			if ($output) {
-				return true;
-			} else {
-				return $data;
-			}
-
-		} else {
-			return false;
+			if ($output) return true;
+			return $data;
 		}
+		return false;
 	}
 
 	/**
@@ -228,17 +250,17 @@ class FileManager {
 	 * Outputs HTTP headers and file content for download
 	 * @param $filePath string the location of the file to be sent
 	 * @param $mediaType string the MIME type of the file, optional
-	 * @param $inline print file as inline instead of attachment, optional
+	 * @param $inline boolean print file as inline instead of attachment, optional
+	 * @param $fileName string Optional filename to use on the client side
 	 * @return boolean
 	 */
-	function downloadFile($filePath, $mediaType = null, $inline = false, $fileName = null) {
+	function downloadByPath($filePath, $mediaType = null, $inline = false, $fileName = null) {
 		$result = null;
 		if (HookRegistry::call('FileManager::downloadFile', array(&$filePath, &$mediaType, &$inline, &$result, &$fileName))) return $result;
-		$postDownloadHookList = array('FileManager::downloadFileFinished', 'UsageEventPlugin::getUsageEvent');
 		if (is_readable($filePath)) {
 			if ($mediaType === null) {
 				// If the media type wasn't specified, try to detect.
-				$mediaType = String::mime_content_type($filePath);
+				$mediaType = PKPString::mime_content_type($filePath);
 				if (empty($mediaType)) $mediaType = 'application/octet-stream';
 			}
 			if ($fileName === null) {
@@ -246,39 +268,19 @@ class FileManager {
 				$fileName = basename($filePath);
 			}
 
-			// Free some memory
-			$postDownloadHooks = null;
-			$hooks = HookRegistry::getHooks();
-			foreach ($postDownloadHookList as $hookName) {
-				if (isset($hooks[$hookName])) {
-					$postDownloadHooks[$hookName] = $hooks[$hookName];
-				}
-			}
-			unset($hooks);
-			Registry::clear();
-
 			// Stream the file to the end user.
 			header("Content-Type: $mediaType");
 			header('Content-Length: ' . filesize($filePath));
+			header('Accept-Ranges: none');
 			header('Content-Disposition: ' . ($inline ? 'inline' : 'attachment') . "; filename=\"$fileName\"");
 			header('Cache-Control: private'); // Workarounds for IE weirdness
 			header('Pragma: public');
-
-			// Beware of converting to instance call
-			// https://github.com/pkp/pkp-lib/commit/82f4a36db406ecac3eb88875541a74123e455713#commitcomment-1459396
-			FileManager::readFile($filePath, true);
-
-			if ($postDownloadHooks) {
-				foreach ($postDownloadHooks as $hookName => $hooks) {
-					HookRegistry::setHooks($hookName, $hooks);
-				}
-			}
+			$this->readFileFromPath($filePath, true);
 			$returner = true;
 		} else {
 			$returner = false;
 		}
 		HookRegistry::call('FileManager::downloadFileFinished', array(&$returner));
-
 		return $returner;
 	}
 
@@ -287,7 +289,7 @@ class FileManager {
 	 * @param $filePath string the location of the file to be deleted
 	 * @return boolean returns true if successful
 	 */
-	function deleteFile($filePath) {
+	function deleteByPath($filePath) {
 		if ($this->fileExists($filePath)) {
 			$result = null;
 			if (HookRegistry::call('FileManager::deleteFile', array($filePath, &$result))) return $result;
@@ -351,7 +353,11 @@ class FileManager {
 	 */
 	function mkdirtree($dirPath, $perms = null) {
 		if (!file_exists($dirPath)) {
-			if ($this->mkdirtree(dirname($dirPath), $perms)) {
+			//Avoid infinite recursion when file_exists reports false for root directory
+			if ($dirPath == dirname($dirPath)) {
+				fatalError('There are no readable files in this directory tree. Are safe mode or open_basedir active?');
+				return false;
+			} else if ($this->mkdirtree(dirname($dirPath), $perms)) {
 				return $this->mkdir($dirPath, $perms);
 			} else {
 				return false;
@@ -424,6 +430,8 @@ class FileManager {
 				return '.pdf';
 			case 'application/word':
 				return '.doc';
+			case 'text/css':
+				return '.css';
 			case 'text/html':
 				return '.html';
 			case 'application/epub+zip':
@@ -453,6 +461,9 @@ class FileManager {
 			case 'image/x-ico':
 			case 'image/ico':
 				return '.ico';
+			case 'image/svg+xml':
+			case 'image/svg':
+				return '.svg';
 			case 'application/x-shockwave-flash':
 				return '.swf';
 			case 'video/x-flv':
@@ -496,10 +507,10 @@ class FileManager {
 	 * Truncate a filename to fit in the specified length.
 	 */
 	function truncateFileName($fileName, $length = 127) {
-		if (String::strlen($fileName) <= $length) return $fileName;
+		if (PKPString::strlen($fileName) <= $length) return $fileName;
 		$ext = $this->getExtension($fileName);
-		$truncated = String::substr($fileName, 0, $length - 1 - String::strlen($ext)) . '.' . $ext;
-		return String::substr($truncated, 0, $length);
+		$truncated = PKPString::substr($fileName, 0, $length - 1 - PKPString::strlen($ext)) . '.' . $ext;
+		return PKPString::substr($truncated, 0, $length);
 	}
 
 	/**
@@ -544,8 +555,73 @@ class FileManager {
 			$fileExtension = 'txt';
 		}
 
+		// consider .tar.gz extension
+		if (strtolower(substr($fileName, -7)) == '.tar.gz') {
+			$fileExtension = substr($fileName, -6);
+		}
+
 		return $fileExtension;
 	}
-}
 
-?>
+	/**
+	 * Decompress passed gziped file.
+	 * @param $filePath string
+	 * @param $errorMsg string
+	 * @return boolean|string
+	 */
+	function decompressFile($filePath, &$errorMsg) {
+		return $this->_executeGzip($filePath, true, $errorMsg);
+	}
+
+	/**
+	 * Compress passed file.
+	 * @param $filePath string The file to be compressed.
+	 * @param $errorMsg string
+	 * @return boolean|string
+	 */
+	function compressFile($filePath, &$errorMsg) {
+		return $this->_executeGzip($filePath, false, $errorMsg);
+	}
+
+
+	//
+	// Private helper methods.
+	//
+	/**
+	 * Execute gzip to compress or extract files.
+	 * @param $filePath string file to be compressed or uncompressed.
+	 * @param $decompress boolean optional Set true if the passed file
+	 * needs to be decompressed.
+	 * @param $errorMsg string
+	 * @return false|string The file path that was created with the operation
+	 * or false in case of fail.
+	 */
+	private function _executeGzip($filePath, $decompress = false, &$errorMsg) {
+		PKPLocale::requireComponents(LOCALE_COMPONENT_PKP_ADMIN);
+		$gzipPath = Config::getVar('cli', 'gzip');
+		if (!is_executable($gzipPath)) {
+			$errorMsg = __('admin.error.executingUtil', array('utilPath' => $gzipPath, 'utilVar' => 'gzip'));
+			return false;
+		}
+		$gzipCmd = escapeshellarg($gzipPath);
+		if ($decompress) $gzipCmd .= ' -d';
+		// Make sure any output message will mention the file path.
+		$output = array($filePath);
+		$returnValue = 0;
+		$gzipCmd .= ' ' . $filePath;
+		if (!Core::isWindows()) {
+			// Get the output, redirecting stderr to stdout.
+			$gzipCmd .= ' 2>&1';
+		}
+		exec($gzipCmd, $output, $returnValue);
+		if ($returnValue > 0) {
+			$errorMsg = __('admin.error.utilExecutionProblem', array('utilPath' => $gzipPath, 'output' => implode(PHP_EOL, $output)));
+			return false;
+		}
+		if ($decompress) {
+			return substr($filePath, 0, -3);
+		} else {
+			return $filePath . '.gz';
+		}
+	}
+}

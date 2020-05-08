@@ -3,9 +3,9 @@
 /**
  * @file classes/cache/GenericCache.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class GenericCache
  * @ingroup cache
@@ -47,7 +47,7 @@ class GenericCache {
 	/**
 	 * Instantiate a cache.
 	 */
-	function GenericCache($context, $cacheId, $fallback) {
+	function __construct($context, $cacheId, $fallback) {
 		$this->context = $context;
 		$this->cacheId = $cacheId;
 		$this->fallback = $fallback;
@@ -138,4 +138,4 @@ class GenericCache {
 	}
 }
 
-?>
+

@@ -3,9 +3,9 @@
 /**
  * @file controllers/modals/editorDecision/form/InitiateReviewForm.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class InitiateReviewForm
  * @ingroup controllers_modal_editorDecision_form
@@ -21,8 +21,8 @@ class InitiateReviewForm extends EditorDecisionForm {
 	 * Constructor.
 	 * @param $submission Submission
 	 */
-	function InitiateReviewForm($submission, $decision, $stageId, $template) {
-		parent::EditorDecisionForm($submission, $decision, $stageId, $template);
+	function __construct($submission, $decision, $stageId, $template) {
+		parent::__construct($submission, $decision, $stageId, $template);
 	}
 
 	/**
@@ -37,15 +37,19 @@ class InitiateReviewForm extends EditorDecisionForm {
 	// Implement protected template methods from Form
 	//
 	/**
-	 * @copydoc Form::execute()
+	 * Execute the form.
 	 */
-	function execute($args, $request) {
+	function execute(...$functionParams) {
+		parent::execute(...$functionParams);
+
+		$request = Application::get()->getRequest();
+
 		// Retrieve the submission.
 		$submission = $this->getSubmission();
 
 		// Record the decision.
 		import('classes.workflow.EditorDecisionActionsManager');
-		$actionLabels = EditorDecisionActionsManager::getActionLabels(array($this->_decision));
+		$actionLabels = (new EditorDecisionActionsManager())->getActionLabels($request->getContext(), $this->getStageId(), array($this->_decision));
 		import('lib.pkp.classes.submission.action.EditorAction');
 		$editorAction = new EditorAction();
 		$editorAction->recordDecision($request, $submission, $this->_decision, $actionLabels);
@@ -58,4 +62,4 @@ class InitiateReviewForm extends EditorDecisionForm {
 	}
 }
 
-?>
+

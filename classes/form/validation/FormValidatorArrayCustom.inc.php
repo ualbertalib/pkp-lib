@@ -3,9 +3,9 @@
 /**
  * @file classes/form/validation/FormValidatorArrayCustom.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class FormValidatorArrayCustom
  * @ingroup form_validation
@@ -47,8 +47,8 @@ class FormValidatorArrayCustom extends FormValidator {
 	 * @param $fields array all subfields for each item in the array, i.e. name[][foo]. If empty it is assumed that name[] is a data field
 	 * @param $isLocaleField boolean
 	 */
-	function FormValidatorArrayCustom(&$form, $field, $type, $message, $userFunction, $additionalArguments = array(), $complementReturn = false, $fields = array(), $isLocaleField = false) {
-		parent::FormValidator($form, $field, $type, $message);
+	function __construct(&$form, $field, $type, $message, $userFunction, $additionalArguments = array(), $complementReturn = false, $fields = array(), $isLocaleField = false) {
+		parent::__construct($form, $field, $type, $message);
 		$this->_fields = $fields;
 		$this->_errorFields = array();
 		$this->_isLocaleField = $isLocaleField;
@@ -162,4 +162,4 @@ class FormValidatorArrayCustom extends FormValidator {
 	}
 }
 
-?>
+

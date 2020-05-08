@@ -3,9 +3,9 @@
 /**
  * @file pages/user/PKPUserHandler.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPUserHandler
  * @ingroup pages_user
@@ -16,12 +16,6 @@
 import('classes.handler.Handler');
 
 class PKPUserHandler extends Handler {
-	/**
-	 * Constructor
-	 */
-	function PKPUserHandler() {
-		parent::Handler();
-	}
 
 	/**
 	 * Index page; redirect to profile
@@ -48,6 +42,11 @@ class PKPUserHandler extends Handler {
 			$session->setSessionVar('currentLocale', $setLocale);
 		}
 
+		$source = $request->getUserVar('source');
+		if (preg_match('#^/\w#', $source) === 1) {
+			$request->redirectUrl($source);
+		}
+
 		if(isset($_SERVER['HTTP_REFERER'])) {
 			$request->redirectUrl($_SERVER['HTTP_REFERER']);
 		}
@@ -59,7 +58,7 @@ class PKPUserHandler extends Handler {
 	 * Get interests for reviewer interests autocomplete.
 	 * @param $args array
 	 * @param $request PKPRequest
-	 * @return string Serialized JSON object
+	 * @return JSONMessage JSON object
 	 */
 	function getInterests($args, $request) {
 		// Get the input text used to filter on
@@ -71,27 +70,25 @@ class PKPUserHandler extends Handler {
 		$interests = $interestManager->getAllInterests($filter);
 
 		import('lib.pkp.classes.core.JSONMessage');
-		$json = new JSONMessage(true, $interests);
-		return $json->getString();
+		return new JSONMessage(true, $interests);
 	}
 
 	/**
 	 * Persist the status for a user's preference to see inline help.
 	 * @param $args array
 	 * @param $request PKPRequest
-	 * @return string Serialized JSON object
+	 * @return JSONMessage JSON object
 	 */
 	function toggleHelp($args, $request) {
 
 		$user = $request->getUser();
 		$user->setInlineHelp($user->getInlineHelp() ? 0 : 1);
 
-		$userDao = DAORegistry::getDAO('UserDAO');
+		$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 		$userDao->updateObject($user);
 
 		import('lib.pkp.classes.core.JSONMessage');
-		$json = new JSONMessage(true);
-		return $json->getString();
+		return new JSONMessage(true);
 	}
 
 	/**
@@ -111,11 +108,11 @@ class PKPUserHandler extends Handler {
 		}
 
 		$this->setupTemplate($request);
-		AppLocale::requireComponents(LOCALE_COMPONENT_PKP_USER);
+		AppLocale::requireComponents(LOCALE_COMPONENT_PKP_USER, LOCALE_COMPONENT_PKP_REVIEWER);
 		$templateMgr = TemplateManager::getManager($request);
 		$templateMgr->assign('message', $authorizationMessage);
-		return $templateMgr->display('common/message.tpl');
+		return $templateMgr->display('frontend/pages/message.tpl');
 	}
 }
 
-?>
+

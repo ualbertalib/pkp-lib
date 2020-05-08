@@ -3,9 +3,9 @@
 /**
  * @file classes/security/Role.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class Role
  * @ingroup security
@@ -17,10 +17,12 @@
 /** ID codes and paths for all default roles */
 define('ROLE_ID_MANAGER',		0x00000010);
 define('ROLE_ID_SITE_ADMIN',		0x00000001);
+define('ROLE_ID_SUB_EDITOR',		0x00000011);
 define('ROLE_ID_AUTHOR',		0x00010000);
 define('ROLE_ID_REVIEWER',		0x00001000);
 define('ROLE_ID_ASSISTANT',		0x00001001);
 define('ROLE_ID_READER',		0x00100000);
+define('ROLE_ID_SUBSCRIPTION_MANAGER',	0x00200000);
 
 class Role extends DataObject {
 	/**
@@ -28,8 +30,8 @@ class Role extends DataObject {
 	 * @param $roleId for this role.  Default to null for backwards
 	 * 	compatibility
 	 */
-	function Role($roleId = null) {
-		parent::DataObject();
+	function __construct($roleId = null) {
+		parent::__construct();
 		$this->setId($roleId);
 	}
 
@@ -53,5 +55,3 @@ class Role extends DataObject {
 		return $this->setId($roleId);
 	}
 }
-
-?>

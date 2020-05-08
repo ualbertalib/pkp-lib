@@ -4,9 +4,9 @@
 /**
  * @file js/controllers/SiteHandler.js
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SiteHandler
  * @ingroup js_controllers
@@ -42,17 +42,8 @@
 		this.bind('redirectRequested', this.redirectToUrl);
 		this.bind('notifyUser', this.fetchNotificationHandler_);
 		this.bind('updateHeader', this.updateHeaderHandler_);
-		this.bind('updateSidebar', this.updateSidebarHandler_);
 		this.bind('callWhenClickOutside', this.callWhenClickOutsideHandler_);
 		this.bind('mousedown', this.mouseDownHandler_);
-		this.bind('urlInDivLoaded', this.setMainMaxWidth_);
-
-		// Listen for grid initialized events so the inline help
-		// can be shown or hidden.
-		this.bind('gridInitialized', this.updateHelpDisplayHandler_);
-
-		// Listen for help toggle events.
-		this.bind('toggleInlineHelp', this.toggleInlineHelpHandler_);
 
 		// Bind the pageUnloadHandler_ method to the DOM so it is
 		// called.
@@ -62,28 +53,34 @@
 		// grids will not refresh correctly.
 		$.ajaxSetup({cache: false});
 
-		$('select.applyPlugin', $widgetWrapper).selectBox();
-
 		// Check if we have notifications to show.
 		if (options.hasSystemNotifications) {
 			this.trigger('notifyUser');
 		}
+
+		// Respond to `notify` events triggered on the global event bus
+		this.bindGlobal('notify', this.handleNotifyEvent);
 
 		// bind event handlers for form status change events.
 		this.bind('formChanged', this.callbackWrapper(
 				this.registerUnsavedFormElement_));
 		this.bind('unregisterChangedForm', this.callbackWrapper(
 				this.unregisterUnsavedFormElement_));
-		this.bind('modalCanceled', this.callbackWrapper(
-				this.unregisterUnsavedFormElement_));
 		this.bind('unregisterAllForms', this.callbackWrapper(
 				this.unregisterAllFormElements_));
 
-		// Add event handler to the modal open event that fixes stacking ui issues
-		this.bind('modalOpen', this.callbackWrapper(
-				this.stackModal_));
+		// React to a modal events
+		this.bind('pkpModalOpen', this.callbackWrapper(this.openModal_));
+		this.bind('pkpModalClose', this.callbackWrapper(this.closeModal_));
+
+		this.bind('pkpObserveScrolling', this.callbackWrapper(
+				this.registerScrollingObserver_));
+		this.bind('pkpRemoveScrollingObserver', this.callbackWrapper(
+				this.unregisterScrollingObserver_));
 
 		this.outsideClickChecks_ = {};
+
+		this.initializeTinyMCE();
 	};
 	$.pkp.classes.Helper.inherits(
 			$.pkp.controllers.SiteHandler, $.pkp.classes.Handler);
@@ -92,6 +89,14 @@
 	//
 	// Private properties
 	//
+	/**
+	 * Help context.
+	 * @private
+	 * @type {string?}
+	 */
+	$.pkp.controllers.SiteHandler.prototype.helpContext_ = null;
+
+
 	/**
 	 * Site handler options.
 	 * @private
@@ -122,6 +127,98 @@
 	// Public static methods.
 	//
 	/**
+	 * Initialize the tinyMCE plugin
+	 */
+	$.pkp.controllers.SiteHandler.prototype.initializeTinyMCE =
+			function() {
+
+		if (typeof tinyMCE !== 'undefined') {
+			tinyMCE.PluginManager.load('pkpTags', $.pkp.app.baseUrl +
+					'/plugins/generic/tinymce/plugins/pkpTags/plugin.js');
+			tinyMCE.PluginManager.load('pkpwordcount', $.pkp.app.baseUrl +
+					'/plugins/generic/tinymce/plugins/pkpWordcount/plugin.js');
+
+
+			var contentCSS = $.pkp.app.tinyMceContentCSS,
+					tinymceParams,
+					tinymceParamDefaults;
+			if ($.pkp.app.cdnEnabled) {
+				contentCSS = contentCSS + ', ' + $.pkp.app.tinyMceContentFont;
+			}
+
+			tinymceParamDefaults = {
+				width: '100%',
+				resize: 'both',
+				entity_encoding: 'raw',
+				plugins: 'paste,fullscreen,link,lists,code,' +
+						'image,-pkpTags,noneditable',
+				convert_urls: false,
+				forced_root_block: 'p',
+				paste_auto_cleanup_on_paste: true,
+				apply_source_formatting: false,
+				theme: 'modern',
+				toolbar: 'copy paste | bold italic underline | link unlink ' +
+						'code fullscreen | image | pkpTags',
+				richToolbar: 'copy paste | bold italic underline | bullist numlist | ' +
+						'superscript subscript | link unlink code fullscreen | ' +
+						'image | pkpTags',
+				statusbar: false,
+				content_css: contentCSS
+			};
+
+			// Support image uploads
+			if (typeof $.pkp.plugins.generic.tinymceplugin !== 'undefined' &&
+					typeof $.pkp.plugins.generic.tinymceplugin.uploadUrl !== 'undefined') {
+				tinymceParamDefaults.paste_data_images = true;
+				tinymceParamDefaults.relative_urls = false;
+				tinymceParamDefaults.remove_script_host = false;
+				// https://www.tiny.cloud/docs/general-configuration-guide/upload-images/
+				tinymceParamDefaults.images_upload_handler = function(
+						blobInfo, success, failure) {
+
+					/*global FormData: false */
+					var data = new FormData();
+					data.append('file', blobInfo.blob(), blobInfo.filename());
+					$.ajax({
+						method: 'POST',
+						url: $.pkp.plugins.generic.tinymceplugin.uploadUrl,
+						data: data,
+						processData: false,
+						contentType: false,
+						headers: {
+							'X-Csrf-Token': $.pkp.currentUser.csrfToken
+						},
+						success: function(r) {
+							success(r.url);
+						},
+						error: function(r) {
+							failure(r.responseJSON.errorMessage);
+						}
+					});
+				};
+			}
+
+			// Allow default params to be overridden
+			if (typeof $.pkp.plugins.generic.tinymceplugin !== 'undefined' &&
+					typeof $.pkp.plugins.generic.tinymceplugin.tinymceParams) {
+				tinymceParams = $.extend({}, tinymceParamDefaults,
+						$.pkp.plugins.generic.tinymceplugin.tinymceParams);
+			} else {
+				tinymceParams = $.extend({}, tinymceParamDefaults);
+			}
+
+			// Don't allow the following settings to be overridden
+			tinymceParams.init_instance_callback =
+					$.pkp.controllers.SiteHandler.prototype.triggerTinyMCEInitialized;
+			tinymceParams.setup =
+					$.pkp.controllers.SiteHandler.prototype.triggerTinyMCESetup;
+
+			tinyMCE.init(tinymceParams);
+		}
+	};
+
+
+	/**
 	 * Callback used by the tinyMCE plugin to trigger the tinyMCEInitialized
 	 * event in the DOM.
 	 * @param {Object} tinyMCEObject The tinyMCE object instance being
@@ -129,7 +226,9 @@
 	 */
 	$.pkp.controllers.SiteHandler.prototype.triggerTinyMCEInitialized =
 			function(tinyMCEObject) {
-		var $inputElement = $('#' + tinyMCEObject.editorId);
+
+		var $inputElement = $('#' +
+				$.pkp.classes.Helper.escapeJQuerySelector(tinyMCEObject.id));
 		$inputElement.trigger('tinyMCEInitialized', [tinyMCEObject]);
 	};
 
@@ -141,14 +240,28 @@
 	 */
 	$.pkp.controllers.SiteHandler.prototype.triggerTinyMCESetup =
 			function(tinyMCEObject) {
+		var target = $('#' +
+				$.pkp.classes.Helper.escapeJQuerySelector(tinyMCEObject.id)),
+				height;
 
 		// For read-only controls, set up TinyMCE read-only mode.
-		if ($('#' + tinyMCEObject.id).attr('readonly')) {
+		if (target.attr('readonly')) {
 			tinyMCEObject.settings.readonly = true;
 		}
 
+		if (target.attr('wordCount') && target.attr('wordCount') > 0) {
+			tinyMCEObject.settings.plugins =
+					tinyMCEObject.settings.plugins + ',pkpwordcount';
+			tinyMCEObject.settings.statusbar = true;
+		}
+
+		// Set height based on textarea rows
+		height = target.attr('rows') || 10; // default: 10
+		height *= 20; // 20 pixels per row
+		tinyMCEObject.settings.height = height.toString() + 'px';
+
 		// Add a fake HTML5 placeholder when the editor is intitialized
-		tinyMCEObject.onInit.add(function(tinyMCEObject) {
+		tinyMCEObject.on('init', function(tinyMCEObject) {
 			var $element = $('#' + tinyMCEObject.id),
 					placeholderText,
 					$placeholder,
@@ -161,11 +274,12 @@
 			}
 
 			// Create placeholder element
-			$placeholder = /** @type {jQueryObject} */ ($('<span></span>')
-					.html(/** @type {string} */ (placeholderText)));
+			$placeholder = $('<span></span>');
+			$placeholder.html(/** @type {string} */ (placeholderText));
 			$placeholder.addClass('mcePlaceholder');
 			$placeholder.attr('id', 'mcePlaceholder-' + tinyMCEObject.id);
-			if (tinyMCEObject.getContent().length) {
+
+			if (tinyMCEObject.target.getContent().length) {
 				$placeholder.hide();
 			}
 
@@ -176,19 +290,71 @@
 			$element.parent().append($placeholder);
 		});
 
-		tinyMCEObject.onActivate.add(function(tinyMCEObject) {
+		tinyMCEObject.on('activate', function(tinyMCEObject) {
 			// Hide the placeholder when the editor is activated
 			$('#mcePlaceholder-' + tinyMCEObject.id).hide();
 		});
 
-		tinyMCEObject.onDeactivate.add(function(tinyMCEObject) {
+		tinyMCEObject.on('deactivate', function(tinyMCEObject) {
 			// Show the placholder when the editor is deactivated
-			if (!tinyMCEObject.getContent().length) {
+			if (!tinyMCEObject.target.getContent().length) {
 				$('#mcePlaceholder-' + tinyMCEObject.id).show();
 			}
-
-			tinyMCEObject.dom.addClass(tinyMCEObject.dom.select('li'), 'show');
+			tinyMCEObject.target.dom.addClass(
+					tinyMCEObject.target.dom.select('li'), 'show');
 		});
+
+		tinyMCEObject.on('BeforeSetContent', function(e) {
+			var variablesParsed = $.pkp.classes.TinyMCEHelper.prototype.getVariableMap(
+					'#' + $.pkp.classes.Helper.escapeJQuerySelector(tinyMCEObject.id));
+
+			e.content = e.content.replace(
+					/\{\$([a-zA-Z]+)\}(?![^<]*>)/g, function(match, contents, offset, s) {
+						if (variablesParsed[contents] !== undefined) {
+							return $.pkp.classes.TinyMCEHelper.prototype.getVariableElement(
+									contents, variablesParsed[contents], '#' + tinyMCEObject.id)
+									.html();
+						}
+						return match;
+					});
+		});
+
+		// When the field is being saved, replace any tag placeholders
+		tinyMCEObject.on('SaveContent', function(e) {
+			var $content = $('<div>' + e.content + '</div>');
+
+			// Replace tag span elements with the raw tags
+			$content.find('.pkpTag').replaceWith(function() {
+				return '{$' + $(this).attr('data-symbolic') + '}';
+			});
+			e.content = $content.html();
+		});
+
+		// In fullscreen mode, also present the toolbar.
+		tinyMCEObject.on('FullscreenStateChanged init', function(e) {
+			var target = e.target, $container = $(target.editorContainer);
+			if (target.plugins.fullscreen) {
+				if (target.plugins.fullscreen.isFullscreen()) {
+					$container.find('.mce-toolbar[role=\'menubar\']').show();
+				} else {
+					$container.find('.mce-toolbar[role=\'menubar\']').hide();
+				}
+			}
+		});
+	};
+
+
+	/**
+	 * Get the current window dimensions.
+	 * @return {Object} The current window dimensions (height and width)
+	 * in pixels.
+	 */
+	$.pkp.controllers.SiteHandler.prototype.getWindowDimensions =
+			function() {
+		var dimensions = {'height': $(window).height(),
+			'width': $(window).width()};
+
+		return dimensions;
 	};
 
 
@@ -270,57 +436,6 @@
 	// Private methods.
 	//
 	/**
-	 * Respond to a user toggling the display of inline help.
-	 * @private
-	 * @param {HTMLElement} sourceElement The element that
-	 *  issued the event.
-	 * @param {Event} event The triggering event.
-	 * @return {boolean} Always returns false.
-	 */
-	$.pkp.controllers.SiteHandler.prototype.toggleInlineHelpHandler_ =
-			function(sourceElement, event) {
-
-		// persist the change on the server.
-		$.ajax({url: this.options_.toggleHelpUrl});
-
-		this.options_.inlineHelpState = this.options_.inlineHelpState ? 0 : 1;
-		this.updateHelpDisplayHandler_();
-
-		// Stop further event processing
-		return false;
-	};
-
-
-	/**
-	 * Callback to listen to grid initialization events. Used to
-	 * toggle the inline help display on them.
-	 * @private
-	 * @param {HTMLElement=} opt_sourceElement The element that issued the
-	 *  "gridInitialized" event.
-	 * @param {Event=} opt_event The "gridInitialized" event.
-	 */
-	$.pkp.controllers.SiteHandler.prototype.updateHelpDisplayHandler_ =
-			function(opt_sourceElement, opt_event) {
-		var $bodyElement, inlineHelpState;
-
-		$bodyElement = this.getHtmlElement();
-		inlineHelpState = this.options_.inlineHelpState;
-		if (inlineHelpState) {
-			// the .css() call removes the CSS applied to the legend intially,
-			// so it is not shown while the page is being loaded.
-			$bodyElement.find('.pkp_grid_description, #legend, .pkp_help').
-					css('visibility', 'visible').show();
-			$bodyElement.find('[id^="toggleHelp"]').html(
-					this.options_.toggleHelpOffText);
-		} else {
-			$bodyElement.find('.pkp_grid_description, #legend, .pkp_help').hide();
-			$bodyElement.find('[id^="toggleHelp"]').html(
-					this.options_.toggleHelpOnText);
-		}
-	};
-
-
-	/**
 	 * Fetch the notification data.
 	 * @private
 	 * @param {HTMLElement} sourceElement The element that issued the
@@ -359,21 +474,7 @@
 	 */
 	$.pkp.controllers.SiteHandler.prototype.updateHeaderHandler_ =
 			function(sourceElement, event) {
-		var handler = $.pkp.classes.Handler.getHandler($('#headerContainer'));
-		handler.reload();
-	};
-
-
-	/**
-	 * Fetch the sidebar (e.g. on sidebar configuration change).
-	 * @param {HTMLElement} sourceElement The element that issued the
-	 *  update sidebar event.
-	 * @param {Event} event The "fetch sidebar" event.
-	 * @private
-	 */
-	$.pkp.controllers.SiteHandler.prototype.updateSidebarHandler_ =
-			function(sourceElement, event) {
-		var handler = $.pkp.classes.Handler.getHandler($('#sidebarContainer'));
+		var handler = $.pkp.classes.Handler.getHandler($('#navigationUserWrapper'));
 		handler.reload();
 	};
 
@@ -388,14 +489,11 @@
 	 * @param {Event} event The "call when click outside" event.
 	 * @param {{
 	 *   container: jQueryObject,
-	 *   callback: Function,
-	 *   skipWhenVisibleModals: boolean
+	 *   callback: Function
 	 *   }} eventParams The event parameters.
 	 * - container: a jQuery element to be used to test if user click
 	 * outside of it or not.
 	 * - callback: a callback function in case test is true.
-	 * - skipWhenVisibleModals: boolean flag to tell whether skip the
-	 * callback when modals are visible or not.
 	 */
 	$.pkp.controllers.SiteHandler.prototype.callWhenClickOutsideHandler_ =
 			function(sourceElement, event, eventParams) {
@@ -404,12 +502,13 @@
 			return;
 		}
 
-		if (eventParams.callback === undefined) {
-			return;
-		}
-
 		var id = eventParams.container.attr('id');
-		this.outsideClickChecks_[id] = eventParams;
+
+		if (eventParams.clear) {
+			delete this.outsideClickChecks_[id];
+		} else if (eventParams.callback !== undefined) {
+			this.outsideClickChecks_[id] = eventParams;
+		}
 	};
 
 
@@ -442,7 +541,6 @@
 	 * option avoids it, use the callback.
 	 * @private
 	 * @param {{
-	 *   skipWhenVisibleModals: boolean,
 	 *   container: Object,
 	 *   callback: Function
 	 *   }} checkOptions Object with data to be used to
@@ -468,17 +566,6 @@
 		// container is hidden.
 		if ($container.is(':hidden')) {
 			return false;
-		}
-
-		// Check for the visible modals option.
-		if (checkOptions.skipWhenVisibleModals !==
-				undefined) {
-			if (checkOptions.skipWhenVisibleModals) {
-				if (this.getHtmlElement().find('div.ui-dialog').length > 0) {
-					// Found a modal, return.
-					return false;
-				}
-			}
 		}
 
 		// Do the click origin checking.
@@ -585,72 +672,88 @@
 
 
 	/**
-	 * Set the maximum width for the pkp_structure_main div.
-	 * This will prevent content with larger widths (like photos)
-	 * messing up with layout.
-	 * @private
-	 * @param {HTMLElement} sourceElement The element that
-	 *  issued the event.
-	 * @param {Event} event The triggering event.
-	 * @param {?string} data additional event data.
+	 * Display a floating notification message
+	 *
+	 * @param {Object} caller The object which triggered the event
+	 * @param {Object} settings The PNotify settings
 	 */
-	$.pkp.controllers.SiteHandler.prototype.setMainMaxWidth_ =
-			function(sourceElement, event, data) {
+	$.pkp.controllers.SiteHandler.prototype.handleNotifyEvent =
+			function(caller, settings) {
+		var pnotify = new PNotify(settings);
+	};
 
-		var $site = this.getHtmlElement(), structureContentWidth, leftSideBarWidth,
-				rightSideBarWidth, $mainDiv = $('.pkp_structure_main', $site),
-				mainExtraWidth, mainMaxWidth, lastTabOffset, tabsContainerOffset,
-				$lastTab, $allTabs = $mainDiv.find('.ui-tabs').tabs();
 
-		if (data == 'sidebarContainer') {
-			structureContentWidth = $('.pkp_structure_content', $site).width();
+	/**
+	 * Reacts to a modal being opened. Adds a class to the body representing
+	 * a modal open state.
+	 * @private
+	 * @param {HTMLElement} handledElement The modal that has been added
+	 * @param {HTMLElement} siteHandlerElement The html element
+	 * attached to this handler.
+	 * @param {HTMLElement} sourceElement The element wishes to
+	 * register.
+	 * @param {Event} event The formChanged event.
+	 */
+	$.pkp.controllers.SiteHandler.prototype.openModal_ =
+			function(handledElement, siteHandlerElement, sourceElement, event) {
+		this.getHtmlElement().addClass('modal_is_visible');
+	};
 
-			leftSideBarWidth = $('.pkp_structure_sidebar_left', $site).
-					outerWidth(true);
-			rightSideBarWidth = $('.pkp_structure_sidebar_right', $site).
-					outerWidth(true);
 
-			// Check for padding, margin or border.
-			mainExtraWidth = $mainDiv.outerWidth(true) - $mainDiv.width();
-			mainMaxWidth = structureContentWidth - (
-					leftSideBarWidth + rightSideBarWidth + mainExtraWidth);
+	/**
+	 * Reacts to a modal being closed. Removes a class from the body
+	 * representing a modal closed state, after checking if no other modals are
+	 * open.
+	 * @private
+	 * @param {HTMLElement} handledElement The modal that has been added
+	 * @param {HTMLElement} siteHandlerElement The html element
+	 * attached to this handler.
+	 * @param {HTMLElement} sourceElement The element wishes to
+	 * register.
+	 * @param {Event} event The formChanged event.
+	 */
+	$.pkp.controllers.SiteHandler.prototype.closeModal_ =
+			function(handledElement, siteHandlerElement, sourceElement, event) {
 
-			$mainDiv.css('max-width', mainMaxWidth);
-
-			if ($mainDiv.find('.stTabsInnerWrapper').length == 1) {
-				$mainDiv.find('.stTabsMainWrapper').width($mainDiv.outerWidth(true));
-				tabsContainerOffset = $mainDiv.find('.ui-tabs-nav').offset().left +
-						$mainDiv.find('.ui-tabs-nav').outerWidth(true);
-				$lastTab = $mainDiv.find('.ui-tabs-nav').find('li').last();
-				lastTabOffset = $lastTab.offset().left + $lastTab.outerWidth(true);
-				if (lastTabOffset <= tabsContainerOffset) {
-					$mainDiv.find('.stTabsMainWrapper').find('div').first().hide();
-				} else {
-					$mainDiv.find('.stTabsMainWrapper').find('div').first().show();
-				}
-			}
+		var $htmlElement = this.getHtmlElement();
+		if (!$htmlElement.find('.pkp_modal.is_visible').length) {
+			$htmlElement.removeClass('modal_is_visible');
 		}
 	};
 
 
 	/**
-	 * Fixes modal stacking overlay issue where stacked modal overlays don't
-	 * get layered directly below the modal
+	 * Register a function to observe the body scrolling event.
 	 * @private
+	 * @param {Object} siteHandler The site handler object.
 	 * @param {HTMLElement} siteHandlerElement The html element
 	 * attached to this handler.
-	 * @param {HTMLElement} sourceElement The element that
-	 *  issued the event.
-	 * @param {Event} event The triggering event.
-	 * @param {HTMLElement} handledElement The modal that is being added
+	 * @param {Object} event The pkpObserveScrolling event object.
+	 * @param {Function} observerFunction The observer function.
+	 * @return {boolean}
 	 */
-	$.pkp.controllers.SiteHandler.prototype.stackModal_ =
-			function(siteHandlerElement, sourceElement, event, handledElement) {
-		var $dialogElement = $(handledElement).parent(),
-				$dialogElementOverlay = $dialogElement.next('.ui-widget-overlay');
-
-		$dialogElementOverlay.css('z-index', $dialogElement.css('z-index') - 1);
+	$.pkp.controllers.SiteHandler.prototype.registerScrollingObserver_ =
+			function(siteHandler, siteHandlerElement, event, observerFunction) {
+		$(document).scroll(observerFunction);
+		return false;
 	};
 
-/** @param {jQuery} $ jQuery closure. */
+
+	/**
+	 * Unregister a function that was observing the body scrolling event.
+	 * @private
+	 * @param {Object} siteHandler The site handler object.
+	 * @param {HTMLElement} siteHandlerElement The html element
+	 * attached to this handler.
+	 * @param {Object} event The pkpRemoveScrollingObserver event object.
+	 * @param {Function} observerFunction The observer function.
+	 * @return {boolean}
+	 */
+	$.pkp.controllers.SiteHandler.prototype.unregisterScrollingObserver_ =
+			function(siteHandler, siteHandlerElement, event, observerFunction) {
+		var castObserverFunction = /** @type {function()} */ (observerFunction);
+		$(document).unbind('scroll', castObserverFunction);
+		return false;
+	};
+
 }(jQuery));

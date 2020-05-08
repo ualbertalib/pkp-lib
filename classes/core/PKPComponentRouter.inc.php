@@ -3,9 +3,9 @@
 /**
  * @file classes/core/PKPComponentRouter.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPComponentRouter
  * @ingroup core
@@ -21,7 +21,7 @@
  *       .../index.php/context1/context2/$$$call$$$/path/to/handler-class/operation-name?arg1=...&arg2=...
  *
  *  where "$$$call$$$" is a non-mutable literal string and "path/to" is
- *  by convention the directory path below the components folder leading to the
+ *  by convention the directory path below the "controllers" folder leading to the
  *  component. The next element ("handler-class" in this example) will be mapped to a
  *  component class file by "camelizing" the string to "HandlerClassHandler" and adding
  *  ".inc.php" to the end. The "operation-name" is transformed to "operationName"
@@ -78,12 +78,6 @@ class PKPComponentRouter extends PKPRouter {
 	/** @var callable the rpc service endpoint the request was routed to */
 	var $_rpcServiceEndpoint = false;
 
-	/**
-	 * Constructor
-	 */
-	function PKPComponentRouter() {
-		parent::PKPRouter();
-	}
 
 	/**
 	 * Determines whether this router can route the given request.
@@ -123,12 +117,12 @@ class PKPComponentRouter extends PKPRouter {
 			array_pop($rpcServiceEndpointParts);
 
 			// Construct the fully qualified component class name from the rest of it.
-			$handlerClassName = String::camelize(array_pop($rpcServiceEndpointParts), CAMEL_CASE_HEAD_UP).'Handler';
+			$handlerClassName = PKPString::camelize(array_pop($rpcServiceEndpointParts), CAMEL_CASE_HEAD_UP).'Handler';
 
 			// camelize remaining endpoint parts
 			$camelizedRpcServiceEndpointParts = array();
 			foreach ( $rpcServiceEndpointParts as $part) {
-				$camelizedRpcServiceEndpointParts[] = String::camelize($part, CAMEL_CASE_HEAD_DOWN);
+				$camelizedRpcServiceEndpointParts[] = PKPString::camelize($part, CAMEL_CASE_HEAD_DOWN);
 			}
 			$handlerPackage = implode('.', $camelizedRpcServiceEndpointParts);
 
@@ -159,7 +153,7 @@ class PKPComponentRouter extends PKPRouter {
 			}
 
 			// Pop off the operation part
-			$this->_op = String::camelize(array_pop($rpcServiceEndpointParts), CAMEL_CASE_HEAD_DOWN);
+			$this->_op = PKPString::camelize(array_pop($rpcServiceEndpointParts), CAMEL_CASE_HEAD_DOWN);
 		}
 
 		return $this->_op;
@@ -180,6 +174,10 @@ class PKPComponentRouter extends PKPRouter {
 			// time.
 			$this->_rpcServiceEndpoint = $nullVar = null;
 
+			// Retrieve requested component operation
+			$op = $this->getRequestedOp($request);
+			assert(!empty($op));
+
 			//
 			// Component Handler
 			//
@@ -189,7 +187,7 @@ class PKPComponentRouter extends PKPRouter {
 			$allowedPackages = null;
 
 			// Give plugins a chance to intervene
-			if (!HookRegistry::call('LoadComponentHandler', array(&$component))) {
+			if (!HookRegistry::call('LoadComponentHandler', array(&$component, &$op))) {
 
 				if (empty($component)) return $nullVar;
 
@@ -217,10 +215,6 @@ class PKPComponentRouter extends PKPRouter {
 				);
 			}
 
-			// Retrieve requested component operation
-			$op = $this->getRequestedOp($request);
-			assert(!empty($op));
-
 			// A handler at least needs to implement the
 			// following methods:
 			$requiredMethods = array(
@@ -229,6 +223,7 @@ class PKPComponentRouter extends PKPRouter {
 
 			$componentInstance =& instantiate($component, 'PKPHandler', $allowedPackages, $requiredMethods);
 			if (!is_object($componentInstance)) return $nullVar;
+			$this->setHandler($componentInstance);
 
 			//
 			// Callable service endpoint
@@ -267,7 +262,9 @@ class PKPComponentRouter extends PKPRouter {
 	 */
 	function url($request, $newContext = null, $component = null, $op = null, $path = null,
 			$params = null, $anchor = null, $escape = false) {
-		assert(is_null($path));
+		if (!is_null($path)) {
+			throw new Exception('Path must be null when calling PKPComponentRouter::url()');
+		}
 		$pathInfoEnabled = $request->isPathInfoEnabled();
 
 		//
@@ -294,15 +291,15 @@ class PKPComponentRouter extends PKPRouter {
 		$componentParts = explode('.', $component);
 		$componentName = array_pop($componentParts);
 		assert(substr($componentName, -7) == 'Handler');
-		$componentName = String::uncamelize(substr($componentName, 0, -7));
+		$componentName = PKPString::uncamelize(substr($componentName, 0, -7));
 
 		// uncamelize the component parts
 		$uncamelizedComponentParts = array();
 		foreach ($componentParts as $part) {
-			$uncamelizedComponentParts[] = String::uncamelize($part);
+			$uncamelizedComponentParts[] = PKPString::uncamelize($part);
 		}
 		array_push($uncamelizedComponentParts, $componentName);
-		$opName = String::uncamelize($op);
+		$opName = PKPString::uncamelize($op);
 
 		//
 		// Additional query parameters
@@ -370,8 +367,7 @@ class PKPComponentRouter extends PKPRouter {
 		}
 		// Return a JSON error message.
 		import('lib.pkp.classes.core.JSONMessage');
-		$json = new JSONMessage(false, $translatedAuthorizationMessage);
-		return $json->getString();
+		return new JSONMessage(false, $translatedAuthorizationMessage);
 	}
 
 
@@ -493,10 +489,10 @@ class PKPComponentRouter extends PKPRouter {
 			$rpcServiceEndpointParts[$key] = strtolower_codesafe($rpcServiceEndpointPart);
 
 			// We only allow letters, numbers and the hyphen.
-			if (!String::regexp_match('/^[a-z0-9-]*$/', $rpcServiceEndpointPart)) return null;
+			if (!PKPString::regexp_match('/^[a-z0-9-]*$/', $rpcServiceEndpointPart)) return null;
 		}
 
 		return $rpcServiceEndpointParts;
 	}
 }
-?>
+

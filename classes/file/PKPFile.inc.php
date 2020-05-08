@@ -3,9 +3,9 @@
 /**
  * @file classes/file/PKPFile.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPFile
  * @ingroup file
@@ -14,35 +14,10 @@
  */
 
 class PKPFile extends DataObject {
-	/**
-	 * Constructor.
-	 */
-	function PKPFile() {
-		parent::DataObject();
-	}
-
 
 	//
 	// Get/set methods
 	//
-	/**
-	 * Get ID of file.
-	 * @return int
-	 */
-	function getFileId() {
-		if (Config::getVar('debug', 'deprecation_warnings')) trigger_error('Deprecated function.');
-		return $this->getId();
-	}
-
-	/**
-	 * Set ID of file.
-	 * @param $fileId int
-	 */
-	function setFileId($fileId) {
-		if (Config::getVar('debug', 'deprecation_warnings')) trigger_error('Deprecated function.');
-		return $this->setId($fileId);
-	}
-
 	/**
 	 * Get server-side file name of the file.
 	 * @param return string
@@ -56,7 +31,7 @@ class PKPFile extends DataObject {
 	 * @param $fileName string
 	 */
 	function setServerFileName($fileName) {
-		return $this->setData('fileName', $fileName);
+		$this->setData('fileName', $fileName);
 	}
 
 	/**
@@ -72,12 +47,12 @@ class PKPFile extends DataObject {
 	 * @param $originalFileName string
 	 */
 	function setOriginalFileName($originalFileName) {
-		return $this->setData('originalFileName', $originalFileName);
+		$this->setData('originalFileName', $originalFileName);
 	}
 
 	/**
 	 * Get type of the file.
-	 * @ return string
+	 * @return string
 	 */
 	function getFileType() {
 		return $this->getData('filetype');
@@ -88,7 +63,7 @@ class PKPFile extends DataObject {
 	 * @param $type string
 	 */
 	function setFileType($fileType) {
-		return $this->setData('filetype', $fileType);
+		$this->setData('filetype', $fileType);
 	}
 
 	/**
@@ -149,4 +124,4 @@ class PKPFile extends DataObject {
 	}
 }
 
-?>
+

@@ -2,9 +2,9 @@
 /**
  * @file controllers/grid/plugins/PluginGalleryGridCellProvider.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PluginGalleryGridCellProvider
  * @ingroup controllers_grid_plugins
@@ -16,12 +16,6 @@ import('lib.pkp.classes.controllers.grid.GridCellProvider');
 import('lib.pkp.classes.linkAction.request.AjaxModal');
 
 class PluginGalleryGridCellProvider extends GridCellProvider {
-	/**
-	 * Constructor
-	 */
-	function PluginGalleryGridCellProvider() {
-		parent::GridCellProvider();
-	}
 
 	/**
 	 * Extracts variables for a given column from a data element
@@ -75,25 +69,24 @@ class PluginGalleryGridCellProvider extends GridCellProvider {
 	 * @return array an array of LinkAction instances
 	 */
 	function getCellActions($request, $row, $column, $position = GRID_ACTION_POSITION_DEFAULT) {
-		$columnId = $column->getId();
 		$element = $row->getData();
-
-		switch ($columnId) {
+		switch ($column->getId()) {
 			case 'name':
 				$router = $request->getRouter();
 				return array(new LinkAction(
 					'moreInformation',
 					new AjaxModal(
 						$router->url($request, null, null, 'viewPlugin', null, array('rowId' => $row->getId()+1)),
-						$element->getLocalizedName(),
+						htmlspecialchars($element->getLocalizedName()),
 						'modal_information',
 						true
 					),
-				$element->getLocalizedName(),
-				'details'));
+					htmlspecialchars($element->getLocalizedName()),
+					'details'
+				));
 		}
-		return array();
+		return parent::getCellActions($request, $row, $column, $position);
 	}
 }
 
-?>
+

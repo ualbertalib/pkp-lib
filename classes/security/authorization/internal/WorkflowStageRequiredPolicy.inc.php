@@ -2,9 +2,9 @@
 /**
  * @file classes/security/authorization/internal/WorkflowStageRequiredPolicy.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class WorkflowStageRequiredPolicy
  * @ingroup security_authorization_internal
@@ -23,8 +23,8 @@ class WorkflowStageRequiredPolicy extends AuthorizationPolicy {
 	 * Constructor
 	 * @param $stageId integer One of the WORKFLOW_STAGE_ID_* constants.
 	 */
-	function WorkflowStageRequiredPolicy($stageId) {
-		parent::AuthorizationPolicy();
+	function __construct($stageId) {
+		parent::__construct('user.authorization.workflowStageRequired');
 		$this->_stageId = $stageId;
 	}
 
@@ -46,4 +46,4 @@ class WorkflowStageRequiredPolicy extends AuthorizationPolicy {
 	}
 }
 
-?>
+

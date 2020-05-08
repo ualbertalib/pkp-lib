@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/settings/library/LibraryFileAdminGridHandler.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class LibraryFileAdminGridHandler
  * @ingroup controllers_grid_settings_library
@@ -21,9 +21,9 @@ class LibraryFileAdminGridHandler extends LibraryFileGridHandler {
 	/**
 	 * Constructor
 	 */
-	function LibraryFileAdminGridHandler() {
+	function __construct() {
 
-		parent::LibraryFileGridHandler(new LibraryFileAdminGridDataProvider(true));
+		parent::__construct(new LibraryFileAdminGridDataProvider(true));
 		$this->addRoleAssignment(
 			array(ROLE_ID_MANAGER),
 			array(
@@ -40,15 +40,13 @@ class LibraryFileAdminGridHandler extends LibraryFileGridHandler {
 
 	/*
 	 * Configure the grid
-	 * @param $request PKPRequest
+	 * @see LibraryGridHandler::initialize
 	 */
-	function initialize($request) {
+	function initialize($request, $args = null) {
 		// determine if this grid is read only.
 		$this->setCanEdit((boolean) $request->getUserVar('canEdit'));
 
-		// Set instructions
-		$this->setInstructions('manager.publication.libraryDescription');
-		parent::initialize($request);
+		parent::initialize($request, $args);
 	}
 
 	/**
@@ -73,4 +71,4 @@ class LibraryFileAdminGridHandler extends LibraryFileGridHandler {
 	}
 }
 
-?>
+

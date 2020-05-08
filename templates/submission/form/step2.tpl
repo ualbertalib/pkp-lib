@@ -1,9 +1,9 @@
 {**
  * templates/submission/form/step2.tpl
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * Step 2 of author submission.
  *}
@@ -14,27 +14,12 @@
 	{rdelim});
 </script>
 <form class="pkp_form" id="submitStep2Form" method="post" action="{url op="saveStep" path=$submitStep}" enctype="multipart/form-data">
+	{csrf}
 	<input type="hidden" name="submissionId" value="{$submissionId|escape}" />
 	{include file="controllers/notification/inPlaceNotification.tpl" notificationId="submitStep2FormNotification"}
 
-	<!-- Submission upload grid -->
-
-	{if $canExpedite}
-		<p>{translate key="submission.submit.uploadExpeditedFiles"}</p>
-	{/if}
-
-	{url|assign:submissionFilesGridUrl router=$smarty.const.ROUTE_COMPONENT component="grid.files.submission.SubmissionWizardFilesGridHandler" op="fetchGrid" submissionId=$submissionId escape=false}
+	{capture assign=submissionFilesGridUrl}{url router=$smarty.const.ROUTE_COMPONENT component="grid.files.submission.SubmissionWizardFilesGridHandler" op="fetchGrid" submissionId=$submissionId escape=false}{/capture}
 	{load_url_in_div id="submissionFilesGridDiv" url=$submissionFilesGridUrl}
-
-	{if $currentContext->getSetting('supportPhone')}
-		{assign var="howToKeyName" value="submission.submit.howToSubmit"}
-	{else}
-		{assign var="howToKeyName" value="submission.submit.howToSubmitNoPhone"}
-	{/if}
-
-	<p>{translate key=$howToKeyName supportName=$currentContext->getSetting('supportName') supportEmail=$currentContext->getSetting('supportEmail') supportPhone=$currentContext->getSetting('supportPhone')}</p>
-
-	<div class="separator"></div>
 
 	{fbvFormButtons id="step2Buttons" submitText="common.saveAndContinue"}
 </form>

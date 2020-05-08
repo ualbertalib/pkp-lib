@@ -2,9 +2,9 @@
 /**
  * @file classes/linkAction/request/PostAndRedirectAction.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PostAndRedirectAction
  * @ingroup linkAction_request
@@ -26,8 +26,8 @@ class PostAndRedirectAction extends RedirectAction {
 	 * @param $postUrl string The target URL to post data.
 	 * @param $redirectUrl string The target URL to redirect.
 	 */
-	function PostAndRedirectAction($postUrl, $redirectUrl) {
-		parent::RedirectAction($redirectUrl);
+	function __construct($postUrl, $redirectUrl) {
+		parent::__construct($redirectUrl);
 		$this->_postUrl = $postUrl;
 	}
 
@@ -65,4 +65,4 @@ class PostAndRedirectAction extends RedirectAction {
 	}
 }
 
-?>
+

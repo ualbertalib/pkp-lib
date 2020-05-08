@@ -2,9 +2,9 @@
 /**
  * @file controllers/grid/files/fileList/linkAction/SelectReviewFilesLinkAction.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SelectReviewFilesLinkAction
  * @ingroup controllers_grid_files_fileList_linkAction
@@ -25,12 +25,12 @@ class SelectReviewFilesLinkAction extends SelectFilesLinkAction {
 	 * @param $actionLabel string The localized label of the link action.
 	 * @param $modalTitle string the (optional) title to be used for the modal.
 	 */
-	function SelectReviewFilesLinkAction($request, $reviewRound, $actionLabel, $modalTitle = null) {
+	function __construct($request, $reviewRound, $actionLabel, $modalTitle = null) {
 		$actionArgs = array('submissionId' => $reviewRound->getSubmissionId(),
 				'stageId' => $reviewRound->getStageId(), 'reviewRoundId' => $reviewRound->getId());
 
-		parent::SelectFilesLinkAction($request, $actionArgs, $actionLabel, $modalTitle);
+		parent::__construct($request, $actionArgs, $actionLabel, $modalTitle);
 	}
 }
 
-?>
+

@@ -4,9 +4,9 @@
 <!--
   * xml/schema/metrics.xml
   *
-  * Copyright (c) 2014 Simon Fraser University Library
-  * Copyright (c) 2000-2014 John Willinsky
-  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+  * Copyright (c) 2014-2020 Simon Fraser University
+  * Copyright (c) 2000-2020 John Willinsky
+  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
   *
   * Metrics schema in XML.
   -->
@@ -44,7 +44,7 @@
 		<field name="metric_type" type="C2" size="255">
 			<NOTNULL />
 		</field>
-		<field name="metric" type="I2">
+		<field name="metric" type="I4">
 			<NOTNULL />
 		</field>
 
@@ -61,6 +61,11 @@
 			<col>submission_id</col>
 			<col>assoc_type</col>
 		</index>
-		<!-- TODO: more indexes, depending on use cases. -->
+		<index name="metrics_metric_type_submission_id_assoc">
+			<col>metric_type</col>
+			<col>context_id</col>
+			<col>assoc_type</col>
+			<col>assoc_id</col>
+		</index>
 	</table>
 </schema>

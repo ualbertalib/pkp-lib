@@ -3,9 +3,9 @@
 /**
  * @file classes/search/SubmissionSearch.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubmissionSearch
  * @ingroup search
@@ -32,11 +32,11 @@ define('SUBMISSION_SEARCH_DEFAULT_RESULT_LIMIT', 20);
 
 import('lib.pkp.classes.search.SubmissionSearchIndex');
 
-class SubmissionSearch {
+abstract class SubmissionSearch {
 	/**
 	 * Constructor
 	 */
-	function SubmissionSearch() {
+	function __construct() {
 	}
 
 	/**
@@ -46,7 +46,7 @@ class SubmissionSearch {
 	 * @return array of the form ('+' => <required>, '' => <optional>, '-' => excluded)
 	 */
 	function _parseQuery($query) {
-		$count = preg_match_all('/(\+|\-|)("[^"]+"|\(|\)|[^\s\)]+)/', $query, $matches);
+		$count = PKPString::regexp_match_all('/(\+|\-|)("[^"]+"|\(|\)|[^\s\)]+)/', $query, $matches);
 		$pos = 0;
 		return $this->_parseQueryInternal($matches[1], $matches[2], $pos, $count);
 	}
@@ -59,15 +59,15 @@ class SubmissionSearch {
 		$return = array('+' => array(), '' => array(), '-' => array());
 		$postBool = $preBool = '';
 
-		$submissionSearchIndex = new SubmissionSearchIndex();
+		$submissionSearchIndex = Application::getSubmissionSearchIndex();
 
-		$notOperator = String::strtolower(__('search.operator.not'));
-		$andOperator = String::strtolower(__('search.operator.and'));
-		$orOperator = String::strtolower(__('search.operator.or'));
+		$notOperator = PKPString::strtolower(__('search.operator.not'));
+		$andOperator = PKPString::strtolower(__('search.operator.and'));
+		$orOperator = PKPString::strtolower(__('search.operator.or'));
 		while ($pos < $total) {
 			if (!empty($signTokens[$pos])) $sign = $signTokens[$pos];
 			else if (empty($sign)) $sign = '+';
-			$token = String::strtolower($tokens[$pos++]);
+			$token = PKPString::strtolower($tokens[$pos++]);
 			switch ($token) {
 				case $notOperator:
 					$sign = '-';
@@ -79,7 +79,7 @@ class SubmissionSearch {
 				default:
 					$postBool = '';
 					if ($pos < $total) {
-						$peek = String::strtolower($tokens[$pos]);
+						$peek = PKPString::strtolower($tokens[$pos]);
 						if ($peek == $orOperator) {
 							$postBool = 'or';
 							$pos++;
@@ -226,7 +226,7 @@ class SubmissionSearch {
 	 * @param $rangeInfo Information on the range of results to return
 	 * @param $exclude array An array of article IDs to exclude from the result.
 	 * @return VirtualArrayIterator An iterator with one entry per retrieved
-	 *  article containing the article, published article, issue, context, etc.
+	 *  article containing the article, published submission, issue, context, etc.
 	 */
 	function retrieveResults($request, $context, $keywords, &$error, $publishedFrom = null, $publishedTo = null, $rangeInfo = null, $exclude = array()) {
 		// Pagination
@@ -243,14 +243,14 @@ class SubmissionSearch {
 
 		// Check whether a search plug-in jumps in to provide ranked search results.
 		$totalResults = null;
-		$results = HookRegistry::call(
+		$hookResult = HookRegistry::call(
 			'SubmissionSearch::retrieveResults',
-			array(&$context, &$keywords, $publishedFrom, $publishedTo, $orderBy, $orderDir, $exclude, $page, $itemsPerPage, &$totalResults, &$error)
+			array(&$context, &$keywords, $publishedFrom, $publishedTo, $orderBy, $orderDir, $exclude, $page, $itemsPerPage, &$totalResults, &$error, &$results)
 		);
 
 		// If no search plug-in is activated then fall back to the
 		// default database search implementation.
-		if ($results === false) {
+		if ($hookResult === false) {
 			// Parse the query.
 			foreach($keywords as $searchType => $query) {
 				$keywords[$searchType] = $this->_parseQuery($query);
@@ -288,7 +288,7 @@ class SubmissionSearch {
 
 		// Take the range of results and retrieve the Article, Journal,
 		// and associated objects.
-		$results = $this->formatResults($results);
+		$results = $this->formatResults($results, $request->getUser());
 
 		// Return the appropriate iterator.
 		import('lib.pkp.classes.core.VirtualArrayIterator');
@@ -343,46 +343,37 @@ class SubmissionSearch {
 	 * Note that this function is also called externally to fetch
 	 * results for the title index, and possibly elsewhere.
 	 *
+	 * @param $results array
+	 * @param $user User optional (if availability information is desired)
 	 * @return array
 	 */
-	static function formatResults(&$results) {
-		assert(false);
-	}
+	abstract function formatResults($results, $user = null);
 
 	/**
 	 * Return the available options for result set ordering.
 	 * @param $request Request
 	 * @return array
 	 */
-	function getResultSetOrderingOptions($request) {
-		assert(false);
-	}
+	abstract function getResultSetOrderingOptions($request);
 
 	/**
 	 * See implementation of retrieveResults for a description of this
 	 * function.
 	 */
-	protected function &getSparseArray(&$unorderedResults, $orderBy, $orderDir, $exclude) {
-		assert(false);
-	}
+	abstract protected function getSparseArray($unorderedResults, $orderBy, $orderDir, $exclude);
 
 	/**
 	 * Return the default order direction.
 	 * @param $orderBy string
 	 * @return string
 	 */
-	protected function getDefaultOrderDir($orderBy) {
-		assert(false);
-	}
+	abstract protected function getDefaultOrderDir($orderBy);
 
 	/**
 	 * Return the search DAO
 	 * @return DAO
 	 */
-	protected function getSearchDao() {
-		assert(false);
-	}
-
+	abstract protected function getSearchDao();
 }
 
-?>
+

@@ -3,9 +3,9 @@
 /**
  * @file tests/classes/core/DispatcherTest.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class DispatcherTest
  * @ingroup tests_classes_core
@@ -31,24 +31,22 @@ class DispatcherTest extends PKPTestCase {
 		$request;
 
 	/**
-	 * @see PKPTestCase::getMockedRegistryKeys()
+	 * @copydoc PKPTestCase::getMockedRegistryKeys()
 	 */
 	protected function getMockedRegistryKeys() {
 		return array('application', 'dispatcher');
 	}
 
 	/**
-	 * @see PHPUnit_Framework_TestCase::setUp()
+	 * @see PKPTestCase::setUp()
 	 */
-	protected function setUp() {
+	protected function setUp() : void {
 		parent::setUp();
+
 		// Mock application object without calling its constructor.
-		$mockApplication =
-				$this->getMock('Application', array('getContextDepth', 'getContextList'),
-				array(), '', false);
-		Registry::set('application', $mockApplication);
-		$nullVar = null;
-		Registry::set('dispatcher', $nullVar);
+		$mockApplication = $this->getMockBuilder(Application::class)
+			->setMethods(array('getContextDepth', 'getContextList'))
+			->getMock();
 
 		// Set up the getContextDepth() method
 		$mockApplication->expects($this->any())
@@ -67,9 +65,10 @@ class DispatcherTest extends PKPTestCase {
 	}
 
 	/**
-	 * @covers Dispatcher::testUrl
+	 * @covers Dispatcher::url
 	 */
 	public function testUrl() {
+		if (Config::getVar('general', 'disable_path_info')) $this->markTestSkipped();
 		$baseUrl = $this->request->getBaseUrl();
 
 		$url = $this->dispatcher->url($this->request, ROUTE_PAGE, array('context1', 'context2'), 'somepage', 'someop');
@@ -80,4 +79,4 @@ class DispatcherTest extends PKPTestCase {
 	}
 }
 
-?>
+

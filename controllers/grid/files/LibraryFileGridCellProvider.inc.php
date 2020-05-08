@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/files/LibraryFileGridCellProvider.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class LibraryFileGridCellProvider
  * @ingroup controllers_grid_settings_library
@@ -16,12 +16,6 @@
 import('lib.pkp.classes.controllers.grid.GridCellProvider');
 
 class LibraryFileGridCellProvider extends GridCellProvider {
-	/**
-	 * Constructor
-	 */
-	function LibraryFileGridCellProvider() {
-		parent::GridCellProvider();
-	}
 
 	/**
 	 * Extracts variables for a given column from a data element
@@ -48,23 +42,17 @@ class LibraryFileGridCellProvider extends GridCellProvider {
 	 * @return array an array of LinkAction instances
 	 */
 	function getCellActions($request, $row, $column, $position = GRID_ACTION_POSITION_DEFAULT) {
-
-		$columnId = $column->getId();
-		$element = $row->getData();
-
-		$cellActions = array();
-
-		switch ($columnId) {
+		switch ($column->getId()) {
 			case 'files':
+				$element = $row->getData();
 				assert(is_a($element, 'LibraryFile'));
 				// Create the cell action to download a file.
 				import('lib.pkp.controllers.api.file.linkAction.DownloadLibraryFileLinkAction');
-				$cellActions[] = new DownloadLibraryFileLinkAction($request, $element);
+				return array(new DownloadLibraryFileLinkAction($request, $element));
 		}
-
-		return $cellActions;
+		return parent::getCellActions($request, $row, $column, $position);
 	}
 }
 
 
-?>
+

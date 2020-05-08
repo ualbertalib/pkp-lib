@@ -1,9 +1,9 @@
 {**
- * controllers/grid/settings/user/form/userRoleForm.tpl
+ * templates/controllers/grid/settings/user/form/userRoleForm.tpl
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * Form for managing roles for a newly created user.
  *}
@@ -14,6 +14,7 @@
 	{rdelim});
 </script>
 <form class="pkp_form" id="userRoleForm" method="post" action="{url router=$smarty.const.ROUTE_COMPONENT component="grid.settings.user.UserGridHandler" op="updateUserRoles"}">
+	{csrf}
 
 	{include file="controllers/notification/inPlaceNotification.tpl" notificationId="userRoleFormNotification"}
 
@@ -21,9 +22,18 @@
 
 		<input type="hidden" id="userId" name="userId" value="{$userId|escape}" />
 
-		<div id="userRolesContainer" class="full left">
-			{url|assign:userRolesUrl router=$smarty.const.ROUTE_COMPONENT component="listbuilder.users.UserUserGroupListbuilderHandler" op="fetch" userId=$userId title="grid.user.addRoles" escape=false}
-			{load_url_in_div id="userRolesContainer" url=$userRolesUrl}
-		</div>
+		{fbvFormSection}
+			{assign var="uuid" value=""|uniqid|escape}
+			<div id="userGroups-{$uuid}">
+					<list-panel
+						v-bind="components.selectRole"
+						@set="set"
+					/>
+			</div>
+				<script type="text/javascript">
+					pkp.registry.init('userGroups-{$uuid}', 'Container', {$selectRoleListData|json_encode});
+				</script>
+		{/fbvFormSection}
+
 		{fbvFormButtons submitText="common.save"}
 </form>

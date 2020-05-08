@@ -3,9 +3,9 @@
 /**
  * @file plugins/importexport/native/filter/PKPAuthorNativeXmlFilter.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPAuthorNativeXmlFilter
  * @ingroup plugins_importexport_native
@@ -20,9 +20,9 @@ class PKPAuthorNativeXmlFilter extends NativeExportFilter {
 	 * Constructor
 	 * @param $filterGroup FilterGroup
 	 */
-	function PKPAuthorNativeXmlFilter($filterGroup) {
+	function __construct($filterGroup) {
 		$this->setDisplayName('Native XML author export');
-		parent::NativeExportFilter($filterGroup);
+		parent::__construct($filterGroup);
 	}
 
 
@@ -48,6 +48,8 @@ class PKPAuthorNativeXmlFilter extends NativeExportFilter {
 	function &process(&$authors) {
 		// Create the XML document
 		$doc = new DOMDocument('1.0');
+		$doc->preserveWhiteSpace = false;
+		$doc->formatOutput = true;
 		$deployment = $this->getDeployment();
 
 		// Multiple authors; wrap in a <authors> element
@@ -77,24 +79,28 @@ class PKPAuthorNativeXmlFilter extends NativeExportFilter {
 
 		// Create the author node
 		$authorNode = $doc->createElementNS($deployment->getNamespace(), 'author');
+
 		if ($author->getPrimaryContact()) $authorNode->setAttribute('primary_contact', 'true');
 		if ($author->getIncludeInBrowse()) $authorNode->setAttribute('include_in_browse', 'true');
 
-		$userGroupDao = DAORegistry::getDAO('UserGroupDAO');
+		$userGroupDao = DAORegistry::getDAO('UserGroupDAO'); /* @var $userGroupDao UserGroupDAO */
 		$userGroup = $userGroupDao->getById($author->getUserGroupId());
-		assert($userGroup);
+		assert(isset($userGroup));
 		$authorNode->setAttribute('user_group_ref', $userGroup->getName($context->getPrimaryLocale()));
+		$authorNode->setAttribute('seq', $author->getSequence());
+
+		$authorNode->setAttribute('id', $author->getId());
 
 		// Add metadata
-		$authorNode->appendChild($doc->createElementNS($deployment->getNamespace(), 'firstname', $author->getFirstName()));
-		$this->createOptionalNode($doc, $authorNode, 'middlename', $author->getMiddleName());
-		$authorNode->appendChild($doc->createElementNS($deployment->getNamespace(), 'lastname', $author->getLastName()));
+		$this->createLocalizedNodes($doc, $authorNode, 'givenname', $author->getGivenName(null));
+		$this->createLocalizedNodes($doc, $authorNode, 'familyname', $author->getFamilyName(null));
 
 		$this->createLocalizedNodes($doc, $authorNode, 'affiliation', $author->getAffiliation(null));
 
 		$this->createOptionalNode($doc, $authorNode, 'country', $author->getCountry());
-		$authorNode->appendChild($doc->createElementNS($deployment->getNamespace(), 'email', $author->getEmail()));
+		$authorNode->appendChild($doc->createElementNS($deployment->getNamespace(), 'email', htmlspecialchars($author->getEmail(), ENT_COMPAT, 'UTF-8')));
 		$this->createOptionalNode($doc, $authorNode, 'url', $author->getUrl());
+		$this->createOptionalNode($doc, $authorNode, 'orcid', $author->getOrcid());
 
 		$this->createLocalizedNodes($doc, $authorNode, 'biography', $author->getBiography(null));
 
@@ -102,4 +108,4 @@ class PKPAuthorNativeXmlFilter extends NativeExportFilter {
 	}
 }
 
-?>
+

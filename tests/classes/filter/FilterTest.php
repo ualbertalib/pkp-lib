@@ -3,9 +3,9 @@
 /**
  * @file tests/classes/filter/FilterTest.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class FilterTest
  * @ingroup tests_classes_filter
@@ -31,8 +31,8 @@ class FilterTest extends PKPTestCase {
 		self::assertEquals('Mock_Filter_', substr($mockFilter->getDisplayName(), 0, 12));
 		$mockFilter->setDisplayName('Some other display name');
 		self::assertEquals('Some other display name', $mockFilter->getDisplayName());
-		$mockFilter->setSeq(5);
-		self::assertEquals(5, $mockFilter->getSeq());
+		$mockFilter->setSequence(5);
+		self::assertEquals(5, $mockFilter->getSequence());
 
 		// Test errors
 		$mockFilter->addError('some error message');
@@ -95,11 +95,11 @@ class FilterTest extends PKPTestCase {
 
 	/**
 	 * @covers Filter
-	 * @expectedException PHPUnit_Framework_Error
 	 */
 	public function testUnsupportedEnvironment() {
 		$mockFilter = $this->getFilterMock();
 		$mockFilter->setData('phpVersionMin', '20.0.0');
+		$this->expectError();
 		$testOutput = $mockFilter->execute($testInput);
 	}
 
@@ -134,8 +134,10 @@ class FilterTest extends PKPTestCase {
 	 */
 	private function getFilterMock($outputType = 'class::lib.pkp.tests.classes.filter.TestClass2') {
 		// Mock the abstract filter class
-		$constructorArgs = array('class::lib.pkp.tests.classes.filter.TestClass1', $outputType);
-		$mockFilter = $this->getMock('Filter', array('process'), $constructorArgs);
+		$mockFilter = $this->getMockBuilder(Filter::class)
+			->setMethods(array('process'))
+			->setConstructorArgs(array('class::lib.pkp.tests.classes.filter.TestClass1', $outputType))
+			->getMock();
 
 		// Set the filter processor.
 		$mockFilter->expects($this->any())
@@ -145,4 +147,4 @@ class FilterTest extends PKPTestCase {
 		return $mockFilter;
 	}
 }
-?>
+

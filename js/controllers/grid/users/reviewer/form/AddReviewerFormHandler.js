@@ -1,9 +1,9 @@
 /**
  * @file js/controllers/grid/users/reviewer/form/AddReviewerFormHandler.js
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class AddReviewerFormHandler
  * @ingroup js_controllers_grid_users_reviewer_form
@@ -16,7 +16,7 @@
 	/**
 	 * @constructor
 	 *
-	 * @extends $.pkp.controllers.grid.users.reviewer.form.LimitFilesFormHandler
+	 * @extends $.pkp.controllers.grid.users.reviewer.form.EditReviewFormHandler
 	 *
 	 * @param {jQueryObject} $form the wrapped HTML form element.
 	 * @param {Object} options form options.
@@ -39,7 +39,7 @@
 			$.pkp.controllers.grid.users.reviewer.form.
 					AddReviewerFormHandler,
 			$.pkp.controllers.grid.users.reviewer.form.
-					LimitFilesFormHandler);
+					EditReviewFormHandler);
 
 
 	//
@@ -107,16 +107,17 @@
 					function(formElement, jsonData) {
 
 		var $form = this.getHtmlElement(),
-				processedJsonData = this.handleJson(jsonData);
+				processedJsonData = this.handleJson(jsonData),
+				$textarea = $form.find('textarea[name="personalMessage"]'),
+				editor =
+				tinyMCE.EditorManager.get(/** @type {string} */ ($textarea.attr('id')));
 
 		if (processedJsonData !== false) {
 			if (processedJsonData.content !== '') {
-				$form.find('textarea[name="personalMessage"]')
-						.val(processedJsonData.content);
+				editor.setContent(processedJsonData.content);
 			}
 		}
 		return processedJsonData.status;
 	};
 
-/** @param {jQuery} $ jQuery closure. */
 }(jQuery));

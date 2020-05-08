@@ -3,9 +3,9 @@
 /**
  * @file tests/classes/db/DBConnectionTest.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class DBConnectionTest
  * @ingroup tests_classes_db
@@ -21,20 +21,34 @@ class DBConnectionTest extends DatabaseTestCase {
 	const CONFIG_PGSQL = 'pgsql';
 
 	/**
-	 * @covers DBConnection::DBConnection
+	 * @covers DBConnection::__construct
 	 * @covers DBConnection::initDefaultDBConnection
 	 * @covers DBConnection::initConn
-	 * @covers AdodbMysqlCompat::AdodbMysqlCompat
 	 */
 	public function testInitDefaultDBConnection() {
 		$conn = new DBConnection();
 		$dbConn = $conn->getDBConn();
 		switch (Config::getVar('database', 'driver')) {
+			case 'mysqli':
+				self::assertInstanceOf('ADODB_mysqli', $dbConn);
+				break;
 			case 'mysql':
 				self::assertInstanceOf('ADODB_mysql', $dbConn);
 				break;
 			case 'postgres':
+				self::assertInstanceOf('ADODB_postgres7', $dbConn);
+				break;
+			case 'postgres64':
 				self::assertInstanceOf('ADODB_postgres64', $dbConn);
+				break;
+			case 'postgres7':
+				self::assertInstanceOf('ADODB_postgres7', $dbConn);
+				break;
+			case 'postgres8':
+				self::assertInstanceOf('ADODB_postgres8', $dbConn);
+				break;
+			case 'postgres9':
+				self::assertInstanceOf('ADODB_postgres9', $dbConn);
 				break;
 			default:
 				$this->fail('Unknown DB driver.');
@@ -45,7 +59,7 @@ class DBConnectionTest extends DatabaseTestCase {
 	}
 
 	/**
-	 * @covers DBConnection::DBConnection
+	 * @covers DBConnection::__construct
 	 * @covers DBConnection::initDefaultDBConnection
 	 * @covers DBConnection::initConn
 	 * @covers AdodbPostgres7Compat::AdodbPostgres7Compat
@@ -61,7 +75,7 @@ class DBConnectionTest extends DatabaseTestCase {
 	}
 
 	/**
-	 * @covers DBConnection::DBConnection
+	 * @covers DBConnection::__construct
 	 * @covers DBConnection::initCustomDBConnection
 	 * @covers DBConnection::initConn
 	 */
@@ -76,4 +90,4 @@ class DBConnectionTest extends DatabaseTestCase {
 	}
 }
 
-?>
+

@@ -3,9 +3,9 @@
 /**
  * @file controllers/api/task/SendReminderLinkAction.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SendReminderLinkAction
  * @ingroup controllers_api_task
@@ -22,7 +22,7 @@ class SendReminderLinkAction extends LinkAction {
 	 * @param $request Request
 	 * @param $actionArgs array The action arguments.
 	 */
-	function SendReminderLinkAction($request, $modalTitle, $actionArgs) {
+	function __construct($request, $modalTitle, $actionArgs) {
 		// Instantiate the send review modal.
 		$router = $request->getRouter();
 		import('lib.pkp.classes.linkAction.request.AjaxModal');
@@ -34,13 +34,13 @@ class SendReminderLinkAction extends LinkAction {
 		);
 
 		// Configure the link action.
-		parent::LinkAction(
+		parent::__construct(
 			'sendReminder',
 			$ajaxModal,
-			null,
+			__('editor.review.sendReminder'),
 			'overdue'
 		);
 	}
 }
 
-?>
+

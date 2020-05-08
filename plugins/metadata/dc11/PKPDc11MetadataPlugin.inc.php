@@ -6,9 +6,9 @@
 /**
  * @file plugins/metadata/dc11/PKPDc11MetadataPlugin.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPDc11MetadataPlugin
  * @ingroup plugins_metadata_dc11
@@ -20,13 +20,6 @@
 import('lib.pkp.classes.plugins.MetadataPlugin');
 
 class PKPDc11MetadataPlugin extends MetadataPlugin {
-	/**
-	 * Constructor
-	 */
-	function PKPDc11MetadataPlugin() {
-		parent::MetadataPlugin();
-	}
-
 
 	//
 	// Override protected template methods from Plugin
@@ -51,6 +44,22 @@ class PKPDc11MetadataPlugin extends MetadataPlugin {
 	function getDescription() {
 		return __('plugins.metadata.dc11.description');
 	}
+
+	/**
+	 * @copydoc MetadataPlugin::supportsFormat()
+	 */
+	public function supportsFormat($format) {
+		return $format === 'dc11';
+	}
+
+	/**
+	 * @copydoc MetadataPlugin::getSchemaObject()
+	 */
+	public function getSchemaObject($format) {
+		assert($this->supportsFormat($format));
+		import('plugins.metadata.dc11.schema.Dc11Schema');
+		return new Dc11Schema();
+	}
 }
 
-?>
+

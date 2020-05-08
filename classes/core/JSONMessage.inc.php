@@ -3,9 +3,9 @@
 /**
  * @file classes/core/JSONMessage.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class JSONMessage
  * @ingroup core
@@ -25,8 +25,8 @@ class JSONMessage {
 	/** @var string ID for DOM element that will be replaced. */
 	var $_elementId;
 
-	/** @var array A JS event generated on the server side. */
-	var $_event;
+	/** @var array List of JS events generated on the server side. */
+	var $_events;
 
 	/** @var array Set of additional attributes for special cases. */
 	var $_additionalAttributes;
@@ -38,7 +38,7 @@ class JSONMessage {
 	 * @param $elementId string The DOM element to be replaced.
 	 * @param $additionalAttributes array Additional data to be returned.
 	 */
-	function JSONMessage($status = true, $content = '', $elementId = '0', $additionalAttributes = null) {
+	function __construct($status = true, $content = '', $elementId = '0', $additionalAttributes = null) {
 		// Set internal state.
 		$this->setStatus($status);
 		$this->setContent($content);
@@ -101,7 +101,7 @@ class JSONMessage {
 	/**
 	 * Set the event to trigger with this JSON message
 	 * @param $eventName string
-	 * @param $eventData string
+	 * @param $eventData mixed
 	 */
 	function setEvent($eventName, $eventData = null) {
 		assert(is_string($eventName));
@@ -110,15 +110,33 @@ class JSONMessage {
 		$event = array('name' => $eventName);
 		if(!is_null($eventData)) $event['data'] = $eventData;
 
-		$this->_event = $event;
+		$this->_events[] = $event;
 	}
 
 	/**
-	 * Get the event to trigger with this JSON message
+	 * Set a global event to trigger with this JSON message
+	 *
+	 * This is a wrapper for the setEvent method.
+	 *
+	 * Global events are triggered on the global event router instead of being
+	 * triggered directly on the handler. They are intended for broadcasting
+	 * updates from one handler to other handlers.
+	 *
+	 * @param $eventName string
+	 * @param $eventData array Global event data must be an assoc array
+	 */
+	function setGlobalEvent($eventName, $eventData = array()) {
+		assert(is_array($eventData));
+		$eventData['isGlobalEvent'] = true;
+		$this->setEvent($eventName, $eventData);
+	}
+
+	/**
+	 * Get the events to trigger with this JSON message
 	 * @return array
 	 */
-	function getEvent() {
-		return $this->_event;
+	function getEvents() {
+		return $this->_events;
 	}
 
 	/**
@@ -147,20 +165,24 @@ class JSONMessage {
 		$jsonObject = array(
 			'status' => $this->getStatus(),
 			'content' => $this->getContent(),
-			'elementId' => $this->getElementId()
+			'elementId' => $this->getElementId(),
+			'events' => $this->getEvents(),
 		);
 		if(is_array($this->getAdditionalAttributes())) {
 			foreach($this->getAdditionalAttributes() as $key => $value) {
 				$jsonObject[$key] = $value;
 			}
 		}
-		if(is_array($this->getEvent())) {
-			$jsonObject['event'] = $this->getEvent();
-		}
 
 		// Encode the object.
-		return json_encode($jsonObject);
+		$json = json_encode($jsonObject);
+
+		if ($json === false) {
+			error_log(json_last_error_msg());
+		}
+
+		return $json;
 	}
 }
 
-?>
+

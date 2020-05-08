@@ -3,9 +3,9 @@
 /**
  * @file classes/scheduledTask/ScheduledTask.inc.php
  *
- * Copyright (c) 2013-2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2013-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ScheduledTask
  * @ingroup scheduledTask
@@ -25,8 +25,8 @@ abstract class ScheduledTask {
 	/** @var string? This process id. */
 	private $_processId = null;
 
-	/** @var array Messages log about the execution process */
-	private $_executionLog;
+	/** @var string File path in which execution log messages will be written. */
+	private $_executionLogFile;
 
 	/** @var ScheduledTaskHelper */
 	private $_helper;
@@ -36,12 +36,28 @@ abstract class ScheduledTask {
 	 * Constructor.
 	 * @param $args array
 	 */
-	function ScheduledTask($args = array()) {
+	function __construct($args = array()) {
 		$this->_args = $args;
 		$this->_processId = uniqid();
-		$this->_executionLog = array();
 
-		AppLocale::requireComponents(LOCALE_COMPONENT_PKP_ADMIN, LOCALE_COMPONENT_PKP_COMMON);
+		// Ensure common locale keys are available
+		AppLocale::requireComponents(LOCALE_COMPONENT_PKP_ADMIN, LOCALE_COMPONENT_APP_ADMIN, LOCALE_COMPONENT_PKP_COMMON);
+		
+		// Check the scheduled task execution log folder.
+		import('lib.pkp.classes.file.PrivateFileManager');
+		$fileMgr = new PrivateFileManager();
+
+		$scheduledTaskFilesPath = realpath($fileMgr->getBasePath()) . DIRECTORY_SEPARATOR . SCHEDULED_TASK_EXECUTION_LOG_DIR;
+		$this->_executionLogFile = $scheduledTaskFilesPath . DIRECTORY_SEPARATOR . str_replace(' ', '', $this->getName()) . 
+			'-' . $this->getProcessId() . '-' . date('Ymd') . '.log';
+		if (!$fileMgr->fileExists($scheduledTaskFilesPath, 'dir')) {
+			$success = $fileMgr->mkdirtree($scheduledTaskFilesPath);
+			if (!$success) {
+				// files directory wrong configuration?
+				assert(false);
+				$this->_executionLogFile = null;
+			}
+		}
 	}
 
 
@@ -81,18 +97,25 @@ abstract class ScheduledTask {
 	 * SCHEDULED_TASK_MESSAGE_TYPE... constants.
 	 */
 	function addExecutionLogEntry($message, $type = null) {
-		$log = $this->_executionLog;
+		$logFile = $this->_executionLogFile;
 
 		if (!$message) return;
 		$date = '[' . Core::getCurrentDate() . '] ';
 
 		if ($type) {
-			$log[] = $date . '[' . __($type) . '] ' . $message;
+			$log = $date . '[' . __($type) . '] ' . $message;
 		} else {
-			$log[] = $date . $message;
+			$log = $date . $message;
 		}
 
-		$this->_executionLog = $log;
+		$fp = fopen($logFile, 'ab');
+		if (flock($fp, LOCK_EX)) {
+			fwrite($fp, $log . PHP_EOL);
+			flock($fp, LOCK_UN);
+		} else {
+			fatalError("Couldn't lock the file.");
+		}
+		fclose($fp);	
 	}
 
 
@@ -101,6 +124,7 @@ abstract class ScheduledTask {
 	//
 	/**
 	 * Implement this method to execute the task actions.
+	 * @return boolean true iff success
 	 */
 	abstract protected function executeActions();
 
@@ -112,9 +136,6 @@ abstract class ScheduledTask {
 	 * Make sure the execution process follow the required steps.
 	 * This is not the method one should extend to implement the
 	 * task actions, for this see ScheduledTask::executeActions().
-	 * @param boolean $notifyAdmin optional Whether or not the task
-	 * will notify the site administrator about errors, warnings or
-	 * completed process.
 	 * @return boolean Whether or not the task was succesfully
 	 * executed.
 	 */
@@ -127,25 +148,10 @@ abstract class ScheduledTask {
 		$this->addExecutionLogEntry(__('admin.scheduledTask.stopTime'), SCHEDULED_TASK_MESSAGE_TYPE_NOTICE);
 
 		$helper = $this->getHelper();
-		$helper->notifyExecutionResult($this->_processId, $this->getName(), $result, $this->_getLogMessage());
+		$helper->notifyExecutionResult($this->_processId, $this->getName(), $result, $this->_executionLogFile);
 
 		return $result;
 	}
-
-
-	//
-	// Private helper methods.
-	//
-	/**
-	 * Get the execution log as string.
-	 * @return string
-	 */
-	private function _getLogMessage() {
-		$log = $this->_executionLog;
-		$logString = implode(PHP_EOL . PHP_EOL, $log);
-
-		return $logString;
-	}
 }
 
-?>
+

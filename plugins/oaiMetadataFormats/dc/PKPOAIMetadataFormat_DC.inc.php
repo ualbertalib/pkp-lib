@@ -3,9 +3,9 @@
 /**
  * @file plugins/oaiMetadataFormats/dc/PKPOAIMetadataFormat_DC.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPOAIMetadataFormat_DC
  * @see OAI
@@ -17,7 +17,7 @@ class PKPOAIMetadataFormat_DC extends OAIMetadataFormat {
 	/**
 	 * @copydoc OAIMetadataFormat::toXML
 	 */
-	function toXml(&$dataObject, $format = null) {
+	function toXml($dataObject, $format = null) {
 		import('plugins.metadata.dc11.schema.Dc11Schema');
 		$dcDescription = $dataObject->extractMetadata(new Dc11Schema());
 
@@ -55,7 +55,7 @@ class PKPOAIMetadataFormat_DC extends OAIMetadataFormat {
 
 		// Translate the property name to XML syntax.
 		$openingElement = str_replace(array('[@', ']'), array(' ',''), $propertyName);
-		$closingElement = String::regexp_replace('/\[@.*/', '', $propertyName);
+		$closingElement = PKPString::regexp_replace('/\[@.*/', '', $propertyName);
 
 		// Create the actual XML entry.
 		$response = '';
@@ -79,4 +79,4 @@ class PKPOAIMetadataFormat_DC extends OAIMetadataFormat {
 	}
 }
 
-?>
+

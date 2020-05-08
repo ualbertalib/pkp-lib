@@ -6,8 +6,9 @@
 /**
  * @file lib/pkp/classes/statistics/PKPMetricsDAO.inc.php
  *
- * Copyright (c) 2003-2012 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPMetricsDAO
  * @ingroup lib_pkp_classes_statistics
@@ -15,6 +16,7 @@
  * @brief Class with basic operations for retrieving and adding statistics data.
  */
 
+import('classes.statistics.StatisticsHelper'); //STATISTICS_DIMENSION_
 
 class PKPMetricsDAO extends DAO {
 
@@ -22,7 +24,7 @@ class PKPMetricsDAO extends DAO {
 	 * Retrieve a range of aggregate, filtered, ordered metric values, i.e.
 	 * a statistics report.
 	 *
-	 * @see <http://pkp.sfu.ca/wiki/index.php/OJSdeStatisticsConcept#Input_and_Output_Formats_.28Aggregation.2C_Filters.2C_Metrics_Data.29>
+	 * @see <https://pkp.sfu.ca/wiki/index.php/OJSdeStatisticsConcept#Input_and_Output_Formats_.28Aggregation.2C_Filters.2C_Metrics_Data.29>
 	 * for a full specification of the input and output format of this method.
 	 *
 	 * @param $metricType string|array metrics selection
@@ -129,6 +131,10 @@ class PKPMetricsDAO extends DAO {
 				$currentClause =& $whereClause; // Reference required.
 			}
 
+			if (is_object($values)) {
+				$values = (array) $values;
+			}
+
 			if (is_array($values) && isset($values['from'])) {
 				// Range filter: The value is a hashed array with from/to entries.
 				if (!isset($values['to'])) return $nullVar;
@@ -144,13 +150,16 @@ class PKPMetricsDAO extends DAO {
 				if (is_scalar($values)) {
 					$currentClause .= "$column = ?";
 					$params[] = $values;
-				} else {
+				} elseif (count($values)) {
 					$placeholders = array_pad(array(), count($values), '?');
 					$placeholders = implode(', ', $placeholders);
 					$currentClause .= "$column IN ($placeholders)";
 					foreach ($values as $value) {
 						$params[] = $value;
 					}
+				} else {
+					// count($values) == 0: No matches should be returned.
+					$currentClause .= '1=0';
 				}
 			}
 
@@ -160,7 +169,7 @@ class PKPMetricsDAO extends DAO {
 		// Replace the current time constant by time values
 		// inside the parameters array.
 		$currentTime = array(
-			STATISTICS_CURRENT_DAY => date('Ymd', time()),
+			STATISTICS_YESTERDAY => date('Ymd', strtotime('-1 day', time())),
 			STATISTICS_CURRENT_MONTH => date('Ym', time()));
 		foreach ($currentTime as $constant => $time) {
 			$currentTimeKeys = array_keys($params, $constant);
@@ -186,14 +195,8 @@ class PKPMetricsDAO extends DAO {
 
 		// Build the report.
 		$sql = "$selectClause FROM metrics $whereClause $groupByClause $havingClause $orderByClause";
-		if (is_a($range, 'DBResultRange')) {
-			if ($range->getCount() > STATISTICS_MAX_ROWS) {
-				$range->setCount(STATISTICS_MAX_ROWS);
-			}
-			$result = $this->retrieveRange($sql, $params, $range);
-		} else {
-			$result = $this->retrieveLimit($sql, $params, STATISTICS_MAX_ROWS);
-		}
+		if (is_a($range, 'DBResultRange')) $result = $this->retrieveRange($sql, $params, $range);
+		else $result = $this->retrieve($sql, $params);
 
 		// Return the report.
 		$returner = $result->GetAll();
@@ -292,7 +295,7 @@ class PKPMetricsDAO extends DAO {
 
 		// We require either month or day in the time dimension.
 		if (isset($record['day'])) {
-			if (!String::regexp_match('/[0-9]{8}/', $record['day'])) {
+			if (!PKPString::regexp_match('/[0-9]{8}/', $record['day'])) {
 				throw new Exception('Cannot load record: invalid date.');
 			}
 			$recordToStore['day'] = $record['day'];
@@ -301,7 +304,7 @@ class PKPMetricsDAO extends DAO {
 				throw new Exception('Cannot load record: invalid month.');
 			}
 		} elseif (isset($record['month'])) {
-			if (!String::regexp_match('/[0-9]{6}/', $record['month'])) {
+			if (!PKPString::regexp_match('/[0-9]{6}/', $record['month'])) {
 				throw new Exception('Cannot load record: invalid month.');
 			}
 			$recordToStore['month'] = $record['month'];
@@ -343,13 +346,14 @@ class PKPMetricsDAO extends DAO {
 	 * and representation.
 	 */
 	protected function foreignKeyLookup($assocType, $assocId) {
-		$contextId = $sectionId = $submissionId = $representationId = null;
+		$contextId = $sectionId = $submissionId = $assocObjectType = $assocObjectId = $representationId = null;
 
 		$isFile = false;
 		$isRepresentation = false;
 
 		switch($assocType) {
 			case ASSOC_TYPE_SUBMISSION_FILE:
+			case ASSOC_TYPE_SUBMISSION_FILE_COUNTER_OTHER:
 				$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO'); /* @var $submissionFileDao SubmissionFileDAO */
 				$submissionFile = $submissionFileDao->getLatestRevision($assocId);
 				if ($submissionFile) {
@@ -372,14 +376,15 @@ class PKPMetricsDAO extends DAO {
 					if (!$isFile) $isRepresentation = true;
 
 					$contextId = $representation->getContextId();
-					$submissionId = $representation->getSubmissionId();
+					$publication = Services::get('publication')->get($representation->getData('publicationId'));
+					$submissionId = $publication->getData('submissionId');
 				} else {
 					throw new Exception('Cannot load record: invalid representation id.');
 				}
 				// Don't break but go on to retrieve the submission.
 			case ASSOC_TYPE_SUBMISSION:
 				if (!$isFile && !$isRepresentation) $submissionId = $assocId;
-				$submissionDao = Application::getSubmissionDAO(); /* @var $submissionDao SubmissionDAO */
+				$submissionDao = DAORegistry::getDAO('SubmissionDAO'); /* @var $submissionDao SubmissionDAO */
 				$submission = $submissionDao->getById($submissionId);
 				if ($submission) {
 					$contextId = $submission->getContextId();
@@ -388,6 +393,7 @@ class PKPMetricsDAO extends DAO {
 				} else {
 					throw new Exception('Cannot load record: invalid submission id.');
 				}
+				list($assocObjectType, $assocObjectId) = $this->getAssocObjectInfo($submissionId, $contextId);
 				break;
 			case ASSOC_TYPE_SECTION:
 				$sectionDao = Application::getSectionDAO();
@@ -409,7 +415,20 @@ class PKPMetricsDAO extends DAO {
 				break;
 		}
 
-		return array($contextId, $sectionId, null, null, $submissionId, $representationId);
+		return array($contextId, $sectionId, $assocObjectType, $assocObjectId, $submissionId, $representationId);
+	}
+
+	/**
+	 * Get the id and type of the object that
+	 * the passed submission info is associated with.
+	 * Default implementation returns null, subclasses
+	 * have to implement it.
+	 * @param $submissionId Submission id.
+	 * @param $contextId The submission context id.
+	 * @return array Assoc type and id of the object.
+	 */
+	protected function getAssocObjectInfo($submissionId, $contextId) {
+		return array(null, null);
 	}
 }
-?>
+

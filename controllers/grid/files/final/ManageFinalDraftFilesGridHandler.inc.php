@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/files/final/ManageFinalDraftFilesGridHandler.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ManageFinalDraftFilesGridHandler
  * @ingroup controllers_grid_files_final
@@ -19,12 +19,12 @@ class ManageFinalDraftFilesGridHandler extends SelectableSubmissionFileListCateg
 	/**
 	 * Constructor
 	 */
-	function ManageFinalDraftFilesGridHandler() {
+	function __construct() {
 		import('lib.pkp.controllers.grid.files.SubmissionFilesCategoryGridDataProvider');
-		parent::SelectableSubmissionFileListCategoryGridHandler(
+		parent::__construct(
 			new SubmissionFilesCategoryGridDataProvider(SUBMISSION_FILE_FINAL),
 			WORKFLOW_STAGE_ID_EDITING,
-			FILE_GRID_ADD|FILE_GRID_DELETE|FILE_GRID_VIEW_NOTES
+			FILE_GRID_ADD|FILE_GRID_DELETE|FILE_GRID_VIEW_NOTES|FILE_GRID_EDIT
 		);
 
 		$this->addRoleAssignment(
@@ -54,7 +54,7 @@ class ManageFinalDraftFilesGridHandler extends SelectableSubmissionFileListCateg
 	 * Save 'manage final draft files' form
 	 * @param $args array
 	 * @param $request PKPRequest
-	 * @return string Serialized JSON object
+	 * @return JSONMessage JSON object
 	 */
 	function updateFinalDraftFiles($args, $request) {
 		$submission = $this->getSubmission();
@@ -64,16 +64,16 @@ class ManageFinalDraftFilesGridHandler extends SelectableSubmissionFileListCateg
 		$manageFinalDraftFilesForm->readInputData();
 
 		if ($manageFinalDraftFilesForm->validate()) {
-			$dataProvider = $this->getDataProvider();
-			$manageFinalDraftFilesForm->execute($args, $request, $dataProvider->loadCategoryData($request, $this->getStageId()));
+			$manageFinalDraftFilesForm->execute(
+				$this->getGridCategoryDataElements($request, $this->getStageId())
+			);
 
 			// Let the calling grid reload itself
 			return DAO::getDataChangedEvent();
 		} else {
-			$json = new JSONMessage(false);
-			return $json->getString();
+			return new JSONMessage(false);
 		}
 	}
 }
 
-?>
+

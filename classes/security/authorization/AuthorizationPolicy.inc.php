@@ -2,9 +2,9 @@
 /**
  * @file classes/security/authorization/AuthorizationPolicy.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class AuthorizationPolicy
  * @ingroup security_authorization
@@ -43,7 +43,7 @@ class AuthorizationPolicy {
 	 * Constructor
 	 * @param $message string
 	 */
-	function AuthorizationPolicy($message = null) {
+	function __construct($message = null) {
 		if (!is_null($message)) $this->setAdvice(AUTHORIZATION_ADVICE_DENY_MESSAGE, $message);
 	}
 
@@ -155,4 +155,4 @@ class AuthorizationPolicy {
 	}
 }
 
-?>
+

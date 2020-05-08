@@ -3,9 +3,9 @@
 /**
  * @file classes/notification/managerDelegate/EditorAssignmentNotificationManager.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class EditorAssignmentNotificationManager
  * @ingroup managerDelegate
@@ -21,12 +21,12 @@ class EditorAssignmentNotificationManager extends NotificationManagerDelegate {
 	 * Constructor.
 	 * @param $notificationType int NOTIFICATION_TYPE_...
 	 */
-	function EditorAssignmentNotificationManager($notificationType) {
-		parent::NotificationManagerDelegate($notificationType);
+	function __construct($notificationType) {
+		parent::__construct($notificationType);
 	}
 
 	/**
-	 * @copydoc NotificationManagerDelegate::getNotificationMessage($notification)
+	 * @copydoc PKPNotificationOperationManager::getNotificationMessage($notification)
 	 */
 	public function getNotificationMessage($request, $notification) {
 		switch ($notification->getType()) {
@@ -42,14 +42,14 @@ class EditorAssignmentNotificationManager extends NotificationManagerDelegate {
 	}
 
 	/**
-	 * @copydoc NotificationManagerDelegate::getStyleClass()
+	 * @copydoc PKPNotificationOperationManager::getStyleClass()
 	 */
 	public function getStyleClass($notification) {
 		return NOTIFICATION_STYLE_CLASS_WARNING;
 	}
 
 	/**
-	 * @copydoc NotificationManagerDelegate::isVisibleToAllUsers()
+	 * @copydoc PKPNotificationOperationManager::isVisibleToAllUsers()
 	 */
 	public function isVisibleToAllUsers($notificationType, $assocType, $assocId) {
 		return true;
@@ -70,7 +70,7 @@ class EditorAssignmentNotificationManager extends NotificationManagerDelegate {
 		$submissionId = $assocId;
 
 		// Check for an existing NOTIFICATION_TYPE_EDITOR_ASSIGNMENT_...
-		$notificationDao = DAORegistry::getDAO('NotificationDAO');
+		$notificationDao = DAORegistry::getDAO('NotificationDAO'); /* @var $notificationDao NotificationDAO */
 		$notificationFactory = $notificationDao->getByAssoc(
 			ASSOC_TYPE_SUBMISSION,
 			$submissionId,
@@ -80,7 +80,7 @@ class EditorAssignmentNotificationManager extends NotificationManagerDelegate {
 		);
 
 		// Check for editor stage assignment.
-		$stageAssignmentDao = DAORegistry::getDAO('StageAssignmentDAO');
+		$stageAssignmentDao = DAORegistry::getDAO('StageAssignmentDAO'); /* @var $stageAssignmentDao StageAssignmentDAO */
 		$editorAssigned = $stageAssignmentDao->editorAssignedToStage($submissionId, $this->_getStageIdByNotificationType());
 
 		// Decide if we have to create or delete a notification.
@@ -122,4 +122,4 @@ class EditorAssignmentNotificationManager extends NotificationManagerDelegate {
 	}
 }
 
-?>
+

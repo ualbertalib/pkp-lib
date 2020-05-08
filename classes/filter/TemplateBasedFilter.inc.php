@@ -3,9 +3,9 @@
 /**
  * @file classes/filter/TemplateBasedFilter.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class TemplateBasedFilter
  * @ingroup classes_filter
@@ -21,8 +21,8 @@ class TemplateBasedFilter extends PersistableFilter {
 	 * Constructor
 	 * @param $filterGroup FilterGroup
 	 */
-	function TemplateBasedFilter($filterGroup) {
-		parent::PersistableFilter($filterGroup);
+	function __construct($filterGroup) {
+		parent::__construct($filterGroup);
 	}
 
 
@@ -72,8 +72,7 @@ class TemplateBasedFilter extends PersistableFilter {
 	function &process(&$input) {
 		// Initialize view
 		$locale = AppLocale::getLocale();
-		$application = PKPApplication::getApplication();
-		$request = $application->getRequest();
+		$request = Application::get()->getRequest();
 		$templateMgr = TemplateManager::getManager($request);
 
 		// Add the filter's directory as additional template dir so that
@@ -102,4 +101,4 @@ class TemplateBasedFilter extends PersistableFilter {
 		return $output;
 	}
 }
-?>
+

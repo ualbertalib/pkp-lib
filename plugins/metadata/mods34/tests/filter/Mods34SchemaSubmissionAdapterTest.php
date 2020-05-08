@@ -3,9 +3,9 @@
 /**
  * @file plugins/metadata/mods34/tests/filter/Mods34SchemaSubmissionAdapterTest.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class Mods34SchemaSubmissionAdapterTest
  * @ingroup plugins_metadata_mods34_tests_filter
@@ -15,7 +15,7 @@
  */
 
 import('lib.pkp.plugins.metadata.mods34.tests.filter.Mods34DescriptionTestCase');
-import('lib.pkp.classes.submission.Submission');
+import('lib.pkp.classes.submission.PKPSubmission');
 import('lib.pkp.plugins.metadata.mods34.filter.Mods34SchemaSubmissionAdapter');
 
 class Mods34SchemaSubmissionAdapterTest extends Mods34DescriptionTestCase {
@@ -36,7 +36,7 @@ class Mods34SchemaSubmissionAdapterTest extends Mods34DescriptionTestCase {
 		// Test constructor.
 		$adapter = new Mods34SchemaSubmissionAdapter(PersistableFilter::tempGroup(
 				'metadata::plugins.metadata.mods34.schema.Mods34Schema(CITATION)',
-				'class::lib.pkp.classes.submission.Submission'));
+				'class::lib.pkp.classes.submission.PKPSubmission'));
 		self::assertEquals(ASSOC_TYPE_CITATION, $adapter->getAssocType());
 		self::assertInstanceOf('Mods34Schema', $adapter->getMetadataSchema());
 		self::assertEquals('Submission', $adapter->getDataObjectClass());
@@ -53,16 +53,15 @@ class Mods34SchemaSubmissionAdapterTest extends Mods34DescriptionTestCase {
 		$submissionDescription->removeStatement('abstract');
 
 		// Test metadata injection (no replace).
-		$resultSubmission =& $adapter->injectMetadataIntoDataObject($submissionDescription, $submission, 'lib.pkp.tests.plugins.metadata.mods34.filter.Author');
+		$resultSubmission =& $adapter->injectMetadataIntoDataObject($submissionDescription, $submission);
 		$expectedResult = array(
-			'cleanTitle' => array('en_US' => 'new submission title', 'de_DE' => 'neuer Titel'),
 			'title' => array('en_US' => 'new submission title', 'de_DE' => 'neuer Titel'),
 			'abstract' => array('en_US' => 'previous abstract'),
 			'sponsor' => array('en_US' => 'Some Sponsor'),
 			'dateSubmitted' => '2010-07-07',
 			'language' => 'en',
 			'pages' => 215,
-			'coverageGeo' => array('en_US' => 'some geography'),
+			'coverage' => array('en_US' => 'some geography'),
 			'mods34:titleInfo/nonSort' => array('en_US' => 'the', 'de_DE' => 'ein'),
 			'mods34:titleInfo/subTitle' => array('en_US' => 'subtitle', 'de_DE' => 'Subtitel'),
 			'mods34:titleInfo/partNumber' => array('en_US' => 'part I', 'de_DE' => 'Teil I'),
@@ -78,7 +77,7 @@ class Mods34SchemaSubmissionAdapterTest extends Mods34DescriptionTestCase {
 
 		// Test meta-data extraction.
 		$adapter = new Mods34SchemaSubmissionAdapter(PersistableFilter::tempGroup(
-				'class::lib.pkp.classes.submission.Submission',
+				'class::lib.pkp.classes.submission.PKPSubmission',
 				'metadata::plugins.metadata.mods34.schema.Mods34Schema(CITATION)'));
 		$extractedDescription = $adapter->extractMetadataFromDataObject($submission);
 		$submissionDescription->removeStatement('recordInfo/recordCreationDate[@encoding="w3cdtf"]');
@@ -112,4 +111,4 @@ class Mods34SchemaSubmissionAdapterTest extends Mods34DescriptionTestCase {
 		self::assertEquals($submissionDescription, $extractedDescription);
 	}
 }
-?>
+

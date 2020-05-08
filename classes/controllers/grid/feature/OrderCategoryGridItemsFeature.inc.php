@@ -3,9 +3,9 @@
 /**
  * @file classes/controllers/grid/feature/OrderCategoryGridItemsFeature.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class OrderCategoryGridItemsFeature
  * @ingroup controllers_grid_feature
@@ -16,11 +16,11 @@
 
 import('lib.pkp.classes.controllers.grid.feature.OrderItemsFeature');
 
-define_exposed('ORDER_CATEGORY_GRID_CATEGORIES_ONLY', 0x01);
-define_exposed('ORDER_CATEGORY_GRID_CATEGORIES_ROWS_ONLY', 0x02);
-define_exposed('ORDER_CATEGORY_GRID_CATEGORIES_AND_ROWS', 0x03);
+define('ORDER_CATEGORY_GRID_CATEGORIES_ONLY', 0x01);
+define('ORDER_CATEGORY_GRID_CATEGORIES_ROWS_ONLY', 0x02);
+define('ORDER_CATEGORY_GRID_CATEGORIES_AND_ROWS', 0x03);
 
-class OrderCategoryGridItemsFeature extends OrderItemsFeature{
+class OrderCategoryGridItemsFeature extends OrderItemsFeature {
 
 	/**
 	 * Constructor.
@@ -30,9 +30,16 @@ class OrderCategoryGridItemsFeature extends OrderItemsFeature{
 	 * actions and it will force the usage of the gridRow.tpl.
 	 * If you want to use a different grid row template file, set this flag to
 	 * false and make sure to use a template file that adds row actions.
+	 * @param $grid GridHandler The grid this feature is to be part of
 	 */
-	function OrderCategoryGridItemsFeature($typeOption = ORDER_CATEGORY_GRID_CATEGORIES_AND_ROWS, $overrideRowTemplate = true) {
-		parent::OrderItemsFeature($overrideRowTemplate);
+	function __construct($typeOption = ORDER_CATEGORY_GRID_CATEGORIES_AND_ROWS, $overrideRowTemplate = true, $grid = null) {
+		parent::__construct($overrideRowTemplate);
+
+		if ($grid) {
+			$grid->_constants['ORDER_CATEGORY_GRID_CATEGORIES_ONLY'] = ORDER_CATEGORY_GRID_CATEGORIES_ONLY;
+			$grid->_constants['ORDER_CATEGORY_GRID_CATEGORIES_ROWS_ONLY'] = ORDER_CATEGORY_GRID_CATEGORIES_ROWS_ONLY;
+			$grid->_constants['ORDER_CATEGORY_GRID_CATEGORIES_AND_ROWS'] = ORDER_CATEGORY_GRID_CATEGORIES_AND_ROWS;
+		}
 
 		$this->addOptions(array('type' => $typeOption));
 	}
@@ -131,6 +138,7 @@ class OrderCategoryGridItemsFeature extends OrderItemsFeature{
 		if ($this->getType() != ORDER_CATEGORY_GRID_CATEGORIES_ONLY) {
 			foreach($gridCategoryElements as $categoryId => $element) {
 				$gridRowElements = $grid->getGridCategoryDataElements($request, $element);
+				if (!$gridRowElements) continue;
 
 				// Get the correct rows sequence data.
 				$rowsData = null;
@@ -141,10 +149,10 @@ class OrderCategoryGridItemsFeature extends OrderItemsFeature{
 					}
 				}
 
+				unset($rowsData[0]); // remove the first element, it is always the parent category ID
 				$firstSeqValue = $grid->getDataElementInCategorySequence($categoryId, reset($gridRowElements));
 				foreach ($gridRowElements as $rowId => $element) {
-					$rowPosition = array_search($rowId, $rowsData);
-					$newSequence = $firstSeqValue + $rowPosition;
+					$newSequence = array_search($rowId, $rowsData);
 					$currentSequence = $grid->getDataElementInCategorySequence($categoryId, $element);
 					if ($newSequence != $currentSequence) {
 						$grid->setDataElementInCategorySequence($categoryId, $element, $newSequence);
@@ -155,4 +163,4 @@ class OrderCategoryGridItemsFeature extends OrderItemsFeature{
 	}
 }
 
-?>
+

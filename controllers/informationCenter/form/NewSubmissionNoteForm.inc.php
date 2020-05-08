@@ -3,9 +3,9 @@
 /**
  * @file controllers/informationCenter/form/NewSubmissionNoteForm.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class NewSubmissionNoteForm
  * @ingroup informationCenter_form
@@ -23,8 +23,8 @@ class NewSubmissionNoteForm extends NewNoteForm {
 	/**
 	 * Constructor.
 	 */
-	function NewSubmissionNoteForm($submissionId) {
-		parent::NewNoteForm();
+	function __construct($submissionId) {
+		parent::__construct();
 
 		$this->submissionId = $submissionId;
 	}
@@ -43,7 +43,7 @@ class NewSubmissionNoteForm extends NewNoteForm {
 	 * @return string
 	 */
 	function getSubmitNoteLocaleKey() {
-		return 'informationCenter.addSubmissionNote';
+		return 'informationCenter.addNote';
 	}
 
 	/**
@@ -55,4 +55,4 @@ class NewSubmissionNoteForm extends NewNoteForm {
 	}
 }
 
-?>
+

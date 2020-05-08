@@ -3,9 +3,9 @@
 /**
  * @file classes/controllers/grid/feature/GridFeature.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class GridFeature
  * @ingroup controllers_grid_feature
@@ -13,7 +13,7 @@
  * @brief Base grid feature class. A feature is a type of plugin specific
  * to the grid widgets. It provides several hooks to allow injection of
  * additional grid functionality. This class implements template methods
- * to be extendeded by subclasses.
+ * to be extended by subclasses.
  *
  */
 
@@ -29,7 +29,7 @@ class GridFeature {
 	 * Constructor.
 	 * @param $id string Feature id.
 	 */
-	function GridFeature($id) {
+	function __construct($id) {
 		$this->setId($id);
 	}
 
@@ -107,7 +107,7 @@ class GridFeature {
 
 	/**
 	 * Return the java script feature class.
-	 * @return string
+	 * @return string|null
 	 */
 	function getJSClass() {
 		return null;
@@ -217,6 +217,17 @@ class GridFeature {
 	}
 
 	/**
+	 * Hook called after a group of rows is fetched.
+	 * @param $args array
+	 * 'request' => PKPRequest
+	 * 'grid' => GridHandler
+	 * 'jsonMessage' => JSONMessage
+	 */
+	function fetchRows($args) {
+		return null;
+	}
+
+	/**
 	 * Hook called after a row is fetched.
 	 * @param $args array
 	 * 'request' => PKPRequest
@@ -239,4 +250,4 @@ class GridFeature {
 	}
 }
 
-?>
+

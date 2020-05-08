@@ -3,9 +3,9 @@
 /**
  * @file classes/reviewForm/ReviewFormResponse.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ReviewFormResponse
  * @ingroup reviewForm
@@ -16,12 +16,6 @@
  */
 
 class ReviewFormResponse extends DataObject {
-	/**
-	 * Constructor.
-	 */
-	function ReviewFormResponse() {
-		parent::DataObject();
-	}
 
 	//
 	// Get/set methods
@@ -40,7 +34,7 @@ class ReviewFormResponse extends DataObject {
 	 * @param $reviewId int
 	 */
 	function setReviewId($reviewId) {
-		return $this->setData('reviewId', $reviewId);
+		$this->setData('reviewId', $reviewId);
 	}
 
 	/**
@@ -56,7 +50,7 @@ class ReviewFormResponse extends DataObject {
 	 * @param $reviewFormElementId int
 	 */
 	function setReviewFormElementId($reviewFormElementId) {
-		return $this->setData('reviewFormElementId', $reviewFormElementId);
+		$this->setData('reviewFormElementId', $reviewFormElementId);
 	}
 
 	/**
@@ -72,7 +66,7 @@ class ReviewFormResponse extends DataObject {
 	 * @param $value int
 	 */
 	function setValue($value) {
-		return $this->setData('value', $value);
+		$this->setData('value', $value);
 	}
 
 	/**
@@ -88,8 +82,8 @@ class ReviewFormResponse extends DataObject {
 	 * @param $type string
 	 */
 	function setResponseType($type) {
-		return $this->setData('type', $type);
+		$this->setData('type', $type);
 	}
 }
 
-?>
+

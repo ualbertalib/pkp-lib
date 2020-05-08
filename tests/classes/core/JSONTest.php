@@ -3,9 +3,9 @@
 /**
  * @file tests/classes/core/JSONTest.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class JSONTest
  * @ingroup tests_classes_core
@@ -32,9 +32,9 @@ class JSONTest extends PKPTestCase {
 
 		// Render the JSON message.
 		$expectedString = '{"status":true,"content":"test content",'.
-				'"elementId":"0","testObj":{"someInt":5,"someFloat":5.5},'.
-				'"event":{"name":"someEvent","data":{"eventDataKey":["item1","item2"]}}}';
+				'"elementId":"0","events":[{"name":"someEvent","data":{"eventDataKey":["item1","item2"]}}],'.
+				'"testObj":{"someInt":5,"someFloat":5.5}}';
 		self::assertEquals($expectedString, $json->getString());
 	}
 }
-?>
+

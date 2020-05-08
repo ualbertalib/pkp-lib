@@ -2,9 +2,9 @@
 /**
  * @file controllers/grid/users/stageParticipant/linkAction/NotifyLinkAction.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class NotifyLinkAction
  * @ingroup controllers_grid_users_stageParticipant
@@ -24,7 +24,7 @@ class NotifyLinkAction extends LinkAction {
 	 * @param $userId optional
 	 *  to show information about.
 	 */
-	function NotifyLinkAction($request, &$submission, $stageId, $userId = null) {
+	function __construct($request, &$submission, $stageId, $userId = null) {
 		AppLocale::requireComponents(LOCALE_COMPONENT_APP_SUBMISSION);
 		// Prepare request arguments
 		$requestArgs['submissionId'] = $submission->getId();
@@ -44,11 +44,11 @@ class NotifyLinkAction extends LinkAction {
 		);
 
 		// Configure the file link action.
-		parent::LinkAction(
+		parent::__construct(
 			'notify', $ajaxModal,
 			__('submission.stageParticipants.notify'), 'notify'
 		);
 	}
 }
 
-?>
+

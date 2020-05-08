@@ -3,9 +3,9 @@
 /**
  * @file classes/submission/PKPAuthorDAO.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPAuthorDAO
  * @ingroup submission
@@ -14,62 +14,77 @@
  * @brief Operations for retrieving and modifying PKPAuthor objects.
  */
 
-
+import('lib.pkp.classes.db.SchemaDAO');
 import('lib.pkp.classes.submission.PKPAuthor');
 
-class PKPAuthorDAO extends DAO {
+abstract class PKPAuthorDAO extends SchemaDAO {
+	/** @copydoc SchemaDao::$schemaName */
+	public $schemaName = SCHEMA_AUTHOR;
+
+	/** @copydoc SchemaDao::$tableName */
+	public $tableName = 'authors';
+
+	/** @copydoc SchemaDao::$settingsTableName */
+	public $settingsTableName = 'author_settings';
+
+	/** @copydoc SchemaDao::$primaryKeyColumn */
+	public $primaryKeyColumn = 'author_id';
+
+	/** @copydoc SchemaDao::$primaryTableColumns */
+	public $primaryTableColumns = [
+		'id' => 'author_id',
+		'email' => 'email',
+		'includeInBrowse' => 'include_in_browse',
+		'publicationId' => 'publication_id',
+		'seq' => 'seq',
+		'userGroupId' => 'user_group_id',
+	];
+
 	/**
-	 * Constructor
+	 * Get a new data object
+	 * @return DataObject
 	 */
-	function PKPAuthorDAO() {
-		parent::DAO();
+	function newDataObject() {
+		return new Author();
 	}
 
 	/**
-	 * Retrieve an author by ID.
-	 * @param $authorId int Author ID
-	 * @param $submissionId int optional
-	 * @return Author
+	 * @copydoc SchemaDAO::getById()
+	 * Overrides the parent implementation to add the submission_locale column
 	 */
-	function getById($authorId, $submissionId = null) {
-		$params = array((int) $authorId);
-		if ($submissionId !== null) $params[] = (int) $submissionId;
+	public function getById($objectId) {
 		$result = $this->retrieve(
-			'SELECT a.*,
-				ug.show_title
-			FROM	authors a
-				JOIN user_groups ug ON (a.user_group_id=ug.user_group_id)
-			WHERE	a.author_id = ?'
-				. ($submissionId !== null?' AND a.submission_id = ?':''),
-			$params
+			'SELECT a.*, p.locale AS submission_locale FROM authors a JOIN publications p ON (a.publication_id = p.publication_id) WHERE author_id = ?',
+			(int) $objectId
 		);
 
 		$returner = null;
 		if ($result->RecordCount() != 0) {
 			$returner = $this->_fromRow($result->GetRowAssoc(false));
 		}
-
 		$result->Close();
 		return $returner;
 	}
 
 	/**
-	 * Retrieve all authors for a submission.
-	 * @param $submissionId int
+	 * Retrieve all authors for a publication.
+	 * @param $publicationId int Publication ID.
 	 * @param $sortByAuthorId bool Use author Ids as indexes in the array
 	 * @param $useIncludeInBrowse bool Whether to limit to just include_in_browse authors
 	 * @return array Authors ordered by sequence
 	 */
-	function getBySubmissionId($submissionId, $sortByAuthorId = false, $useIncludeInBrowse = false) {
+	function getByPublicationId($publicationId, $sortByAuthorId = false, $useIncludeInBrowse = false) {
 		$authors = array();
-		$params = array((int) $submissionId);
+		$params = array((int) $publicationId);
 		if ($useIncludeInBrowse) $params[] = 1;
 
 		$result = $this->retrieve(
-			'SELECT	a.*, ug.show_title
-			FROM	authors a
+			'SELECT DISTINCT a.*, ug.show_title, p.locale AS submission_locale
+			FROM authors a
 				JOIN user_groups ug ON (a.user_group_id=ug.user_group_id)
-			WHERE	a.submission_id = ? ' .
+				JOIN publications p ON (p.publication_id = a.publication_id)
+				LEFT JOIN author_settings au ON (au.author_id = a.author_id)
+			WHERE	a.publication_id = ? ' .
 			($useIncludeInBrowse ? ' AND a.include_in_browse = ?' : '')
 			. ' ORDER BY seq',
 			$params
@@ -91,280 +106,39 @@ class PKPAuthorDAO extends DAO {
 	}
 
 	/**
-	 * Retrieve the number of authors assigned to a submission
-	 * @param $submissionId int
-	 * @return int
+	 * Update author names when publication locale changes.
+	 * @param $publicationId int
+	 * @param $oldLocale string
+	 * @param $newLocale string
 	 */
-	function getAuthorCountBySubmissionId($submissionId) {
-		$result = $this->retrieve(
-			'SELECT COUNT(*) FROM authors WHERE submission_id = ?',
-			(int) $submissionId
-		);
-
-		$returner = $result->fields[0];
-
-		$result->Close();
-		return $returner;
+	function changePublicationLocale($publicationId, $oldLocale, $newLocale) {
+		$authors = $this->getByPublicationId($publicationId);
+		foreach ($authors as $author) {
+			if (empty($author->getGivenName($newLocale))) {
+				if (empty($author->getFamilyName($newLocale)) && empty($author->getPreferredPublicName($newLocale))) {
+					// if no name exists for the new locale
+					// copy all names with the old locale to the new locale
+					$author->setGivenName($author->getGivenName($oldLocale), $newLocale);
+					$author->setFamilyName($author->getFamilyName($oldLocale), $newLocale);
+					$author->setPreferredPublicName($author->getPreferredPublicName($oldLocale), $newLocale);
+				} else {
+					// if the given name does not exist, but one of the other names do exist
+					// copy only the given name with the old locale to the new locale, because the given name is required
+					$author->setGivenName($author->getGivenName($oldLocale), $newLocale);
+				}
+				$this->updateObject($author);
+			}
+		}
 	}
 
-	/**
-	 * Update the localized data for this object
-	 * @param $author object
-	 */
-	function updateLocaleFields($author) {
-		$this->updateDataObjectSettings(
-			'author_settings',
-			$author,
-			array(
-				'author_id' => $author->getId()
-			)
-		);
-	}
 
 	/**
-	 * Internal function to return an Author object from a row.
-	 * @param $row array
-	 * @return Author
+	 * @copydoc SchemaDAO::_fromRow()
 	 */
-	function _fromRow($row) {
-		$author = $this->newDataObject();
-		$author->setId($row['author_id']);
-		$author->setSubmissionId($row['submission_id']);
-		$author->setFirstName($row['first_name']);
-		$author->setMiddleName($row['middle_name']);
-		$author->setLastName($row['last_name']);
-		$author->setSuffix($row['suffix']);
-		$author->setCountry($row['country']);
-		$author->setEmail($row['email']);
-		$author->setUrl($row['url']);
-		$author->setUserGroupId($row['user_group_id']);
-		$author->setPrimaryContact($row['primary_contact']);
-		$author->setSequence($row['seq']);
-		$author->setIncludeInBrowse($row['include_in_browse']);
-		$author->_setShowTitle($row['show_title']); // Dependent
-
-		$this->getDataObjectSettings('author_settings', 'author_id', $row['author_id'], $author);
-
-		HookRegistry::call('AuthorDAO::_fromRow', array(&$author, &$row));
+	public function _fromRow($primaryRow) {
+		$author = parent::_fromRow($primaryRow);
+		$author->setSubmissionLocale($primaryRow['submission_locale']);
 		return $author;
-	}
-
-	/**
-	 * Internal function to return an Author object from a row. Simplified
-	 * not to include object settings.
-	 * @param $row array
-	 * @return Author
-	 */
-	function _returnSimpleAuthorFromRow($row) {
-		$author = $this->newDataObject();
-		$author->setId($row['author_id']);
-		$author->setSubmissionId($row['submission_id']);
-		$author->setFirstName($row['first_name']);
-		$author->setMiddleName($row['middle_name']);
-		$author->setLastName($row['last_name']);
-		$author->setSuffix($row['suffix']);
-		$author->setCountry($row['country']);
-		$author->setEmail($row['email']);
-		$author->setUrl($row['url']);
-		$author->setUserGroupId($row['user_group_id']);
-		$author->setPrimaryContact($row['primary_contact']);
-		$author->setSequence($row['seq']);
-		$author->setIncludeInBrowse($row['include_in_browse'] == 1 ? true : false);
-
-		$author->setAffiliation($row['affiliation_l'], $row['locale']);
-		$author->setAffiliation($row['affiliation_pl'], $row['primary_locale']);
-
-		HookRegistry::call('AuthorDAO::_returnSimpleAuthorFromRow', array(&$author, &$row));
-		return $author;
-	}
-
-	/**
-	 * Get a new data object
-	 * @return DataObject
-	 */
-	function newDataObject() {
-		assert(false); // Should be overridden by child classes
-	}
-
-	/**
-	 * Get field names for which data is localized.
-	 * @return array
-	 */
-	function getLocaleFieldNames() {
-		return array('biography', 'competingInterests', 'affiliation');
-	}
-
-	/**
-	 * Insert a new Author.
-	 * @param $author Author
-	 */
-	function insertObject($author) {
-		// Set author sequence to end of author list
-		if(!$author->getSequence()) {
-			$authorCount = $this->getAuthorCountBySubmissionId($author->getSubmissionId());
-			$author->setSequence($authorCount + 1);
-		}
-		// Reset primary contact for submission to this author if applicable
-		if ($author->getPrimaryContact()) {
-			$this->resetPrimaryContact($author->getId(), $author->getSubmissionId());
-		}
-
-		$this->update(
-				'INSERT INTO authors
-				(submission_id, first_name, middle_name, last_name, suffix, country, email, url, user_group_id, primary_contact, seq, include_in_browse)
-				VALUES
-				(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-				array(
-						(int) $author->getSubmissionId(),
-						$author->getFirstName(),
-						$author->getMiddleName() . '', // make non-null
-						$author->getLastName(),
-						$author->getSuffix() . '',
-						$author->getCountry(),
-						$author->getEmail(),
-						$author->getUrl(),
-						(int) $author->getUserGroupId(),
-						(int) $author->getPrimaryContact(),
-						(float) $author->getSequence(),
-						(int) $author->getIncludeInBrowse() ? 1 : 0,
-				)
-		);
-
-		$author->setId($this->getInsertId());
-		$this->updateLocaleFields($author);
-
-		return $author->getId();
-	}
-
-	/**
-	 * Update an existing Author.
-	 * @param $author Author
-	 */
-	function updateObject($author) {
-		// Reset primary contact for submission to this author if applicable
-		if ($author->getPrimaryContact()) {
-			$this->resetPrimaryContact($author->getId(), $author->getSubmissionId());
-		}
-		$returner = $this->update(
-				'UPDATE	authors
-				SET	first_name = ?,
-					middle_name = ?,
-					last_name = ?,
-					suffix = ?,
-					country = ?,
-					email = ?,
-					url = ?,
-					user_group_id = ?,
-					primary_contact = ?,
-					seq = ?,
-					include_in_browse = ?
-				WHERE	author_id = ?',
-				array(
-						$author->getFirstName(),
-						$author->getMiddleName() . '', // make non-null
-						$author->getLastName(),
-						$author->getSuffix() . '',
-						$author->getCountry(),
-						$author->getEmail(),
-						$author->getUrl(),
-						(int) $author->getUserGroupId(),
-						(int) $author->getPrimaryContact(),
-						(float) $author->getSequence(),
-						(int) $author->getIncludeInBrowse() ? 1 : 0,
-						(int) $author->getId()
-				)
-		);
-		$this->updateLocaleFields($author);
-		return $returner;
-	}
-
-	/**
-	 * Delete an Author.
-	 * @param $author Author
-	 */
-	function deleteObject($author) {
-		return $this->deleteById($author->getId());
-	}
-
-	/**
-	 * Delete an author by ID.
-	 * @param $authorId int
-	 * @param $submissionId int optional
-	 */
-	function deleteById($authorId, $submissionId = null) {
-		$params = array((int) $authorId);
-		if ($submissionId) $params[] = (int) $submissionId;
-		$returner = $this->update(
-			'DELETE FROM authors WHERE author_id = ?' .
-			($submissionId?' AND submission_id = ?':''),
-			$params
-		);
-		if ($returner) $this->update('DELETE FROM author_settings WHERE author_id = ?', array((int) $authorId));
-
-		return $returner;
-	}
-
-	/**
-	 * Sequentially renumber a submission's authors in their sequence order.
-	 * @param $submissionId int
-	 */
-	function resequenceAuthors($submissionId) {
-		$result = $this->retrieve(
-			'SELECT author_id FROM authors WHERE submission_id = ? ORDER BY seq',
-			(int) $submissionId
-		);
-
-		for ($i=1; !$result->EOF; $i++) {
-			list($authorId) = $result->fields;
-			$this->update(
-				'UPDATE authors SET seq = ? WHERE author_id = ?',
-				array(
-					$i,
-					$authorId
-				)
-			);
-
-			$result->MoveNext();
-		}
-		$result->Close();
-	}
-
-	/**
-	 * Retrieve the primary author for a submission.
-	 * @param $submissionId int
-	 * @return Author
-	 */
-	function getPrimaryContact($submissionId) {
-		$result = $this->retrieve(
-			'SELECT a.*, ug.show_title
-				FROM authors a
-			JOIN user_groups ug ON (a.user_group_id=ug.user_group_id)
-			WHERE submission_id = ? AND primary_contact = 1',
-			(int) $submissionId
-		);
-
-		$returner = null;
-		if ($result->RecordCount() != 0) {
-			$returner = $this->_fromRow($result->GetRowAssoc(false));
-		}
-		$result->Close();
-		return $returner;
-	}
-
-	/**
-	 * Remove other primary contacts from a submission and set to authorId
-	 * @param $authorId int
-	 * @param $submissionId int
-	 */
-	function resetPrimaryContact($authorId, $submissionId) {
-		$this->update(
-			'UPDATE authors SET primary_contact = 0 WHERE primary_contact = 1 AND submission_id = ?',
-			(int) $submissionId
-		);
-		$this->update(
-			'UPDATE authors SET primary_contact = 1 WHERE author_id = ? AND submission_id = ?',
-			array((int) $authorId, (int) $submissionId)
-		);
 	}
 
 	/**
@@ -380,11 +154,13 @@ class PKPAuthorDAO extends DAO {
 	 * @param $submissionId int
 	 */
 	function deleteBySubmissionId($submissionId) {
-		$authors = $this->getBySubmissionId($submissionId);
-		foreach ($authors as $author) {
-			$this->deleteObject($author);
+		$submissionDao = DAORegistry::getDAO('SubmissionDAO');
+		$submission = $submissionDao->getById($submissionId);
+		if ($submission) foreach ($submission->getData('publications') as $publication) {
+			$authors = $this->getByPublicationId($publication->getId());
+			foreach ($authors as $author) {
+				$this->deleteObject($author);
+			}
 		}
 	}
 }
-
-?>

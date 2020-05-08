@@ -3,9 +3,9 @@
 /**
  * @file classes/install/form/UpgradeForm.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class UpgradeForm
  * @ingroup install_form
@@ -21,14 +21,16 @@ class UpgradeForm extends MaintenanceForm {
 	/**
 	 * Constructor.
 	 */
-	function UpgradeForm($request) {
-		parent::MaintenanceForm($request, 'install/upgrade.tpl');
+	function __construct($request) {
+		parent::__construct($request, 'install/upgrade.tpl');
 	}
 
 	/**
 	 * Perform installation.
 	 */
-	function execute() {
+	function execute(...$functionParams) {
+		parent::execute(...$functionParams);
+
 		define('RUNNING_UPGRADE', 1);
 		$templateMgr = TemplateManager::getManager($this->_request);
 		$installer = new Upgrade($this->_data);
@@ -62,4 +64,4 @@ class UpgradeForm extends MaintenanceForm {
 	}
 }
 
-?>
+

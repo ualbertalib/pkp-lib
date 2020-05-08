@@ -4,9 +4,9 @@
 <!--
   * xml/schema/submissionFiles.xml
   *
-  * Copyright (c) 2014 Simon Fraser University Library
-  * Copyright (c) 2000-2014 John Willinsky
-  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+  * Copyright (c) 2014-2020 Simon Fraser University
+  * Copyright (c) 2000-2020 John Willinsky
+  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
   *
   * Submission files schema in XML.
   -->
@@ -50,13 +50,17 @@
 		<field name="date_modified" type="T">
 			<NOTNULL/>
 		</field>
-		<field name="user_group_id" type="I8" />
 		<field name="uploader_user_id" type="I8" />
 		<field name="assoc_type" type="I8"/>
 		<field name="assoc_id" type="I8"/>
 		<descr>Files associated with submission. Includes submission files, etc.</descr>
 		<index name="submission_files_submission_id">
 			<col>submission_id</col>
+		</index>
+		<index name="submission_files_stage_assoc"><!-- pkp/pkp-lib#5804 -->
+			<col>file_stage</col>
+			<col>assoc_type</col>
+			<col>assoc_id</col>
 		</index>
 	</table>
 
@@ -69,7 +73,7 @@
 		<field name="file_id" type="I8">
 			<NOTNULL />
 		</field>
-		<field name="locale" type="C2" size="5">
+		<field name="locale" type="C2" size="14">
 			<NOTNULL />
 			<DEFAULT VALUE=""/>
 		</field>
@@ -114,5 +118,20 @@
 		<field name="chapter_id" type="I8"/>
 		<field name="contact_author" type="I8"/>
 		<descr>Submission visuals.</descr>
+	</table>
+
+	<!--
+	  *
+	  * TABLE submission_supplementary_files
+	  *
+	  -->
+	<table name="submission_supplementary_files">
+		<field name="file_id" type="I8">
+			<KEY />
+		</field>
+		<field name="revision" type="I8">
+			<KEY />
+		</field>
+		<descr>Submission supplementary content.</descr>
 	</table>
 </schema>

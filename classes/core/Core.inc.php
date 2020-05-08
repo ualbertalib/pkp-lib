@@ -8,9 +8,9 @@
 /**
  * @file classes/core/Core.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class Core
  * @ingroup core
@@ -20,7 +20,7 @@
 
 
 define('PKP_LIB_PATH', 'lib' . DIRECTORY_SEPARATOR . 'pkp');
-define('USER_AGENTS_FILE', Core::getBaseDir() . DIRECTORY_SEPARATOR . PKP_LIB_PATH . DIRECTORY_SEPARATOR . 'registry' . DIRECTORY_SEPARATOR . 'botAgents.txt');
+define('COUNTER_USER_AGENTS_FILE', Core::getBaseDir() . DIRECTORY_SEPARATOR . PKP_LIB_PATH . DIRECTORY_SEPARATOR . 'lib' . DIRECTORY_SEPARATOR . 'counterBots' .  DIRECTORY_SEPARATOR . 'generated' . DIRECTORY_SEPARATOR . 'COUNTER_Robots_list.txt');
 
 class Core {
 
@@ -43,45 +43,13 @@ class Core {
 	}
 
 	/**
-	 * Sanitize a variable.
-	 * Removes leading and trailing whitespace, normalizes all characters to UTF-8.
-	 * @param $var string
-	 * @return string
-	 */
-	static function cleanVar($var) {
-		// only normalize strings that are not UTF-8 already, and when the system is using UTF-8
-		if ( Config::getVar('i18n', 'charset_normalization') == 'On' && strtolower_codesafe(Config::getVar('i18n', 'client_charset')) == 'utf-8' && !String::utf8_is_valid($var) ) {
-
-			$var = String::utf8_normalize($var);
-
-			// convert HTML entities into valid UTF-8 characters (do not transcode)
-			$var = html_entity_decode($var, ENT_COMPAT, 'UTF-8');
-
-			// strip any invalid UTF-8 sequences
-			$var = String::utf8_bad_strip($var);
-
-			// re-encode special HTML characters
-			if (checkPhpVersion('5.2.3')) {
-				$var = htmlspecialchars($var, ENT_NOQUOTES, 'UTF-8', false);
-			} else {
-				$var = htmlspecialchars($var, ENT_NOQUOTES, 'UTF-8');
-			}
-		}
-
-		// strip any invalid ASCII control characters
-		$var = String::utf8_strip_ascii_ctrl($var);
-
-		return trim($var);
-	}
-
-	/**
 	 * Sanitize a value to be used in a file path.
 	 * Removes any characters except alphanumeric characters, underscores, and dashes.
 	 * @param $var string
 	 * @return string
 	 */
 	static function cleanFileVar($var) {
-		return String::regexp_replace('/[^\w\-]/', '', $var);
+		return PKPString::regexp_replace('/[^\w\-]/', '', $var);
 	}
 
 	/**
@@ -103,27 +71,11 @@ class Core {
 	}
 
 	/**
-	 * Get the operating system of the server.
-	 * @return string
-	 */
-	static function serverPHPOS() {
-		return PHP_OS;
-	}
-
-	/**
-	 * Get the version of PHP running on the server.
-	 * @return string
-	 */
-	static function serverPHPVersion() {
-		return phpversion();
-	}
-
-	/**
 	 * Check if the server platform is Windows.
 	 * @return boolean
 	 */
 	static function isWindows() {
-		return strtolower_codesafe(substr(Core::serverPHPOS(), 0, 3)) == 'win';
+		return strtolower_codesafe(substr(PHP_OS, 0, 3)) == 'win';
 	}
 
 	/**
@@ -145,16 +97,21 @@ class Core {
 	 * expressions to find bots inside user agent strings.
 	 * @return boolean
 	 */
-	static function isUserAgentBot($userAgent, $botRegexpsFile = USER_AGENTS_FILE) {
+	static function isUserAgentBot($userAgent, $botRegexpsFile = COUNTER_USER_AGENTS_FILE) {
 		static $botRegexps;
+		Registry::set('currentUserAgentsFile', $botRegexpsFile);
 
 		if (!isset($botRegexps[$botRegexpsFile])) {
-			$botRegexps[$botRegexpsFile] = array_filter(file($botRegexpsFile),
-				array('Core', '_filterBotRegexps'));
+			$botFileCacheId = md5($botRegexpsFile);
+			$cacheManager = CacheManager::getManager();
+			$cache = $cacheManager->getCache('core', $botFileCacheId, array('Core', '_botFileListCacheMiss'), CACHE_TYPE_FILE);
+			$botRegexps[$botRegexpsFile] = $cache->getContents();
 		}
 
 		foreach ($botRegexps[$botRegexpsFile] as $regexp) {
-			if (String::regexp_match($regexp, $userAgent)) {
+			// make the search case insensitive
+			$regexp .= 'i';
+			if (PKPString::regexp_match($regexp, $userAgent)) {
 				return true;
 			}
 		}
@@ -176,7 +133,7 @@ class Core {
 	 */
 	static function getContextPaths($urlInfo, $isPathInfo, $contextList = null, $contextDepth = null, $userVars = array()) {
 		$contextPaths = array();
-		$application = Application::getApplication();
+		$application = Application::get();
 
 		if (!$contextList) {
 			$contextList = $application->getContextList();
@@ -305,7 +262,7 @@ class Core {
 			// We found the contextPath using the base_url
 			// config file settings. Check if the url starts
 			// with the context path, if not, prepend it.
-			if (strpos($url, '/' . $contextPath) !== 0) {
+			if (strpos($url, '/' . $contextPath . '/') !== 0) {
 				$url = '/' . $contextPath . $url;
 			}
 		}
@@ -336,7 +293,7 @@ class Core {
 			// We are just interested in context base urls, remove the index one.
 			if (isset($contextBaseUrls['index'])) {
 				unset($contextBaseUrls['index']);
-			} 
+			}
 
 			// Arrange them in length order, so we make sure
 			// we get the correct one, in case there's an overlaping
@@ -424,22 +381,31 @@ class Core {
 	}
 
 	/**
-	 * Filter the regular expressions to find bots, adding
-	 * delimiters if necessary.
-	 * @param $regexp string
+	 * Bot list file cache miss fallback.
+	 * @param $cache FileCache
+	 * @return array:
 	 */
-	private static function _filterBotRegexps(&$regexp) {
-		$delimiter = '/';
-		$regexp = trim($regexp);
-		if (!empty($regexp) && $regexp[0] != '#') {
-			if(strpos($regexp, $delimiter) !== 0) {
-				// Make sure delimiters are in place.
-				$regexp = $delimiter . $regexp . $delimiter;
-				return true;
+	static function _botFileListCacheMiss($cache) {
+		$id = $cache->getCacheId();
+		$filteredBotRegexps = array_filter(file(Registry::get('currentUserAgentsFile')),
+			function ($regexp) {
+				$regexp = trim($regexp);
+				return !empty($regexp) && $regexp[0] != '#';
 			}
-		} else {
-			return false;
-		}
+		);
+		$botRegexps = array_map(function ($regexp) {
+				$delimiter = '/';
+				$regexp = trim($regexp);
+				if(strpos($regexp, $delimiter) !== 0) {
+					// Make sure delimiters are in place.
+					$regexp = $delimiter . $regexp . $delimiter;
+				}
+				return $regexp;
+			},
+			$filteredBotRegexps
+		);
+		$cache->setEntireCache($botRegexps);
+		return $botRegexps;
 	}
 
 	/**
@@ -483,16 +449,13 @@ class Core {
 			$isArrayComponent = true;
 		}
 		if ($isPathInfo) {
-			$application = Application::getApplication();
+			$application = Application::get();
 			$contextDepth = $application->getContextDepth();
 
 			$vars = explode('/', trim($urlInfo, '/'));
 			if (count($vars) > $contextDepth + $offset) {
 				if ($isArrayComponent) {
 					$component = array_slice($vars, $contextDepth + $offset);
-					for ($i=0, $count=count($component); $i<$count; $i++) {
-						$component[$i] = Core::cleanVar(get_magic_quotes_gpc() ? stripslashes($component[$i]) : $component[$i]);
-					}
 				} else {
 					$component = $vars[$contextDepth + $offset];
 				}
@@ -510,4 +473,4 @@ class Core {
 	}
 }
 
-?>
+

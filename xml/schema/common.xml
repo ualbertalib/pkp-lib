@@ -4,9 +4,9 @@
 <!--
   * xml/schema/common.xml
   *
-  * Copyright (c) 2014 Simon Fraser University Library
-  * Copyright (c) 2000-2014 John Willinsky
-  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+  * Copyright (c) 2014-2020 Simon Fraser University
+  * Copyright (c) 2000-2020 John Willinsky
+  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
   *
   * Common elements of the PKP database schema in XML.
   -->
@@ -88,7 +88,7 @@
 			<DEFAULT VALUE="0"/>
 			<descr>If not 0, redirect to the specified journal/conference/... site.</descr>
 		</field>
-		<field name="primary_locale" type="C2" size="5">
+		<field name="primary_locale" type="C2" size="14">
 			<NOTNULL/>
 			<descr>Primary locale for the site.</descr>
 		</field>
@@ -96,12 +96,12 @@
 			<NOTNULL/>
 			<DEFAULT VALUE="6"/>
 		</field>
-		<field name="installed_locales" type="C2" size="255">
+		<field name="installed_locales" type="C2" size="1024">
 			<NOTNULL/>
 			<DEFAULT VALUE="en_US"/>
 			<descr>Locales for which support has been installed.</descr>
 		</field>
-		<field name="supported_locales" type="C2" size="255">
+		<field name="supported_locales" type="C2" size="1024">
 			<descr>Locales supported by the site (for hosted journals/conferences/...).</descr>
 		</field>
 		<field name="original_style_file_name" type="C2" size="255"/>
@@ -117,15 +117,11 @@
 		<field name="setting_name" type="C2" size="255">
 			<NOTNULL />
 		</field>
-		<field name="locale" type="C2" size="5">
+		<field name="locale" type="C2" size="14">
 			<NOTNULL />
 			<DEFAULT VALUE=""/>
 		</field>
 		<field name="setting_value" type="X"/>
-		<field name="setting_type" type="C2" size="6">
-			<NOTNULL />
-			<descr>(bool|int|float|string|object)</descr>
-		</field>
 		<descr>Site settings.</descr>
 		<index name="site_settings_pkey">
 			<col>setting_name</col>
@@ -171,30 +167,19 @@
 		<field name="username" type="C2" size="32">
 			<NOTNULL/>
 		</field>
-		<field name="password" type="C2" size="40">
+		<field name="password" type="C2" size="255">
 			<NOTNULL/>
 		</field>
-		<field name="salutation" type="C2" size="40"/>
-		<field name="first_name" type="C2" size="40">
+		<field name="email" type="C2" size="255">
 			<NOTNULL/>
 		</field>
-		<field name="middle_name" type="C2" size="40"/>
-		<field name="last_name" type="C2" size="90">
-			<NOTNULL/>
-		</field>
-		<field name="suffix" type="C2" size="40"/>
-		<field name="gender" type="C" size="1"/>
-		<field name="initials" type="C2" size="5"/>
-		<field name="email" type="C2" size="90">
-			<NOTNULL/>
-		</field>
-		<field name="url" type="C2" size="255"/>
-		<field name="phone" type="C2" size="24"/>
-		<field name="fax" type="C2" size="24"/>
+		<field name="url" type="C2" size="2047"/>
+		<field name="phone" type="C2" size="32"/>
 		<field name="mailing_address" type="C2" size="255"/>
 		<field name="billing_address" type="C2" size="255"/>
 		<field name="country" type="C2" size="90"/>
 		<field name="locales" type="C2" size="255"/>
+		<field name="gossip" type="X"/>
 		<field name="date_last_email" type="T"/>
 		<field name="date_registered" type="T">
 			<NOTNULL/>
@@ -232,7 +217,7 @@
 		<field name="user_id" type="I8">
 			<NOTNULL/>
 		</field>
-		<field name="locale" type="C2" size="5">
+		<field name="locale" type="C2" size="14">
 			<NOTNULL/>
 			<DEFAULT VALUE=""/>
 		</field>
@@ -271,7 +256,7 @@
 	  *
 	  -->
 	<table name="sessions">
-		<field name="session_id" type="C2" size="40">
+		<field name="session_id" type="C2" size="128">
 			<NOTNULL/>
 		</field>
 		<field name="user_id" type="I8"/>
@@ -381,6 +366,10 @@
 			<col>assoc_type</col>
 			<col>assoc_id</col>
 		</index>
+		<index name="notifications_user_id_level">
+			<col>user_id</col>
+			<col>level</col>
+		</index>
 	</table>
 
 	<!--
@@ -392,7 +381,7 @@
 		<field name="notification_id" type="I8">
 			<NOTNULL/>
 		</field>
-		<field name="locale" type="C2" size="5" />
+		<field name="locale" type="C2" size="14" />
 		<field name="setting_name" type="C2" size="64">
 			<NOTNULL/>
 		</field>
@@ -515,7 +504,7 @@
 			<NOTNULL />
 			<descr>Unique identifier for this email.</descr>
 		</field>
-		<field name="locale" type="C2" size="5">
+		<field name="locale" type="C2" size="14">
 			<NOTNULL />
 			<DEFAULT VALUE="en_US"/>
 		</field>
@@ -546,11 +535,7 @@
 			<NOTNULL/>
 			<descr>Unique identifier for this email.</descr>
 		</field>
-		<field name="assoc_type" type="I8">
-			<!-- Not null not specified for sake of upgrade. -->
-			<DEFAULT VALUE="0"/>
-		</field>
-		<field name="assoc_id" type="I8">
+		<field name="context_id" type="I8">
 			<!-- Not null not specified for sake of upgrade. -->
 			<DEFAULT VALUE="0"/>
 		</field>
@@ -561,49 +546,36 @@
 		<descr>Templates for emails.</descr>
 		<index name="email_templates_email_key">
 			<col>email_key</col>
-			<col>assoc_type</col>
-			<col>assoc_id</col>
+			<col>context_id</col>
 			<UNIQUE/>
-		</index>
-		<index name="email_templates_assoc">
-			<col>assoc_type</col>
-			<col>assoc_id</col>
 		</index>
 	</table>
 
 	<!--
 	  *
-	  * TABLE email_templates_data
+	  * TABLE email_templates_settings
 	  *
 	  -->
-	<table name="email_templates_data">
-		<field name="email_key" type="C2" size="64">
+	<table name="email_templates_settings">
+		<field name="email_id" type="I8">
 			<NOTNULL />
-			<descr>Unique identifier for this email.</descr>
 		</field>
-		<field name="locale" type="C2" size="5">
+		<field name="locale" type="C2" size="14">
 			<NOTNULL />
-			<DEFAULT VALUE="en_US"/>
+			<DEFAULT VALUE=""/>
 		</field>
-		<field name="assoc_type" type="I8">
-			<!-- Not null not specified for sake of upgrade. -->
-			<DEFAULT VALUE="0"/>
+		<field name="setting_name" type="C2" size="255">
+			<NOTNULL />
 		</field>
-		<field name="assoc_id" type="I8">
-			<!-- Not null not specified for sake of upgrade. -->
-			<DEFAULT VALUE="0"/>
-		</field>
-		<field name="subject" type="C2" size="120">
-			<NOTNULL/>
-		</field>
-		<field name="body" type="X"/>
-		<descr>Data for email templates.</descr>
-		<index name="email_templates_data_pkey">
-			<col>email_key</col>
+		<field name="setting_value" type="X" />
+		<index name="email_settings_email_id">
+			<col>email_id</col>
+		</index>
+		<index name="email_settings_pkey">
+			<col>email_id</col>
 			<col>locale</col>
-			<col>assoc_type</col>
-			<col>assoc_id</col>
-			<UNIQUE/>
+			<col>setting_name</col>
+			<UNIQUE />
 		</index>
 	</table>
 
@@ -628,35 +600,6 @@
 		<descr>Resumption tokens for the OAI protocol interface.</descr>
 		<index name="oai_resumption_tokens_pkey">
 			<col>token</col>
-			<UNIQUE/>
-		</index>
-	</table>
-
-	<!-- Parallel Processing -->
-
-	<!--
-	 *
-	 * TABLE processes
-	 *
-	 -->
-	<table name="processes">
-		<field name="process_id" type="C2" size="23">
-			<NOTNULL />
-		</field>
-		<field name="process_type" type="I1">
-			<NOTNULL/>
-		</field>
-		<field name="time_started" type="I8">
-			<NOTNULL/>
-		</field>
-		<field name="additional_data" type="X"/>
-		<field name="obliterated" type="I1">
-			<NOTNULL/>
-			<DEFAULT VALUE="0"/>
-		</field>
-		<descr>Currently running processes.</descr>
-		<index name="processes_pkey">
-			<col>process_id</col>
 			<UNIQUE/>
 		</index>
 	</table>

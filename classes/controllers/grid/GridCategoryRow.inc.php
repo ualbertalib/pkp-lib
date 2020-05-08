@@ -3,9 +3,9 @@
 /**
  * @file classes/controllers/grid/GridCategoryRow.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class GridCategoryRow
  * @ingroup controllers_grid
@@ -23,8 +23,8 @@ class GridCategoryRow extends GridRow {
 	/**
 	 * Constructor.
 	 */
-	function GridCategoryRow() {
-		parent::GridRow();
+	function __construct() {
+		parent::__construct();
 
 		// Set a default cell provider that will get the cell template
 		// variables from the category grid row.
@@ -59,4 +59,4 @@ class GridCategoryRow extends GridRow {
 	}
 }
 
-?>
+

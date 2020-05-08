@@ -2,38 +2,26 @@
 
 # @file tools/travis/prepare-webserver.sh
 #
-# Copyright (c) 2014 Simon Fraser University Library
-# Copyright (c) 2010-2014 John Willinsky
-# Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+# Copyright (c) 2014-2020 Simon Fraser University
+# Copyright (c) 2010-2020 John Willinsky
+# Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
 #
-# Script to prepare the webserver for Travis testing.
+# Script to prepare and start the PHP internal webserver for Travis testing.
 #
 
 set -xe
 
-# Start apache and configure a virtual host.
-sudo apt-get update > /dev/null
-sudo apt-get install -y --force-yes apache2 php5-cgi libapache2-mod-fastcgi apache2-suexec-custom apache2-mpm-prefork php5-curl php5-mysql php5-pgsql php5-intl
-sudo a2enmod actions fastcgi suexec
+# Add our PHP configuration variables to the default configuration.
+if [ -z "$TRAVIS" ] ; then
+	echo "(Skipping phpenv add)"
+else
+	phpenv config-add lib/pkp/tools/travis/php.ini
+fi
 
-# Prepare FastCGI/suEXEC environment: Apache2 config for FastCGI/suEXEC
-echo "Action application/x-httpd-php /cgi-bin/php.fcgi
-SuexecUserGroup travis travis" | sudo tee /etc/apache2/sites-enabled/php-fcgi.conf
+# This script runs as the travis user, so cannot bind to port 80. To work
+# around this, we use socat to forward requests from port 80 to port 8080.
+sudo apt-get install socat
+sudo socat TCP-LISTEN:80,fork,reuseaddr TCP:localhost:8080 &
 
-# Prepare FastCGI/suEXEC environment: FastCGI wrapper
-mkdir cgi-bin
-echo "#!/bin/sh
-export PHP_FCGI_CHILDREN=4
-export PHP_FCGI_MAX_REQUESTS=200
-exec /usr/bin/php5-cgi" > cgi-bin/php.fcgi
-chmod -R 755 cgi-bin
-
-# Edit configuration files
-sudo sed -i -e "s,#FastCgiWrapper /usr/lib/apache2/suexec,FastCgiWrapper /usr/lib/apache2/suexec,g" /etc/apache2/mods-enabled/fastcgi.conf
-sudo sed -i -e "s,/var/www,$(pwd),g" /etc/apache2/sites-available/default
-sudo sed -i -e "s,/usr/lib/cgi-bin,$(pwd)/cgi-bin,g" /etc/apache2/sites-available/default
-sudo sed -i -e "s,\${APACHE_LOG_DIR},$(pwd),g" /etc/apache2/sites-available/default
-sudo sed -i -e "s,/var/www,$(pwd)/,g" /etc/apache2/suexec/www-data
-
-# Restart Apache2
-sudo /etc/init.d/apache2 restart
+# Run the PHP internal server on port 8080.
+php -S 127.0.0.1:8080 -t . >& access.log &

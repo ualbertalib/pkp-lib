@@ -3,9 +3,9 @@
 /**
 * @file classes/statistics/PKPStatisticsHelper.inc.php
 *
-* Copyright (c) 2013 Simon Fraser University Library
-* Copyright (c) 2003-2013 John Willinsky
-* Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+* Copyright (c) 2013-2020 Simon Fraser University
+* Copyright (c) 2003-2020 John Willinsky
+* Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
 *
 * @class PKPStatisticsHelper
 * @ingroup statistics
@@ -17,7 +17,7 @@
 // Dimensions:
 // 1) publication object dimension:
 define('STATISTICS_DIMENSION_CONTEXT_ID', 'context_id');
-define('STATISTICS_DIMENSION_PKP_SECTION_ID', 'pkp_section_id');
+define('STATISTICS_DIMENSION_PKP_SECTION_ID', 'pkp_section_id'); // OJS section i.e. OMP series ID
 define('STATISTICS_DIMENSION_ASSOC_OBJECT_TYPE', 'assoc_object_type');
 define('STATISTICS_DIMENSION_ASSOC_OBJECT_ID', 'assoc_object_id');
 define('STATISTICS_DIMENSION_SUBMISSION_ID', 'submission_id');
@@ -42,9 +42,6 @@ define('STATISTICS_METRIC', 'metric');
 define('STATISTICS_ORDER_ASC', 'ASC');
 define('STATISTICS_ORDER_DESC', 'DESC');
 
-// Global report size limit:
-define('STATISTICS_MAX_ROWS', 5000);
-
 // File type to be used in publication object dimension.
 define('STATISTICS_FILE_TYPE_HTML', 1);
 define('STATISTICS_FILE_TYPE_PDF', 2);
@@ -55,12 +52,15 @@ define('STATISTICS_FILE_TYPE_DOC', 4);
 define('STATISTICS_UNKNOWN_COUNTRY_ID', 'ZZ');
 
 // Constants used to filter time dimension to current time.
-define('STATISTICS_CURRENT_DAY', 'currentDay');
+define('STATISTICS_YESTERDAY', 'yesterday');
 define('STATISTICS_CURRENT_MONTH', 'currentMonth');
+
+// Set the earliest date used
+define('STATISTICS_EARLIEST_DATE', '20010101');
 
 abstract class PKPStatisticsHelper {
 
-	function PKPStatisticsHelper() {
+	function __construct() {
 	}
 
 	/**
@@ -149,7 +149,7 @@ abstract class PKPStatisticsHelper {
 
 		// Retrieve site-level report plugins.
 		$reportPlugins = PluginRegistry::loadCategory('reports', true, CONTEXT_SITE);
-		if (!is_array($reportPlugins) || empty($metricType)) {
+		if (empty($reportPlugins) || empty($metricType)) {
 			return $returner;
 		}
 
@@ -179,7 +179,7 @@ abstract class PKPStatisticsHelper {
 	function getAllMetricTypeStrings() {
 		$allMetricTypes = array();
 		$reportPlugins = PluginRegistry::loadCategory('reports', true, CONTEXT_SITE);
-		if (is_array($reportPlugins)) {
+		if (!empty($reportPlugins)) {
 			foreach ($reportPlugins as $reportPlugin) {
 				/* @var $reportPlugin ReportPlugin */
 				$reportMetricTypes = $reportPlugin->getMetricTypes();
@@ -264,11 +264,11 @@ abstract class PKPStatisticsHelper {
 		$args = array(
 			'metricType' => $metricType,
 			'columns' => $columns,
-			'filters' => serialize($filter)
+			'filters' => json_encode($filter)
 		);
 
 		if (!empty($orderBy)) {
-			$args['orderBy'] = serialize($orderBy);
+			$args['orderBy'] = json_encode($orderBy);
 		}
 
 		return $dispatcher->url($request, ROUTE_PAGE, null, 'management', 'tools', 'generateReport', $args);
@@ -277,7 +277,7 @@ abstract class PKPStatisticsHelper {
 
 	/**
 	* Get the geo location tool.
-	* @return GeoLocationTool
+	* @return mixed GeoLocationTool object or null
 	*/
 	function &getGeoLocationTool() {
 		$geoLocationTool = null;
@@ -331,7 +331,7 @@ abstract class PKPStatisticsHelper {
 	 * their respective names as array values.
 	 * @return array
 	 */
-	protected function getFileTypesArray() {
+	public function getFileTypesArray() {
 		return array(
 			STATISTICS_FILE_TYPE_PDF => 'PDF',
 			STATISTICS_FILE_TYPE_HTML => 'HTML',
@@ -348,4 +348,4 @@ abstract class PKPStatisticsHelper {
 	abstract protected function getAppColumnTitle($column);
 }
 
-?>
+

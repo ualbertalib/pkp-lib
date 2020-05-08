@@ -1,9 +1,9 @@
 /**
  * @file js/controllers/UrlInDivHandler.js
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class UrlInDivHandler
  * @ingroup js_controllers
@@ -29,6 +29,10 @@
 
 		// Load the contents.
 		this.reload();
+
+		if (options.refreshOn) {
+			this.bindGlobal(options.refreshOn, this.reload);
+		}
 	};
 	$.pkp.classes.Helper.inherits(
 			$.pkp.controllers.UrlInDivHandler, $.pkp.classes.Handler);
@@ -89,7 +93,7 @@
 	$.pkp.controllers.UrlInDivHandler.prototype.handleLoadedContent_ =
 			function(ajaxContext, jsonData) {
 
-		var handledJsonData = this.handleJson(jsonData);
+		var handledJsonData = this.handleJson(jsonData), urlInDivHandler = this;
 		if (handledJsonData.status === true) {
 			if (handledJsonData.content === undefined) {
 				// Request successful, but no data returned.
@@ -98,12 +102,17 @@
 			} else {
 				// See bug #8237.
 				if (! /msie/.test(navigator.userAgent.toLowerCase())) {
-					this.getHtmlElement().hide().html(handledJsonData.content).fadeIn(400);
+					this.getHtmlElement().hide();
+					this.html(handledJsonData.content);
+					this.getHtmlElement().fadeIn(400);
 				} else {
-					this.getHtmlElement().html(handledJsonData.content);
+					this.html(handledJsonData.content);
 				}
 
-				this.trigger('urlInDivLoaded', [this.getHtmlElement().attr('id')]);
+				$(function() {
+					urlInDivHandler.trigger('urlInDivLoaded',
+							[urlInDivHandler.getHtmlElement().attr('id')]);
+				});
 			}
 		} else {
 			// Alert that loading failed.
@@ -114,5 +123,4 @@
 	};
 
 
-/** @param {jQuery} $ jQuery closure. */
 }(jQuery));

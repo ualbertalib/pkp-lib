@@ -3,9 +3,9 @@
 /**
  * @file tests/classes/core/PKPRequestTest.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPRequestTest
  * @ingroup tests_classes_core
@@ -21,11 +21,14 @@ import('lib.pkp.tests.PKPTestCase');
 import('lib.pkp.classes.core.PKPRequest');
 import('lib.pkp.classes.plugins.HookRegistry'); // This imports our mock HookRegistry implementation.
 
+/**
+ * @backupGlobals enabled
+ */
 class PKPRequestTest extends PKPTestCase {
 	protected $request;
 	private $getRemoteAddrTestConfigData;
 
-	public function setUp() {
+	public function setUp() : void {
 		parent::setUp();
 		HookRegistry::rememberCalledHooks();
 		$this->request = new PKPRequest();
@@ -34,7 +37,7 @@ class PKPRequestTest extends PKPTestCase {
 		$this->getRemoteAddrTestConfigData = Registry::get('configData');
 	}
 
-	public function tearDown() {
+	public function tearDown() : void {
 		HookRegistry::resetCalledHooks();
 
 		// Restore the config data after testTrustXForwardedFor tests
@@ -101,7 +104,9 @@ class PKPRequestTest extends PKPTestCase {
 	 */
 	public function testGetBaseUrl() {
 		$this->setTestConfiguration('request1', 'classes/core/config'); // baseurl1
-		$_SERVER = array();
+		$_SERVER = array(
+			'SCRIPT_NAME' => '/index.php',
+		);
 		self::assertEquals('http://baseurl1/', $this->request->getBaseUrl());
 
 		// Two hooks should have been triggered.
@@ -129,10 +134,10 @@ class PKPRequestTest extends PKPTestCase {
 	public function testGetBaseUrlWithHostDetection() {
 		$this->setTestConfiguration('request1', 'classes/core/config');
 		$_SERVER = array(
-			'HOSTNAME' => 'hostname',
+			'SERVER_NAME' => 'hostname',
 			'SCRIPT_NAME' => '/some/base/path'
 		);
-		self::assertEquals('http://hostname/some/base', $this->request->getBaseUrl());
+		self::assertEquals('http://hostname/some/base/path', $this->request->getBaseUrl());
 	}
 
 	/**
@@ -142,18 +147,18 @@ class PKPRequestTest extends PKPTestCase {
 		$_SERVER = array(
 			'SCRIPT_NAME' => '/some/base/path'
 		);
-		self::assertEquals('/some/base', $this->request->getBasePath());
+		self::assertEquals('/some/base/path', $this->request->getBasePath());
 
 		// The hook should have been triggered once.
 		self::assertEquals(
-			array(array('Request::getBasePath' , array('/some/base'))),
+			array(array('Request::getBasePath' , array('/some/base/path'))),
 			HookRegistry::getCalledHooks()
 		);
 
 		// Calling getBasePath twice should return the same
 		// result without triggering the hook again.
 		HookRegistry::resetCalledHooks();
-		self::assertEquals('/some/base', $this->request->getBasePath());
+		self::assertEquals('/some/base/path', $this->request->getBasePath());
 		self::assertEquals(
 			array(),
 			HookRegistry::getCalledHooks()
@@ -167,7 +172,7 @@ class PKPRequestTest extends PKPTestCase {
 		$_SERVER = array(
 			'SCRIPT_NAME' => '/main'
 		);
-		self::assertEquals('', $this->request->getBasePath());
+		self::assertEquals('/main', $this->request->getBasePath());
 	}
 
 	/**
@@ -206,7 +211,7 @@ class PKPRequestTest extends PKPTestCase {
 		);
 		$this->setTestConfiguration('request2', 'classes/core/config'); // restful URLs
 
-		self::assertEquals('some/script', $this->request->getRequestPath());
+		self::assertEquals('some/script/name', $this->request->getRequestPath());
 	}
 
 
@@ -233,7 +238,7 @@ class PKPRequestTest extends PKPTestCase {
 		);
 		$this->setTestConfiguration('request2', 'classes/core/config'); // path info disabled
 
-		self::assertEquals('some/script', $this->request->getRequestPath());
+		self::assertEquals('some/script/name', $this->request->getRequestPath());
 	}
 
 	/**
@@ -241,7 +246,9 @@ class PKPRequestTest extends PKPTestCase {
 	 */
 	public function testGetServerHostLocalhost() {
 		// if none of the server variables is set then return the default
-		$_SERVER = array();
+		$_SERVER = array(
+			'SCRIPT_NAME' => '/index.php',
+		);
 		self::assertEquals('localhost', $this->request->getServerHost());
 	}
 
@@ -250,9 +257,23 @@ class PKPRequestTest extends PKPTestCase {
 	 * @depends testGetServerHostLocalhost
 	 */
 	public function testGetServerHostWithHostname() {
-		// if HOSTNAME is set then return it
+		// if SERVER_NAME is set then return it
 		$_SERVER = array(
-			'HOSTNAME' => 'hostname'
+			'SERVER_NAME' => 'hostname',
+			'SCRIPT_NAME' => ''
+		);
+		self::assertEquals('hostname', $this->request->getServerHost());
+	}
+
+	/**
+	 * @covers PKPRequest::getServerHost
+	 * @depends testGetServerHostLocalhost
+	 */
+	public function testGetServerHostWithServerName() {
+		// if SERVER_NAME is set then return it
+		$_SERVER = array(
+			'SERVER_NAME' => 'hostname',
+			'SCRIPT_NAME' => '/index.php',
 		);
 		self::assertEquals('hostname', $this->request->getServerHost());
 	}
@@ -264,8 +285,9 @@ class PKPRequestTest extends PKPTestCase {
 	public function testGetServerHostWithHttpHost() {
 		// if HTTP_HOST is set then return it
 		$_SERVER = array(
-			'HOSTNAME' => 'hostname',
-			'HTTP_HOST' => 'http_host'
+			'SERVER_NAME' => 'hostname',
+			'HTTP_HOST' => 'http_host',
+			'SCRIPT_NAME' => '/index.php',
 		);
 		self::assertEquals('http_host', $this->request->getServerHost());
 	}
@@ -277,9 +299,10 @@ class PKPRequestTest extends PKPTestCase {
 	public function testGetServerHostWithHttpXForwardedHost() {
 		// if HTTP_X_FORWARDED_HOST is set then return it
 		$_SERVER = array(
-			'HOSTNAME' => 'hostname',
+			'SERVER_NAME' => 'hostname',
 			'HTTP_HOST' => 'http_host',
-			'HTTP_X_FORWARDED_HOST' => 'x_host'
+			'HTTP_X_FORWARDED_HOST' => 'x_host',
+			'SCRIPT_NAME' => '/index.php',
 		);
 		self::assertEquals('x_host', $this->request->getServerHost());
 	}
@@ -311,7 +334,8 @@ class PKPRequestTest extends PKPTestCase {
 	 */
 	public function testGetProtocolHttpsVariableOff() {
 		$_SERVER = array(
-			'HTTPS' => 'OFF'
+			'HTTPS' => 'OFF',
+			'SCRIPT_NAME' => '/index.php',
 		);
 		self::assertEquals('http', $this->request->getProtocol());
 	}
@@ -321,7 +345,8 @@ class PKPRequestTest extends PKPTestCase {
 	 */
 	public function testGetProtocolHttpsVariableOn() {
 		$_SERVER = array(
-			'HTTPS' => 'ON'
+			'HTTPS' => 'ON',
+			'SCRIPT_NAME' => '/index.php',
 		);
 		self::assertEquals('https', $this->request->getProtocol());
 	}
@@ -380,7 +405,7 @@ class PKPRequestTest extends PKPTestCase {
 	 */
 	public function testGetUserVar() {
 		$_GET = array(
-			'par1' => (get_magic_quotes_gpc() ? "\'val1\'" : "'val1'"),
+			'par1' => '\'val1\'',
 			'par2' => ' val2'
 		);
 		$_POST = array(
@@ -398,7 +423,7 @@ class PKPRequestTest extends PKPTestCase {
 	 */
 	public function testGetUserVars() {
 		$_GET = array(
-			'par1' => (get_magic_quotes_gpc() ? "\'val1\'" : "'val1'"),
+			'par1' => '\'val1\'',
 			'par2' => ' val2'
 		);
 		$_POST = array(
@@ -414,4 +439,4 @@ class PKPRequestTest extends PKPTestCase {
 		self::assertEquals($expectedResult, $this->request->getUserVars());
 	}
 }
-?>
+

@@ -3,9 +3,9 @@
 /**
  * @file controllers/api/file/linkAction/AddFileLinkAction.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class AddFileLinkAction
  * @ingroup controllers_api_file_linkAction
@@ -27,8 +27,6 @@ class AddFileLinkAction extends BaseAddFileLinkAction {
 	 *  constants).
 	 * @param $uploaderRoles array The ids of all roles allowed to upload
 	 *  in the context of this action.
-	 * @param $uploaderGroupIds array The ids of all allowed user groups
-	 *  to upload in the context of this action, or null to permit all.
 	 * @param $fileStage integer The file stage the file should be
 	 *  uploaded to (one of the SUBMISSION_FILE_* constants).
 	 * @param $assocType integer The type of the element the file should
@@ -36,11 +34,12 @@ class AddFileLinkAction extends BaseAddFileLinkAction {
 	 * @param $assocId integer The id of the element the file should be
 	 *  associated with.
 	 * @param $reviewRoundId int The current review round ID (if any)
+	 * @param $revisedFileId int Revised file ID, if any
 	 * @param $dependentFilesOnly bool whether to only include dependent
 	 *  files in the Genres dropdown.
 	 */
-	function AddFileLinkAction($request, $submissionId, $stageId, $uploaderRoles,
-			$uploaderGroupIds, $fileStage, $assocType = null, $assocId = null, $reviewRoundId = null, $dependentFilesOnly = false) {
+	function __construct($request, $submissionId, $stageId, $uploaderRoles,
+			$fileStage, $assocType = null, $assocId = null, $reviewRoundId = null, $revisedFileId = null, $dependentFilesOnly = false) {
 
 		// Create the action arguments array.
 		$actionArgs = array('fileStage' => $fileStage, 'reviewRoundId' => $reviewRoundId);
@@ -48,15 +47,18 @@ class AddFileLinkAction extends BaseAddFileLinkAction {
 			$actionArgs['assocType'] = (int)$assocType;
 			$actionArgs['assocId'] = (int)$assocId;
 		}
-
+		if ($revisedFileId) {
+			$actionArgs['revisedFileId'] = $revisedFileId;
+			$actionArgs['revisionOnly'] = true;
+		}
 		if ($dependentFilesOnly) $actionArgs['dependentFilesOnly'] = true;
 
 		// Identify text labels based on the file stage.
 		$textLabels = AddFileLinkAction::_getTextLabels($fileStage);
 
 		// Call the parent class constructor.
-		parent::BaseAddFileLinkAction(
-			$request, $submissionId, $stageId, $uploaderRoles, $uploaderGroupIds, $actionArgs,
+		parent::__construct(
+			$request, $submissionId, $stageId, $uploaderRoles, $actionArgs,
 			__($textLabels['wizardTitle']), __($textLabels['buttonLabel'])
 		);
 	}
@@ -87,6 +89,10 @@ class AddFileLinkAction extends BaseAddFileLinkAction {
 				'wizardTitle' => 'editor.submissionReview.uploadAttachment',
 				'buttonLabel' => 'editor.submissionReview.uploadAttachment'
 			),
+			SUBMISSION_FILE_ATTACHMENT => array(
+				'wizardTitle' => 'editor.submissionReview.uploadFile',
+				'buttonLabel' => 'submission.addFile'
+			),
 			SUBMISSION_FILE_REVIEW_REVISION => array(
 				'wizardTitle' => 'editor.submissionReview.uploadFile',
 				'buttonLabel' => 'submission.addFile'
@@ -109,10 +115,14 @@ class AddFileLinkAction extends BaseAddFileLinkAction {
 			),
 			SUBMISSION_FILE_PROOF => array(
 				'wizardTitle' => 'submission.upload.proof',
-				'buttonLabel' => 'submission.addFile'
+				'buttonLabel' => 'submission.changeFile'
 			),
 			SUBMISSION_FILE_DEPENDENT => array(
 				'wizardTitle' => 'submission.upload.dependent',
+				'buttonLabel' => 'submission.addFile'
+			),
+			SUBMISSION_FILE_QUERY => array(
+				'wizardTitle' => 'submission.upload.query',
 				'buttonLabel' => 'submission.addFile'
 			),
 		);
@@ -122,4 +132,4 @@ class AddFileLinkAction extends BaseAddFileLinkAction {
 	}
 }
 
-?>
+

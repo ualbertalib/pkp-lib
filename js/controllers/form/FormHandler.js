@@ -4,9 +4,9 @@
 /**
  * @file js/controllers/form/FormHandler.js
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class FormHandler
  * @ingroup js_controllers_form
@@ -32,11 +32,12 @@
 	 *  cancelRedirectUrl: string,
 	 *  disableControlsOnSubmit: boolean,
 	 *  trackFormChanges: boolean,
-	 *  enableDisablePairs: Object,
-	 *  usernameSuggestionTextAlert: string
+	 *  enableDisablePairs: Object
 	 *  }} options options to configure the form handler.
 	 */
 	$.pkp.controllers.form.FormHandler = function($form, options) {
+		var key, validator;
+
 		this.parent($form, options);
 
 		// Check whether we really got a form.
@@ -45,15 +46,33 @@
 				' to an HTML form element!'].join(''));
 		}
 
-		// Transform all form buttons with jQueryUI.
-		if (options.transformButtons !== false) {
-			$('.button', $form).button();
-		}
-
 		// Activate and configure the validation plug-in.
 		if (options.submitHandler) {
 			this.callerSubmitHandler_ = options.submitHandler;
 		}
+
+		// Handle datepicker
+		// If we find a .datepicker in tpl the code adds (form/textInput.tpl) a new
+		// hidden field with the id = <original-element-id>-altField attr:
+		// data-date-format = date format from config.inc.php translated into JQuery
+		// Datepicker date format. The <original-element-name> if changed to
+		// <original-element-name>-removed in order for the hidden field value to
+		// send to post request altField and altFormat are used in order for the user
+		// to have its config.inc.php dateFormatShort parameter displayed but
+		// 'yy-mm-dd' to be send to post request.
+		// [http://api.jqueryui.com/datepicker/#option-altField]
+		$form.find('.datepicker').each(function() {
+			var $this = $(this);
+			$this.datepicker({
+				altField: '#' + $this.prop('id') + '-altField',
+				altFormat: 'yy-mm-dd',
+				dateFormat: $('#' + $this.prop('id') + '-altField')
+						.attr('data-date-format')
+			});
+
+			$this.prop('name', $this.prop('name') + '-removed');
+		});
+
 
 		// Set the redirect-to URL for the cancel button (if there is one).
 		if (options.cancelRedirectUrl) {
@@ -76,15 +95,12 @@
 			this.enableDisablePairs_ = options.enableDisablePairs;
 			this.setupEnableDisablePairs();
 		}
-
-		// Set data for suggesting usernames.  Both keys should be present.
-		if (options.fetchUsernameSuggestionUrl &&
-				options.usernameSuggestionTextAlert) {
-			this.fetchUsernameSuggestionUrl_ = options.fetchUsernameSuggestionUrl;
-			this.usernameSuggestionTextAlert_ = options.usernameSuggestionTextAlert;
+		// Update enable disable pairs state.
+		for (key in this.enableDisablePairs_) {
+			$form.find("[id^='" + key + "']").trigger('updatePair');
 		}
 
-		var validator = $form.validate({
+		validator = $form.validate({
 			onfocusout: this.callbackWrapper(this.onFocusOutValidation_),
 			errorClass: 'error',
 			highlight: function(element, errorClass) {
@@ -94,21 +110,23 @@
 				$(element).parent().parent().removeClass(errorClass);
 			},
 			submitHandler: this.callbackWrapper(this.submitHandler_),
-			showErrors: this.callbackWrapper(this.showErrors)
+			showErrors: this.callbackWrapper(this.showErrors),
+			errorPlacement: function(error, element) {
+				if (element.is(':checkbox')) {
+					// place error after checkbox text
+					element.parent().closest(':not(label)').append(error);
+				} else {
+					// default jquery validate placement
+					error.insertAfter(element);
+				}
+			}
 		});
 
 		// Activate the cancel button (if present).
 		$('[id^=\'cancelFormButton-\']', $form)
 				.click(this.callbackWrapper(this.cancelForm));
 
-		// Activate the reset button (if present).
-		$('#resetFormButton', $form).click(this.callbackWrapper(this.resetForm));
 		$form.find('.showMore, .showLess').bind('click', this.switchViz);
-
-		// Attach handler to suggest username button (if present)
-		$('[id^="suggestUsernameButton"]', $form).click(
-				this.callbackWrapper(this.generateUsername));
-
 
 		// Initial form validation.
 		if (validator.checkForm()) {
@@ -117,10 +135,14 @@
 			this.trigger('formInvalid');
 		}
 
+		// Initialize editable toggles
+		$('.pkpEditableToggle', $form)
+				.click(this.callbackWrapper(this.toggleEditableControl));
+
 		this.initializeTinyMCE();
 
 		// bind a handler to make sure tinyMCE fields are populated.
-		$('#submitFormButton', $form).click(this.callbackWrapper(
+		$('[id^=\'submitFormButton\']', $form).click(this.callbackWrapper(
 				this.pushTinyMCEChanges_));
 
 		// bind a handler to handle change events on input fields.
@@ -134,6 +156,7 @@
 
 		this.publishEvent('tinyMCEInitialized');
 		this.bind('tinyMCEInitialized', this.tinyMCEInitHandler_);
+		this.bind('containerClose', this.containerCloseHandler);
 	};
 	$.pkp.classes.Helper.inherits(
 			$.pkp.controllers.form.FormHandler,
@@ -196,25 +219,6 @@
 	$.pkp.controllers.form.FormHandler.prototype.enableDisablePairs_ = null;
 
 
-	/**
-	 * The URL to be called to fetch a username suggestion.
-	 * @private
-	 * @type {string}
-	 */
-	$.pkp.controllers.form.FormHandler.
-			prototype.fetchUsernameSuggestionUrl_ = '';
-
-
-	/**
-	 * The message that will be displayed if users click on suggest
-	 * username button with no data in lastname.
-	 * @private
-	 * @type {string}
-	 */
-	$.pkp.controllers.form.FormHandler.
-			prototype.usernameSuggestionTextAlert_ = '';
-
-
 	//
 	// Public methods
 	//
@@ -229,11 +233,10 @@
 	 */
 	$.pkp.controllers.form.FormHandler.prototype.showErrors =
 			function(validator, errorMap, errorList) {
-
 		// ensure that rich content elements have their
 		// values stored before validation.
 		if (typeof tinyMCE !== 'undefined') {
-			tinyMCE.triggerSave();
+			tinyMCE.EditorManager.triggerSave();
 		}
 
 		// Clone the form validator before checking the entire form.
@@ -350,30 +353,6 @@
 
 
 	/**
-	 * Internal callback called to reset the form.
-	 *
-	 * @param {HTMLElement} resetButton The reset button.
-	 * @param {Event} event The event that triggered the
-	 *  reset button.
-	 * @return {boolean} false.
-	 */
-	$.pkp.controllers.form.FormHandler.prototype.resetForm =
-			function(resetButton, event) {
-
-		//unregister the form.
-		this.formChangesTracked = false;
-		this.trigger('unregisterChangedForm');
-
-		var $form = this.getHtmlElement();
-		$form.each(function() {
-			this.reset();
-		});
-
-		return false;
-	};
-
-
-	/**
 	 * Configures the enable/disable pair bindings between a checkbox
 	 * and some other form element.
 	 *
@@ -385,7 +364,7 @@
 		var formElement = this.getHtmlElement(), key;
 		for (key in this.enableDisablePairs_) {
 			$(formElement).find("[id^='" + key + "']").bind(
-					'click', this.callbackWrapper(this.toggleDependentElement_));
+					'click updatePair', this.callbackWrapper(this.toggleDependentElement_));
 		}
 		return true;
 	};
@@ -413,84 +392,56 @@
 
 
 	/**
-	 * Event handler that is called when the suggest username button is clicked.
+	 * Add a class to the spinner to indicate it should be hidden
+	 *
+	 * @protected
 	 */
-	$.pkp.controllers.form.FormHandler.prototype.
-			generateUsername = function() {
-
-		var $form = this.getHtmlElement(),
-				firstName, lastName, fetchUrl;
-
-		if ($('[id^="lastName"]', $form).val() === '') {
-			// No last name entered; cannot suggest. Complain.
-			alert(this.usernameSuggestionTextAlert_);
-			return;
-		}
-
-		// Fetch entered names
-		firstName = /** @type {string} */ $('[id^="firstName"]', $form).val();
-		lastName = /** @type {string} */ $('[id^="lastName"]', $form).val();
-
-		// Replace dummy values in the URL with entered values
-		fetchUrl = this.fetchUsernameSuggestionUrl_.
-				replace('FIRST_NAME_DUMMY', firstName).
-				replace('LAST_NAME_DUMMY', lastName);
-
-		$.get(fetchUrl, this.callbackWrapper(this.setUsername), 'json');
+	$.pkp.controllers.form.FormHandler.prototype.hideSpinner =
+			function() {
+		this.getHtmlElement()
+				.find('.formButtons .pkp_spinner').removeClass('is_visible');
 	};
 
 
 	/**
-	 * Check JSON message and set it to username, back on form.
-	 * @param {HTMLElement} formElement The Form HTML element.
-	 * @param {JSONType} jsonData The jsonData response.
+	 * Toggle editable display controls
+	 *
+	 * Editable display controls pair a visual display of data with an editable
+	 * set of fields for that data. This function will toggle between the
+	 * display and edit views.
+	 *
+	 * To use this feature, assign an outer element a `pkp-editable` data
+	 * attribute and corresponding data attributes to the child display and
+	 * input views.
+	 *
+	 * <div data-pkp-editable="true">
+	 *   <div data-pkp-editable-view="display">
+	 *     <!-- display markup -->
+	 *   </div>
+	 *   <div data-pkp-editable-view="input">
+	 *     <!-- input markup -->
+	 *   </div>
+	 * </div>
+	 *
+	 * @param {HTMLElement} toggle The HTML element this event was fired on
+	 * @param {Event} event The event which fired this function
 	 */
-	$.pkp.controllers.form.FormHandler.prototype.
-			setUsername = function(formElement, jsonData) {
+	$.pkp.controllers.form.FormHandler.prototype.toggleEditableControl =
+			function(toggle, event) {
+		event.preventDefault();
+		var control = $(toggle).parents('[data-pkp-editable="true"]');
 
-		var processedJsonData = this.handleJson(jsonData),
-				$form = this.getHtmlElement();
-
-		if (processedJsonData === false) {
-			throw new Error('JSON response must be set to true!');
+		if (!control.length) {
+			return;
 		}
 
-		$('[id^="username"]', $form).val(processedJsonData.content);
+		control.toggleClass('isEditing');
 	};
 
 
 	//
 	// Private Methods
 	//
-	/**
-	 * Initialize TinyMCE instances.
-	 *
-	 * There are instances where TinyMCE is not initialized with the call to
-	 * init(). These occur when content is loaded after the fact (via AJAX).
-	 *
-	 * In these cases, search for richContent fields and initialize them.
-	 *
-	 * @private
-	 */
-	$.pkp.controllers.form.FormHandler.prototype.initializeTinyMCE_ =
-			function() {
-
-		if (typeof tinyMCE !== 'undefined') {
-			var $element, elementId;
-			$element = this.getHtmlElement();
-			elementId = $element.attr('id');
-			setTimeout(function() {
-				// re-select the original element, to prevent closure memory leaks
-				// in (older?) versions of IE.
-				$('#' + elementId).find('.richContent').each(function(index) {
-					tinyMCE.execCommand('mceAddControl', false,
-							$(this).attr('id').toString());
-				});
-			}, 500);
-		}
-	};
-
-
 	/**
 	 * Internal callback called after form validation to handle form
 	 * submission.
@@ -507,15 +458,28 @@
 			function(validator, formElement) {
 
 		// Notify any nested formWidgets of the submit action.
-		var formSubmitEvent = new $.Event('formSubmitRequested');
-		$(formElement).find('.formWidget').trigger(formSubmitEvent);
+		var defaultPrevented = false;
+		$(formElement).find('.formWidget').each(function() {
+			var formSubmitEvent = new $.Event('formSubmitRequested');
+			if (!defaultPrevented) {
+				$(this).trigger(formSubmitEvent);
+				defaultPrevented = formSubmitEvent.isDefaultPrevented();
+			}
+		});
 
 		// If the default behavior was prevented for any reason, stop.
-		if (formSubmitEvent.isDefaultPrevented()) {
+		if (defaultPrevented) {
 			return;
 		}
 
-		$(formElement).find('.pkp_helpers_progressIndicator').show();
+		// For datepicker controls, ensure that empty values are respected.
+		$(formElement).find('.datepicker').each(function() {
+			if ($(this).prop('value') === '') {
+				$('#' + $(this).prop('id') + '-altField').prop('value', '');
+			}
+		});
+
+		this.showSpinner_();
 
 		this.trigger('unregisterChangedForm');
 
@@ -547,7 +511,7 @@
 		// ensure that rich content elements have their
 		// values stored before validation.
 		if (typeof tinyMCE !== 'undefined') {
-			tinyMCE.triggerSave();
+			tinyMCE.EditorManager.triggerSave();
 		}
 		return true;
 	};
@@ -571,9 +535,9 @@
 				"[id^='" + this.enableDisablePairs_[elementId] + "']");
 
 		if ($(sourceElement).is(':checked')) {
-			$(targetElement).attr('disabled', '');
+			$(targetElement).prop('disabled', false);
 		} else {
-			$(targetElement).attr('disabled', 'disabled');
+			$(targetElement).prop('disabled', true);
 		}
 
 		return true;
@@ -594,21 +558,52 @@
 	$.pkp.controllers.form.FormHandler.prototype.tinyMCEInitHandler_ =
 			function(input, event, tinyMCEObject) {
 
-		var editorId = tinyMCEObject.editorId;
+		var editorId = tinyMCEObject.id;
 
-		$(tinyMCEObject.getWin()).blur(
-				this.callbackWrapper(function() {
-					// Save the current tinyMCE value to the form element.
-					tinyMCEObject.save();
+		tinyMCEObject.on('blur', this.callbackWrapper(function(tinyMCEObject) {
+			// Save the current tinyMCE value to the form element.
+			tinyMCEObject.save();
 
-					// Get the form element that stores the tinyMCE data.
-					var $form = this.getHtmlElement(),
-							formElement = $('#' + editorId, $form),
-							// Validate only this element.
-							validator = $form.validate();
+			// Get the form element that stores the tinyMCE data.
+			var $form = this.getHtmlElement(),
+					formElement = $('#' +
+					$.pkp.classes.Helper.escapeJQuerySelector(editorId), $form),
+					// Validate only this element.
+					validator = $form.validate();
 
-					validator.element(formElement);
-				}));
+			validator.element(formElement);
+		}));
+	};
+
+
+	/**
+	 * Bind a handler for container (e.g. modal) close events to permit forms
+	 * to clean up.blur handler on tinyMCE instances inside this form
+	 * @param {HTMLElement} input The input element that triggered the
+	 * event.
+	 * @param {Event} event The initialized event.
+	 * @param {{closePermitted: boolean}} informationObject
+	 * @return {boolean} Event handling success.
+	 */
+	$.pkp.controllers.form.FormHandler.prototype.containerCloseHandler =
+			function(input, event, informationObject) {
+
+		var $form = $(this.getHtmlElement());
+		// prevent orphaned date pickers that may be still open.
+		$form.find('.hasDatepicker').datepicker('hide');
+		if (this.formChangesTracked) {
+			if (!confirm($.pkp.locale.form_dataHasChanged)) {
+				informationObject.closePermitted = false;
+				return false;
+			} else {
+				this.trigger('unregisterAllForms');
+			}
+		}
+
+		if (typeof informationObject !== 'undefined') {
+			informationObject.closePermitted = true;
+		}
+		return true;
 	};
 
 
@@ -650,7 +645,11 @@
 		var originalEvent, ele, form;
 
 		originalEvent = event.originalEvent;
-		ele = originalEvent.relatedTarget;
+		if (typeof originalEvent == 'undefined') {
+			return;
+		}
+
+		ele = originalEvent.target;
 
 		form = this.getHtmlElement();
 		if (!$(ele).hasClass('hasDatepicker') &&
@@ -663,5 +662,17 @@
 		}
 	};
 
-/** @param {jQuery} $ jQuery closure. */
+
+	/**
+	 * Add a class to the spinner to indicate it should be visible
+	 *
+	 * @private
+	 */
+	$.pkp.controllers.form.FormHandler.prototype.showSpinner_ =
+			function() {
+		this.getHtmlElement()
+				.find('.formButtons .pkp_spinner').addClass('is_visible');
+	};
+
+
 }(jQuery));

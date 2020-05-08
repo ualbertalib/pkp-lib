@@ -3,9 +3,9 @@
 /**
  * @file classes/submission/ReviewFilesDAO.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ReviewFilesDAO
  * @ingroup submission
@@ -15,12 +15,6 @@
  */
 
 class ReviewFilesDAO extends DAO {
-	/**
-	 * Constructor
-	 */
-	function ReviewFilesDAO() {
-		parent::DAO();
-	}
 
 	/**
 	 * Grant a review file to a review.
@@ -84,4 +78,4 @@ class ReviewFilesDAO extends DAO {
 	}
 }
 
-?>
+

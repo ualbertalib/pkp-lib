@@ -8,9 +8,9 @@
 /**
  * @file classes/payment/Payment.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class Payment
  * @ingroup payment
@@ -24,6 +24,9 @@ class Payment {
 	/** @var int payment id */
 	var $paymentId;
 
+	/** @var int Context ID */
+	var $contextId;
+
 	/** @var numeric amount of payment in $currencyCode units */
 	var $amount;
 
@@ -36,6 +39,9 @@ class Payment {
 	/** @var int association ID for payment */
 	var $assocId;
 
+	/** @var int PAYMENT_TYPE_... */
+	var $_type;
+
 	/**
 	 * Constructor
 	 * @param $amount number
@@ -43,7 +49,7 @@ class Payment {
 	 * @param $userId int
 	 * @param $assocId int optional
 	 */
-	function Payment($amount = null, $currencyCode = null, $userId = null, $assocId = null) {
+	function __construct($amount = null, $currencyCode = null, $userId = null, $assocId = null) {
 		$this->amount = $amount;
 		$this->currencyCode = $currencyCode;
 		$this->userId = $userId;
@@ -102,21 +108,36 @@ class Payment {
 	}
 
 	/**
-	 * Get the name of the transaction.
-	 * @return string
+	 * Get the context ID for the payment.
+	 * @return int
 	 */
-	function getName() {
-		// must be implemented by sub-classes
-		assert(false);
+	function getContextId() {
+		return $this->contextId;
 	}
 
 	/**
-	 * Get a description of the transaction.
-	 * @return string
+	 * Set the context ID for the payment.
+	 * @param $contextId int
 	 */
-	function getDescription() {
-		// must be implemented by sub-classes
-		assert(false);
+	function setContextId($contextId) {
+		$this->contextId = $contextId;
+	}
+
+	/**
+	 * Set the type for this payment (PAYMENT_TYPE_...)
+	 * @param $type int PAYMENT_TYPE_...
+	 * @return int New payment type
+	 */
+	function setType($type) {
+		return $this->type = $type;
+	}
+
+	/**
+	 * Get the type of this payment (PAYMENT_TYPE_...)
+	 * @return int PAYMENT_TYPE_...
+	 */
+	function getType() {
+		return $this->type;
 	}
 
 	/**
@@ -154,4 +175,4 @@ class Payment {
 	}
 }
 
-?>
+

@@ -2,9 +2,9 @@
 /**
  * @file controllers/grid/files/review/ReviewRevisionsGridDataProvider.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ReviewRevisionsGridDataProvider
  * @ingroup controllers_grid_files_review
@@ -21,8 +21,8 @@ class ReviewRevisionsGridDataProvider extends ReviewGridDataProvider {
 	/**
 	 * Constructor
 	 */
-	function ReviewRevisionsGridDataProvider() {
-		parent::ReviewGridDataProvider(SUBMISSION_FILE_REVIEW_REVISION);
+	function __construct() {
+		parent::__construct(SUBMISSION_FILE_REVIEW_REVISION);
 	}
 
 
@@ -32,13 +32,13 @@ class ReviewRevisionsGridDataProvider extends ReviewGridDataProvider {
 	/**
 	 * @copydoc GridDataProvider::loadData()
 	 */
-	function loadData() {
+	function loadData($filter = array()) {
 		// Grab the files that are new (incoming) revisions
 		// of those currently assigned to the review round.
 		$reviewRound = $this->getReviewRound();
 		$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO'); /* @var $submissionFileDao SubmissionFileDAO */
 		$submissionFiles = $submissionFileDao->getLatestRevisionsByReviewRound($reviewRound, $this->getFileStage());
-		return $this->prepareSubmissionFileData($submissionFiles);
+		return $this->prepareSubmissionFileData($submissionFiles, false, $filter);
 	}
 
 
@@ -57,4 +57,4 @@ class ReviewRevisionsGridDataProvider extends ReviewGridDataProvider {
 	}
 }
 
-?>
+

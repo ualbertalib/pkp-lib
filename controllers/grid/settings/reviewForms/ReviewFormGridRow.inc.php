@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/settings/reviewForms/ReviewFormGridRow.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ReviewFormGridRow
  * @ingroup controllers_grid_settings_reviewForms
@@ -17,21 +17,15 @@ import('lib.pkp.classes.controllers.grid.GridRow');
 import('lib.pkp.classes.linkAction.request.RemoteActionConfirmationModal');
 
 class ReviewFormGridRow extends GridRow {
-	/**
-	 * Constructor
-	 */
-	function ReviewFormGridRow() {
-		parent::GridRow();
-	}
 
 	//
 	// Overridden methods from GridRow
 	//
 	/**
-	 * @see GridRow::initialize()
+	 * @copydoc GridRow::initialize()
 	 */
-	function initialize($request) {
-		parent::initialize($request);
+	function initialize($request, $template = null) {
+		parent::initialize($request, $template);
 
 		// Is this a new row or an existing row?
 		$element = $this->getData();
@@ -63,20 +57,19 @@ class ReviewFormGridRow extends GridRow {
 			}
 
 			// if review form is not editable, add 'copy' grid row action
-			if(!$canEdit) {
-				$this->addAction(
-					new LinkAction(
-						'copy',
-						new RemoteActionConfirmationModal(
-							__('manager.reviewForms.confirmCopy'),
-							null,
-							$router->url($request, null, null, 'copyReviewForm', null, array('rowId' => $rowId))
-							),
-						__('grid.action.copy'),
-						'copy'
-						)
-				);
-			}
+			$this->addAction(
+				new LinkAction(
+					'copy',
+					new RemoteActionConfirmationModal(
+						$request->getSession(),
+						__('manager.reviewForms.confirmCopy'),
+						null,
+						$router->url($request, null, null, 'copyReviewForm', null, array('rowId' => $rowId))
+						),
+					__('grid.action.copy'),
+					'copy'
+					)
+			);
 
 			// add 'preview' grid row action
 			$this->addAction(
@@ -99,6 +92,7 @@ class ReviewFormGridRow extends GridRow {
 					new LinkAction(
 						'delete',
 						new RemoteActionConfirmationModal(
+							$request->getSession(),
 							__('manager.reviewForms.confirmDelete'),
 							null,
 							$router->url($request, null, null, 'deleteReviewForm', null, array('rowId' => $rowId))
@@ -111,4 +105,4 @@ class ReviewFormGridRow extends GridRow {
 	}
 }
 
-?>
+

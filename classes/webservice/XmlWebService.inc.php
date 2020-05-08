@@ -3,9 +3,9 @@
 /**
  * @file classes/webservice/XmlWebService.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class XmlWebService
  * @ingroup webservice
@@ -24,7 +24,8 @@ class XmlWebService extends WebService {
 	/**
 	 * Constructor
 	 */
-	function XmlWebService() {
+	function __construct() {
+		// Parent constructor intentionally not called
 		if (extension_loaded('dom')) {
 			$this->_returnType = XSL_TRANSFORMER_DOCTYPE_DOM;
 		} else {
@@ -64,6 +65,9 @@ class XmlWebService extends WebService {
 		// Call the web service
 		$xmlResult = parent::call($webServiceRequest);
 
+		if (Config::getVar('debug', 'log_web_service_info')) {
+			error_log('Time: ' . date('c') . "\nRequest: " . print_r($webServiceRequest, true) . "\nResponse: " . print_r($xmlResult, true) . "\nLast response status: " . $this->_lastResponseStatus . "\n");
+		}
 		// Catch web service errors
 		if (is_null($xmlResult)) return $xmlResult;
 
@@ -84,4 +88,4 @@ class XmlWebService extends WebService {
 		}
 	}
 }
-?>
+

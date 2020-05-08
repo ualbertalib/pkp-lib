@@ -1,9 +1,9 @@
 /**
  * @file js/controllers/grid/notifications/NotificationsGridHandler.js
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class NotificationsGridHandler
  * @ingroup js_controllers_grid
@@ -29,13 +29,14 @@
 	 */
 	$.pkp.controllers.grid.notifications.NotificationsGridHandler =
 			function($grid, options) {
-		$grid.find('a[id*="markNew"]').mousedown(
+
+		$grid.find('a[id*="markNew"]').click(
 				this.callbackWrapper(this.markNewHandler_));
 
-		$grid.find('a[id*="markRead"]').mousedown(
+		$grid.find('a[id*="markRead"]').click(
 				this.callbackWrapper(this.markReadHandler_));
 
-		$grid.find('a[id*="deleteNotifications"]').mousedown(
+		$grid.find('a[id*="deleteNotification"]').click(
 				this.callbackWrapper(this.deleteHandler_));
 
 		this.parent($grid, options);
@@ -189,5 +190,4 @@
 		// refreshed.
 		this.handleJson(jsonData);
 	};
-/** @param {jQuery} $ jQuery closure. */
 }(jQuery));

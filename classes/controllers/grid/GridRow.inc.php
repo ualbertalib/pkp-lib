@@ -3,9 +3,9 @@
 /**
  * @file classes/controllers/grid/GridRow.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class GridRow
  * @ingroup controllers_grid
@@ -40,9 +40,6 @@ class GridRow extends GridBodyElement {
 	/** @var boolean true if the row has been modified */
 	var $_isModified;
 
-	/** @var string an optional message to display as a 'grid action' in place of real grid actions */
-	var $_noActionMessage;
-
 	/**
 	 * @var array row actions, the first key represents
 	 *  the position of the action in the row template,
@@ -57,8 +54,8 @@ class GridRow extends GridBodyElement {
 	/**
 	 * Constructor.
 	 */
-	function GridRow() {
-		parent::GridBodyElement();
+	function __construct() {
+		parent::__construct();
 
 		$this->_isModified = false;
 	}
@@ -134,22 +131,6 @@ class GridRow extends GridBodyElement {
 	}
 
 	/**
-	 * Set the no action message for the row.
-	 * @param $message string
-	 */
-	function setNoActionMessage($message) {
-		$this->_noActionMessage = $message;
-	}
-
-	/**
-	 * Get the no action message for this row.
-	 * @return string
-	 */
-	function getNoActionMessage() {
-		return $this->_noActionMessage;
-	}
-
-	/**
 	 * Get whether this row has any actions or not.
 	 * @return boolean
 	 */
@@ -174,8 +155,8 @@ class GridRow extends GridBodyElement {
 
 	/**
 	 * Add an action
-	 * @param $position string the position of the action
 	 * @param $action mixed a single action
+	 * @param $position string the position of the action
 	 */
 	function addAction($action, $position = GRID_ACTION_POSITION_DEFAULT) {
 		if (!isset($this->_actions[$position])) $this->_actions[$position] = array();
@@ -207,7 +188,7 @@ class GridRow extends GridBodyElement {
 	 *
 	 * Subclasses can override this method.
 	 *
-	 * @param $request Request
+	 * @param $request PKPRequest
 	 * @param $template string
 	 */
 	function initialize($request, $template = null) {
@@ -217,4 +198,4 @@ class GridRow extends GridBodyElement {
 	}
 }
 
-?>
+

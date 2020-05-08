@@ -6,9 +6,9 @@
 /**
  * @file classes/file/FileWrapper.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class FileWrapper
  * @ingroup file
@@ -30,15 +30,15 @@ class FileWrapper {
 	/** @var array parsed URL info */
 	var $info;
 
-	/** @var int the file descriptor */
-	var $fp;
+	/** @var resource The file descriptor */
+	var $fp = null;
 
 	/**
 	 * Constructor.
 	 * @param $url string
 	 * @param $info array
 	 */
-	function FileWrapper($url, &$info) {
+	function __construct($url, $info) {
 		$this->url = $url;
 		$this->info = $info;
 	}
@@ -80,6 +80,18 @@ class FileWrapper {
 	}
 
 	/**
+	 * Save the file to the specified filename.
+	 * @return int|false Number of bytes saved on success, or false on failure
+	 */
+	function save($filename) {
+		$targetFp = fopen($filename, 'w');
+		if (!$targetFp) return false;
+		$returner = stream_copy_to_stream($this->fp, $targetFp);
+		fclose($targetFp);
+		return $returner;
+	}
+
+	/**
 	 * Read from the file.
 	 * @param $len int
 	 * @return string
@@ -106,7 +118,7 @@ class FileWrapper {
 	 * @param $source mixed; URL, filename, or resources
 	 * @return FileWrapper
 	 */
-	static function &wrapper($source) {
+	static function wrapper($source) {
 		if (ini_get('allow_url_fopen') && Config::getVar('general', 'allow_url_fopen') && is_string($source)) {
 			$info = parse_url($source);
 			$wrapper = new FileWrapper($source, $info);
@@ -122,16 +134,27 @@ class FileWrapper {
 			} else {
 				$scheme = null;
 			}
+
+			$application = Application::get();
+			$request = $application->getRequest();
+			$router = $request->getRouter();
+			if (!Config::getVar('general', 'installed') || defined('RUNNING_UPGRADE') || !$router) {
+				$userAgent = $application->getName() . '/?';
+			} else {
+				$currentVersion =& $application->getCurrentVersion();
+				$userAgent = $application->getName() . '/' . $currentVersion->getVersionString();
+			}
+
 			switch ($scheme) {
 				case 'http':
 					import('lib.pkp.classes.file.wrappers.HTTPFileWrapper');
 					$wrapper = new HTTPFileWrapper($source, $info);
-					$wrapper->addHeader('User-Agent', 'PKP/2.x');
+					$wrapper->addHeader('User-Agent', $userAgent);
 					break;
 				case 'https':
 					import('lib.pkp.classes.file.wrappers.HTTPSFileWrapper');
 					$wrapper = new HTTPSFileWrapper($source, $info);
-					$wrapper->addHeader('User-Agent', 'PKP/2.x');
+					$wrapper->addHeader('User-Agent', $userAgent);
 					break;
 				case 'ftp':
 					import('lib.pkp.classes.file.wrappers.FTPFileWrapper');
@@ -146,4 +169,4 @@ class FileWrapper {
 	}
 }
 
-?>
+

@@ -3,9 +3,9 @@
 /**
  * @file pages/install/InstallHandler.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class InstallHandler
  * @ingroup pages_install
@@ -18,12 +18,6 @@ import('lib.pkp.classes.install.form.UpgradeForm');
 import('classes.handler.Handler');
 
 class InstallHandler extends Handler {
-	/**
-	 * Constructor
-	 */
-	function InstallHandler() {
-		parent::Handler();
-	}
 
 	/**
 	 * If no context is selected, list all.
@@ -35,7 +29,7 @@ class InstallHandler extends Handler {
 		// Make sure errors are displayed to the browser during install.
 		@ini_set('display_errors', true);
 
-		$this->validate($request);
+		$this->validate(null, $request);
 		$this->setupTemplate($request);
 
 		if (($setLocale = $request->getUserVar('setLocale')) != null && AppLocale::isLocaleValid($setLocale)) {
@@ -44,14 +38,14 @@ class InstallHandler extends Handler {
 
 		$installForm = new InstallForm($request);
 		$installForm->initData();
-		$installForm->display();
+		$installForm->display($request);
 	}
 
 	/**
 	 * Redirect to index if system has already been installed.
 	 * @param $request PKPRequest
 	 */
-	function validate($request) {
+	function validate($requiredContexts = null, $request = null) {
 		if (Config::getVar('general', 'installed')) {
 			$request->redirect(null, 'index');
 		}
@@ -63,7 +57,7 @@ class InstallHandler extends Handler {
 	 * @param $request PKPRequest
 	 */
 	function install($args, $request) {
-		$this->validate($request);
+		$this->validate(null, $request);
 		$this->setupTemplate($request);
 
 		$installForm = new InstallForm($request);
@@ -72,7 +66,9 @@ class InstallHandler extends Handler {
 		if ($installForm->validate()) {
 			$installForm->execute();
 		} else {
-			$installForm->display();
+			$errors = $installForm->getErrorsArray();
+			$error = array_shift($errors);
+			$installForm->installError($error, false);
 		}
 	}
 
@@ -82,7 +78,7 @@ class InstallHandler extends Handler {
 	 * @param $request PKPRequest
 	 */
 	function upgrade($args, $request) {
-		$this->validate($request);
+		$this->validate(null, $request);
 		$this->setupTemplate($request);
 
 		if (($setLocale = $request->getUserVar('setLocale')) != null && AppLocale::isLocaleValid($setLocale)) {
@@ -91,7 +87,7 @@ class InstallHandler extends Handler {
 
 		$installForm = new UpgradeForm($request);
 		$installForm->initData();
-		$installForm->display();
+		$installForm->display($request);
 	}
 
 	/**
@@ -100,7 +96,7 @@ class InstallHandler extends Handler {
 	 * @param $request PKPRequest
 	 */
 	function installUpgrade($args, $request) {
-		$this->validate($request);
+		$this->validate(null, $request);
 		$this->setupTemplate($request);
 
 		$installForm = new UpgradeForm($request);
@@ -109,7 +105,7 @@ class InstallHandler extends Handler {
 		if ($installForm->validate()) {
 			$installForm->execute();
 		} else {
-			$installForm->display();
+			$installForm->display($request);
 		}
 	}
 
@@ -123,4 +119,4 @@ class InstallHandler extends Handler {
 	}
 }
 
-?>
+

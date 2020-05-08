@@ -2,9 +2,9 @@
 /**
  * @file controllers/listbuilder/settings/reviewForms/ReviewFormElementResponseItemListbuilderHandler.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ReviewFormElementResponseItemListbuilderHandler
  * @ingroup controllers_listbuilder_settings_reviewForms
@@ -19,22 +19,15 @@ class ReviewFormElementResponseItemListbuilderHandler extends SetupListbuilderHa
 	/** @var int Review form element ID **/
 	var $_reviewFormElementId;
 
-	/**
-	 * Constructor
-	 */
-	function ReviewFormElementResponseItemListbuilderHandler() {
-		parent::SetupListbuilderHandler();
-	}
-
 
 	//
 	// Overridden template methods
 	//
 	/**
-	 * @see SetupListbuilderHandler::initialize()
+	 * @copydoc SetupListbuilderHandler::initialize()
 	 */
-	function initialize($request) {
-		parent::initialize($request);
+	function initialize($request, $args = null) {
+		parent::initialize($request, $args);
 		AppLocale::requireComponents(LOCALE_COMPONENT_PKP_MANAGER);
 		$this->_reviewFormElementId = (int) $request->getUserVar('reviewFormElementId');
 
@@ -52,10 +45,10 @@ class ReviewFormElementResponseItemListbuilderHandler extends SetupListbuilderHa
 	}
 
 	/**
-	 * @see GridHandler::loadData()
+	 * @copydoc GridHandler::loadData()
 	 */
-	function loadData($request) {
-		$reviewFormElementDao = DAORegistry::getDAO('ReviewFormElementDAO');
+	protected function loadData($request, $filter = null) {
+		$reviewFormElementDao = DAORegistry::getDAO('ReviewFormElementDAO'); /* @var $reviewFormElementDao ReviewFormElementDAO */
 		$reviewFormElement = $reviewFormElementDao->getById($this->_reviewFormElementId);
 		$formattedResponses = array();
 		if ($reviewFormElement) {
@@ -74,7 +67,7 @@ class ReviewFormElementResponseItemListbuilderHandler extends SetupListbuilderHa
 	/**
 	 * @copydoc GridHandler::getRowDataElement
 	 */
-	function getRowDataElement($request, &$rowId) {
+	protected function getRowDataElement($request, &$rowId) {
 		// Fallback on the parent if an existing rowId is found
 		if ( !empty($rowId) ) {
 			return parent::getRowDataElement($request, $rowId); 
@@ -89,6 +82,15 @@ class ReviewFormElementResponseItemListbuilderHandler extends SetupListbuilderHa
 		// If we're generating an empty row to edit
 		return array(array('content' => array()));
 	}
+
+	/**
+	 * @copydoc ListbuilderHandler::fetch()
+	 */
+	function fetch($args, $request) {
+		$templateMgr = TemplateManager::getManager($request);
+		$templateMgr->assign('availableOptions', true);
+		return $this->fetchGrid($args, $request);
+	}
 }
 
-?>
+

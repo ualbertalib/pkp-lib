@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/admin/systemInfo/SystemInfoGridHandler.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SystemInfoGridHandler
  * @ingroup controllers_grid_admin_systemInfo
@@ -23,8 +23,8 @@ class SystemInfoGridHandler extends CategoryGridHandler {
 	/**
 	 * Constructor
 	 */
-	function SystemInfoGridHandler() {
-		parent::CategoryGridHandler();
+	function __construct() {
+		parent::__construct();
 		$this->addRoleAssignment(array(
 			ROLE_ID_SITE_ADMIN),
 			array('fetchGrid', 'fetchCategory', 'fetchRow')
@@ -52,10 +52,10 @@ class SystemInfoGridHandler extends CategoryGridHandler {
 	}
 
 	/**
-	 * @copydoc PKPHandler::initialize()
+	 * @copydoc CategoryGridHandler::initialize()
 	 */
-	function initialize($request) {
-		parent::initialize($request);
+	function initialize($request, $args = null) {
+		parent::initialize($request, $args);
 
 		// Load user-related translations.
 		AppLocale::requireComponents(
@@ -68,7 +68,6 @@ class SystemInfoGridHandler extends CategoryGridHandler {
 
 		// Basic grid configuration.
 		$this->setTitle('admin.systemConfiguration');
-		$this->setInstructions('admin.systemConfigurationDescription');
 
 		//
 		// Grid columns.
@@ -109,22 +108,22 @@ class SystemInfoGridHandler extends CategoryGridHandler {
 	/**
 	 * @copydoc CategoryGridHandler::getCategoryRowInstance()
 	 */
-	function getCategoryRowInstance() {
+	protected function getCategoryRowInstance() {
 		return new SystemInfoGridCategoryRow();
 	}
 
 	/**
 	 * @copydoc CategoryGridHandler::loadCategoryData()
 	 */
-	function loadCategoryData($request, $configSection) {
+	function loadCategoryData($request, &$configSection, $filter = null) {
 		return $this->_configData[$configSection];
 	}
 
 	/**
 	 * @copydoc GridHandler::loadData()
 	 */
-	function loadData($request, $filter) {
+	protected function loadData($request, $filter) {
 		return array_keys($this->_configData);
 	}
 }
-?>
+

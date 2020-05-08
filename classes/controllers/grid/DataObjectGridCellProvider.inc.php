@@ -3,9 +3,9 @@
 /**
  * @file classes/controllers/grid/DataObjectGridCellProvider.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class DataObjectGridCellProvider
  * @ingroup controllers_grid
@@ -23,12 +23,6 @@ class DataObjectGridCellProvider extends GridCellProvider {
 	/** @var string the locale to be retrieved. */
 	var $_locale = null;
 
-	/**
-	 * Constructor
-	 */
-	function DataObjectGridCellProvider() {
-		parent::GridCellProvider();
-	}
 
 	//
 	// Setters and Getters
@@ -46,6 +40,7 @@ class DataObjectGridCellProvider extends GridCellProvider {
 	 * @return string
 	 */
 	function getLocale() {
+		if (empty($this->_locale)) return AppLocale::getLocale();
 		return $this->_locale;
 	}
 
@@ -71,10 +66,12 @@ class DataObjectGridCellProvider extends GridCellProvider {
 		// For localized fields, $data will be an array; otherwise,
 		// it will be a value suitable for conversion to string.
 		// If it's localized, fetch the value in the current locale.
-		if (is_array($data)) $data=$data[$this->getLocale()];
+		if (is_array($data)) {
+			$data = $element->getLocalizedData($columnId);
+		}
 
 		return array('label' => $data);
 	}
 }
 
-?>
+

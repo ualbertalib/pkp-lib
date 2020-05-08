@@ -6,9 +6,9 @@
 /**
  * @file js/pages/authorDashboard/SubmissionEmailHandler.js
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubmissionEmailHandler
  * @ingroup js_pages_authorDashboard
@@ -16,6 +16,10 @@
  * @brief Handler for reading monograph emails within the author dashboard.
  */
 (function($) {
+
+	/** @type {Object} */
+	$.pkp.pages.authorDashboard = $.pkp.pages.authorDashboard || {};
+
 
 
 	/**
@@ -40,5 +44,4 @@
 			$.pkp.controllers.linkAction.LinkActionHandler);
 
 
-/** @param {jQuery} $ jQuery closure. */
 }(jQuery));

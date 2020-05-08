@@ -3,9 +3,9 @@
 /**
  * @file classes/form/validation/FormValidatorPost.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class FormValidatorPost
  * @ingroup form_validation
@@ -21,8 +21,8 @@ class FormValidatorPost extends FormValidator {
 	 * @param $form Form
 	 * @param $message string the locale key to use (optional)
 	 */
-	function FormValidatorPost(&$form, $message = 'form.postRequired') {
-		parent::FormValidator($form, 'dummy', FORM_VALIDATOR_REQUIRED_VALUE, $message);
+	function __construct(&$form, $message = 'form.postRequired') {
+		parent::__construct($form, 'dummy', FORM_VALIDATOR_REQUIRED_VALUE, $message);
 	}
 
 
@@ -35,8 +35,9 @@ class FormValidatorPost extends FormValidator {
 	 * @return boolean
 	 */
 	function isValid() {
-		return Request::isPost();
+		$request = Application::get()->getRequest();
+		return $request->isPost();
 	}
 }
 
-?>
+

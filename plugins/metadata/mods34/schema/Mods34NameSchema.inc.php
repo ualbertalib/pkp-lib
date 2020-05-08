@@ -3,9 +3,9 @@
 /**
  * @file plugins/metadata/mods34/schema/Mods34NameSchema.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class Mods34NameSchema
  * @ingroup plugins_metadata_mods34_schema
@@ -38,9 +38,9 @@ class Mods34NameSchema extends MetadataSchema {
 	/**
 	 * Constructor
 	 */
-	function Mods34NameSchema() {
+	function __construct() {
 		// Configure the meta-data schema.
-		parent::MetadataSchema(
+		parent::__construct(
 			'mods-3.4-name',
 			'mods34',
 			'lib.pkp.plugins.metadata.mods34.schema.Mods34NameSchema',
@@ -92,4 +92,4 @@ class Mods34NameSchema extends MetadataSchema {
 		$this->addProperty('role/roleTerm[@type="code" @authority="marcrelator"]', array(METADATA_PROPERTY_TYPE_VOCABULARY => 'mods34-name-role-roleTerms-marcrelator'), false, METADATA_PROPERTY_CARDINALITY_MANY);
 	}
 }
-?>
+

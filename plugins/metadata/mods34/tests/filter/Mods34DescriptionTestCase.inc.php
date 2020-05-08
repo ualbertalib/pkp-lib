@@ -7,9 +7,9 @@
 /**
  * @file plugins/metadata/mods34/tests/filter/Mods34DescriptionTestCase.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class Mods34DescriptionTestCase
  * @ingroup plugins_metadata_mods34_tests_filter
@@ -105,4 +105,4 @@ class Mods34DescriptionTestCase extends DatabaseTestCase {
 		return $mods34Description;
 	}
 }
-?>
+

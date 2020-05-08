@@ -2,9 +2,9 @@
 /**
  * @file classes/filter/FilterHelper.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class FilterHelper
  * @ingroup filter
@@ -71,7 +71,7 @@ class FilterHelper {
 		// We have to include the filter class before going on
 		// so that all required constants are defined before they
 		// might be used in settings.
-		if (String::regexp_match('/^[a-zA-Z0-9.]+$/', $filterClassName)) {
+		if (PKPString::regexp_match('/^[a-zA-Z0-9.]+$/', $filterClassName)) {
 			import($filterClassName);
 		}
 
@@ -100,10 +100,10 @@ class FilterHelper {
 
 		// We ensure idempotence of plug-in installation by checking
 		// for existing identical filters.
-		$similarFilterFactory =& $filterDao->getObjectsByGroupAndClass($filterGroupSymbolic, $filterClassName, 0, $isTemplate);
+		$similarFilterFactory = $filterDao->getObjectsByGroupAndClass($filterGroupSymbolic, $filterClassName, 0, $isTemplate);
 		if ($similarFilterFactory->getCount() > 0) {
 			// 1) Find similar filters.
-			$similarFilters =& $similarFilterFactory->toArray();
+			$similarFilters = $similarFilterFactory->toArray();
 
 			// 2) Go through similar filters and eliminate them
 			//    if they don't have the exact same settings.
@@ -151,9 +151,9 @@ class FilterHelper {
 		if (is_a($filterA, 'CompositeFilter')) {
 			// Compare sub-filters of composite filters.
 			foreach($filterBSubfilters as $filterBSubfilter) { /* @var $filterBSubfilter PersistableFilter */
-				$seq = $filterBSubfilter->getSeq();
+				$seq = $filterBSubfilter->getSequence();
 				$filterASubfilter =& $filterA->getFilter($seq);
-				if (get_class($filterASubfilter) != get_class($filterBSubfilter)) {
+				if (!$filterASubfilter || !$filterBSubfilter || get_class($filterASubfilter) != get_class($filterBSubfilter)) {
 					return false;
 				}
 
@@ -264,4 +264,4 @@ class FilterHelper {
 		return $resultArray;
 	}
 }
-?>
+

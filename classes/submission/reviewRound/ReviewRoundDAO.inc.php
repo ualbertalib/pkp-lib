@@ -3,9 +3,9 @@
 /**
  * @file classes/submission/reviewRound/ReviewRoundDAO.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ReviewRoundDAO
  * @ingroup submission_reviewRound
@@ -17,12 +17,6 @@
 import('lib.pkp.classes.submission.reviewRound.ReviewRound');
 
 class ReviewRoundDAO extends DAO {
-	/**
-	 * Constructor
-	 */
-	function ReviewRoundDAO() {
-		parent::DAO();
-	}
 
 	//
 	// Public methods
@@ -63,7 +57,7 @@ class ReviewRoundDAO extends DAO {
 
 	/**
 	 * Construct a new data object corresponding to this DAO.
-	 * @return SignoffEntry
+	 * @return ReviewRound
 	 */
 	function newDataObject() {
 		return new ReviewRound();
@@ -224,14 +218,14 @@ class ReviewRoundDAO extends DAO {
 	function getLastReviewRoundBySubmissionId($submissionId, $stageId = null) {
 		$params = array((int)$submissionId);
 		if ($stageId) $params[] = (int) $stageId;
-		$result = $this->retrieve(
+		$result = $this->retrieveLimit(
 			'SELECT	*
 			FROM	review_rounds
 			WHERE	submission_id = ?
 			' . ($stageId ? ' AND stage_id = ?' : '') . '
-			ORDER BY stage_id DESC, round DESC
-			LIMIT 1',
-			$params
+			ORDER BY stage_id DESC, round DESC',
+			$params,
+			1
 		);
 
 		$returner = null;
@@ -251,73 +245,19 @@ class ReviewRoundDAO extends DAO {
 	}
 
 	/**
-	 * FIXME #7386#
-	 * Update the review round status. If review assignments is passed and
-	 * no status, then this method will find the correct review round status
-	 * based on the review round assignments state.
+	 * Update the review round status.
+	 *
 	 * @param $reviewRound ReviewRound
-	 * @param $reviewAssignments array Review round review assignments.
-	 * @param $status int
+	 * @param $status int? Optionally pass a REVIEW_ROUND_STATUS_... to set a
+	 *  specific status. If not included, will determine the appropriate status
+	 *  based on ReviewRound::determineStatus().
 	 */
-	function updateStatus($reviewRound, $reviewAssignments = array(), $status = null) {
+	function updateStatus($reviewRound, $status = null) {
 		assert(is_a($reviewRound, 'ReviewRound'));
 		$currentStatus = $reviewRound->getStatus();
 
 		if (is_null($status)) {
-			assert(is_array($reviewAssignments));
-
-			$viewsDao = DAORegistry::getDAO('ViewsDAO'); /* @var $viewsDao ViewsDAO */
-			$anyUnreadReview = false;
-			$anyIncompletedReview = false;
-
-			foreach ($reviewAssignments as $reviewAssignment) { /* @var $reviewAssignment ReviewAssignment */
-				// Skip cancelled and declined reviews.
-				if ($reviewAssignment->getCancelled() ||
-				$reviewAssignment->getDeclined()) {
-					continue;
-				}
-
-				// Check for an incomplete review.
-				if (!$reviewAssignment->getDateCompleted()) {
-					$anyIncompletedReview = true;
-				}
-
-				// Check for an unread or unconsidered review.
-				if (!$viewsDao->getLastViewDate(ASSOC_TYPE_REVIEW_RESPONSE, $reviewAssignment->getId()) || $reviewAssignment->getUnconsidered() == REVIEW_ASSIGNMENT_UNCONSIDERED) {
-					$anyUnreadReview = true;
-
-				}
-			}
-
-			// Find the correct review round status based on the state of
-			// the current review assignments. The check order matters: the
-			// first conditions override the others.
-			if (empty($reviewAssignments)) {
-				$status = REVIEW_ROUND_STATUS_PENDING_REVIEWERS;
-			} else if ($anyIncompletedReview) {
-				$status = REVIEW_ROUND_STATUS_PENDING_REVIEWS;
-			} else if ($anyUnreadReview) {
-				$status = REVIEW_ROUND_STATUS_REVIEWS_READY;
-			} else {
-				$status = REVIEW_ROUND_STATUS_REVIEWS_COMPLETED;
-			}
-
-			// Check for special cases where we don't want to update the status.
-			if (in_array($status, array(REVIEW_ROUND_STATUS_REVIEWS_COMPLETED, REVIEW_ROUND_STATUS_REVIEWS_READY))) {
-				if (in_array($reviewRound->getStatus(), $this->getEditorDecisionRoundStatus())) {
-					// We will skip changing the current review round status to
-					// "reviews completed" or "reviews ready" if the current round
-					// status is related with an editor decision.
-					return;
-				}
-			}
-
-			// Don't update the review round status if it isn't the
-			// stage's current one.
-			$lastReviewRound = $this->getLastReviewRoundBySubmissionId($reviewRound->getSubmissionId(), $reviewRound->getStageId());
-			if ($lastReviewRound->getId() != $reviewRound->getId()) {
-				return;
-			}
+			$status = $reviewRound->determineStatus();
 		}
 
 		// Avoid unnecessary database access.
@@ -328,21 +268,6 @@ class ReviewRoundDAO extends DAO {
 			// Update the data in object too.
 			$reviewRound->setStatus($status);
 		}
-	}
-
-	/**
-	 * Return review round status that are related
-	 * with editor decisions.
-	 * @return array
-	 */
-	function getEditorDecisionRoundStatus() {
-		return array(
-			REVIEW_ROUND_STATUS_REVISIONS_REQUESTED,
-			REVIEW_ROUND_STATUS_RESUBMITTED,
-			REVIEW_ROUND_STATUS_SENT_TO_EXTERNAL,
-			REVIEW_ROUND_STATUS_ACCEPTED,
-			REVIEW_ROUND_STATUS_DECLINED
-		);
 	}
 
 
@@ -381,7 +306,7 @@ class ReviewRoundDAO extends DAO {
 	/**
 	 * Internal function to return a review round object from a row.
 	 * @param $row array
-	 * @return Signoff
+	 * @return ReviewRound
 	 */
 	function _fromRow($row) {
 		$reviewRound = $this->newDataObject();
@@ -396,4 +321,4 @@ class ReviewRoundDAO extends DAO {
 	}
 }
 
-?>
+

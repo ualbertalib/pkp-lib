@@ -3,9 +3,9 @@
 /**
  * @file controllers/informationCenter/form/NewFileNoteForm.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class NewFileNoteForm
  * @ingroup informationCenter_form
@@ -23,8 +23,8 @@ class NewFileNoteForm extends NewNoteForm {
 	/**
 	 * Constructor.
 	 */
-	function NewFileNoteForm($fileId) {
-		parent::NewNoteForm();
+	function __construct($fileId) {
+		parent::__construct();
 
 		$this->fileId = $fileId;
 	}
@@ -43,7 +43,7 @@ class NewFileNoteForm extends NewNoteForm {
 	 * @return string
 	 */
 	function getSubmitNoteLocaleKey() {
-		return 'informationCenter.addFileNote';
+		return 'informationCenter.addNote';
 	}
 
 	/**
@@ -57,11 +57,11 @@ class NewFileNoteForm extends NewNoteForm {
 	/**
 	 * @copydoc NewFileNoteForm::fetch()
 	 */
-	function fetch($request) {
+	function fetch($request, $template = null, $display = false) {
 		$templateMgr = TemplateManager::getManager($request);
 		$templateMgr->assign('showEarlierEntries', true);
-		return parent::fetch($request);
+		return parent::fetch($request, $template, $display);
 	}
 }
 
-?>
+

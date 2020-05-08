@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/admin/systemInfo/VersionInfoGridHandler.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class VersionInfoGridHandler
  * @ingroup controllers_grid_admin_systemInfo
@@ -21,8 +21,8 @@ class VersionInfoGridHandler extends GridHandler {
 	/**
 	 * Constructor
 	 */
-	function VersionInfoGridHandler() {
-		parent::GridHandler();
+	function __construct() {
+		parent::__construct();
 		$this->addRoleAssignment(array(
 			ROLE_ID_SITE_ADMIN),
 			array('fetchGrid', 'fetchRow')
@@ -50,18 +50,17 @@ class VersionInfoGridHandler extends GridHandler {
 	}
 
 	/**
-	 * @copydoc PKPHandler::initialize()
+	 * @copydoc GridHandler::initialize()
 	 */
-	function initialize($request) {
-		parent::initialize($request);
+	function initialize($request, $args = null) {
+		parent::initialize($request, $args);
 
 		// Load user-related translations.
 		AppLocale::requireComponents(
 			LOCALE_COMPONENT_PKP_USER,
 			LOCALE_COMPONENT_PKP_ADMIN,
 			LOCALE_COMPONENT_APP_ADMIN,
-			LOCALE_COMPONENT_APP_MANAGER,
-			LOCALE_COMPONENT_APP_COMMON
+			LOCALE_COMPONENT_APP_MANAGER
 		);
 
 		// Basic grid configuration.
@@ -148,10 +147,10 @@ class VersionInfoGridHandler extends GridHandler {
 	/**
 	 * @copydoc GridHandler::loadData()
 	 */
-	function loadData($request, $filter) {
-		$versionDao = DAORegistry::getDAO('VersionDAO');
+	protected function loadData($request, $filter) {
+		$versionDao = DAORegistry::getDAO('VersionDAO'); /* @var $versionDao VersionDAO */
 		return $versionDao->getVersionHistory();
 	}
 }
 
-?>
+

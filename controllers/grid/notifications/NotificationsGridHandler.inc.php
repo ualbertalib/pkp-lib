@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/notifications/NotificationsGridHandler.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class NotificationsGridHandler
  * @ingroup controllers_grid_notifications
@@ -23,19 +23,12 @@ class NotificationsGridHandler extends GridHandler {
 	/** @var $_selectedNotificationIds array Set of selected IDs */
 	var $_selectedNotificationIds;
 
-	/**
-	 * Constructor
-	 */
-	function NotificationsGridHandler() {
-		parent::GridHandler();
-	}
-
 
 	/**
-	 * @see PKPHandler::initialize()
+	 * @copydoc GridHandler::initialize()
 	 */
 	function initialize($request, $args = null) {
-		parent::initialize($request);
+		parent::initialize($request, $args);
 		AppLocale::requireComponents(LOCALE_COMPONENT_APP_SUBMISSION, LOCALE_COMPONENT_PKP_SUBMISSION);
 
 		$this->_selectedNotificationIds = (array) $request->getUserVar('selectedNotificationIds');
@@ -44,11 +37,11 @@ class NotificationsGridHandler extends GridHandler {
 		$this->addColumn(
 			new GridColumn(
 				'task',
-				'common.tasks',
+				$this->getNotificationsColumnTitle(),
 				null,
 				null,
 				$cellProvider,
-				array('html' => true,
+				array('anyhtml' => true,
 						'alignment' => COLUMN_ALIGNMENT_LEFT)
 			)
 		);
@@ -79,7 +72,7 @@ class NotificationsGridHandler extends GridHandler {
 		$router = $request->getRouter();
 		$this->addAction(
 			new LinkAction(
-				'deleteNotifications',
+				'deleteNotification',
 				new NullAction(),
 				__('grid.action.delete'),
 				'delete'
@@ -102,13 +95,19 @@ class NotificationsGridHandler extends GridHandler {
 	/**
 	 * @see GridHandler::setUrls()
 	 */
-	function setUrls($request) {
+	function setUrls($request, $extraUrls = array()) {
 		$router = $request->getRouter();
-		parent::setUrls($request, array(
-			'markNewUrl' => $router->url($request, null, null, 'markNew', null, $this->getRequestArgs()),
-			'markReadUrl' => $router->url($request, null, null, 'markRead', null, $this->getRequestArgs()),
-			'deleteUrl' => $router->url($request, null, null, 'deleteNotifications', null, $this->getRequestArgs()),
-		));
+		parent::setUrls(
+			$request,
+			array_merge(
+				$extraUrls,
+				array(
+					'markNewUrl' => $router->url($request, null, null, 'markNew', null, $this->getRequestArgs()),
+					'markReadUrl' => $router->url($request, null, null, 'markRead', null, $this->getRequestArgs()),
+					'deleteUrl' => $router->url($request, null, null, 'deleteNotifications', null, $this->getRequestArgs()),
+				)
+			)
+		);
 	}
 
 	/**
@@ -143,27 +142,16 @@ class NotificationsGridHandler extends GridHandler {
 		return in_array($gridDataElement->getId(), $this->_selectedNotificationIds);
 	}
 
+
+	//
+	// Protected methods.
+	//
 	/**
-	 * @see GridHandler::loadData()
-	 * @return array Grid data.
+	 * Get the notifications column title.
+	 * @return string Locale key.
 	 */
-	protected function loadData($request, $filter) {
-		$user = $request->getUser();
-
-		// Get all level task notifications.
-		$notificationDao = DAORegistry::getDAO('NotificationDAO'); /* @var $notificationDao NotificationDAO */
-		$notifications = $notificationDao->getByUserId($user->getId(), NOTIFICATION_LEVEL_TASK);
-		$rowData = $notifications->toAssociativeArray();
-
-		// Remove not listable task types.
-		$notListableTaskTypes = $this->getNotListableTaskTypes();
-		foreach ($rowData as $key => $notification) {
-			if (in_array($notification->getType(), $notListableTaskTypes)) {
-				unset($rowData[$key]);
-			}
-		}
-
-		return $rowData;
+	protected function getNotificationsColumnTitle() {
+		return 'common.tasks';
 	}
 
 
@@ -174,10 +162,10 @@ class NotificationsGridHandler extends GridHandler {
 	 * Mark notifications unread
 	 * @param $args array
 	 * @param $request PKPRequest
-	 * @return string JSON-encoded response
+	 * @return JSONMessage JSON object
 	 */
 	function markNew($args, $request) {
-		$notificationDao = DAORegistry::getDAO('NotificationDAO');
+		$notificationDao = DAORegistry::getDAO('NotificationDAO'); /* @var $notificationDao NotificationDAO */
 		$user = $request->getUser();
 
 		$selectedElements = (array) $request->getUserVar('selectedElements');
@@ -193,10 +181,10 @@ class NotificationsGridHandler extends GridHandler {
 	 * Mark notifications unread
 	 * @param $args array
 	 * @param $request PKPRequest
-	 * @return string JSON-encoded response
+	 * @return JSONMessage JSON object
 	 */
 	function markRead($args, $request) {
-		$notificationDao = DAORegistry::getDAO('NotificationDAO');
+		$notificationDao = DAORegistry::getDAO('NotificationDAO'); /* @var $notificationDao NotificationDAO */
 		$user = $request->getUser();
 
 		$selectedElements = (array) $request->getUserVar('selectedElements');
@@ -221,10 +209,10 @@ class NotificationsGridHandler extends GridHandler {
 	 * Delete notifications
 	 * @param $args array
 	 * @param $request PKPRequest
-	 * @return string JSON-encoded response
+	 * @return JSONMessage JSON object
 	 */
 	function deleteNotifications($args, $request) {
-		$notificationDao = DAORegistry::getDAO('NotificationDAO');
+		$notificationDao = DAORegistry::getDAO('NotificationDAO'); /* @var $notificationDao NotificationDAO */
 		$user = $request->getUser();
 
 		$selectedElements = (array) $request->getUserVar('selectedElements');
@@ -240,22 +228,13 @@ class NotificationsGridHandler extends GridHandler {
 	 * Get unread notifications count
 	 * @param $args array
 	 * @param $request PKPRequest
-	 * @return string JSON-encoded response
+	 * @return JSONMessage JSON object
 	 */
 	function getUnreadNotificationsCount($args, $request) {
-		$notificationDao = DAORegistry::getDAO('NotificationDAO');
+		$notificationDao = DAORegistry::getDAO('NotificationDAO'); /* @var $notificationDao NotificationDAO */
 		$user = $request->getUser();
-		$json = new JSONMessage(true, $notificationDao->getNotificationCount(false, $user->getId(), null, NOTIFICATION_LEVEL_TASK, $this->getNotListableTaskTypes()));
-		return $json->getString();
-	}
-
-	/**
-	 * Get the notification types that we don't want to list in this grid.
-	 * @return array
-	 */
-	static function getNotListableTaskTypes() {
-		return array(NOTIFICATION_TYPE_SIGNOFF_COPYEDIT, NOTIFICATION_TYPE_SIGNOFF_PROOF);
+		return new JSONMessage(true, $notificationDao->getNotificationCount(false, $user->getId(), null, NOTIFICATION_LEVEL_TASK));
 	}
 }
 
-?>
+

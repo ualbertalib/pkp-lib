@@ -3,9 +3,9 @@
 /**
  * @file classes/db/DBRowIterator.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class DBRowIterator
  * @ingroup db
@@ -43,7 +43,8 @@ class DBRowIterator extends ItemIterator {
 	 * @param $dao object DAO class for factory
 	 * @param $functionName The function to call on $dao to create an object
 	 */
-	function DBRowIterator(&$records, $idFields = array()) {
+	function __construct($records, $idFields = array()) {
+		parent::__construct();
 		$this->idFields = $idFields;
 
 		if (!$records || $records->EOF) {
@@ -57,7 +58,7 @@ class DBRowIterator extends ItemIterator {
 			$this->pageCount = 1;
 		}
 		else {
-			$this->records =& $records;
+			$this->records = $records;
 			$this->wasEmpty = false;
 			$this->page = $records->AbsolutePage();
 			$this->isFirst = $records->atFirstPage();
@@ -71,14 +72,14 @@ class DBRowIterator extends ItemIterator {
 	 * Return the object representing the next row.
 	 * @return object
 	 */
-	function &next() {
+	function next() {
 		if ($this->records == null) return $this->records;
 		if (!$this->records->EOF) {
 			$row = $this->records->getRowAssoc(false);
-			if (!$this->records->MoveNext()) $this->_cleanup();
+			if (!$this->records->MoveNext()) $this->close();
 			return $row;
 		} else {
-			$this->_cleanup();
+			$this->close();
 			$nullVar = null;
 			return $nullVar;
 		}
@@ -88,8 +89,8 @@ class DBRowIterator extends ItemIterator {
 	 * Return the next row, with key.
 	 * @return array ($key, $value)
 	 */
-	function &nextWithKey() {
-		$result =& $this->next();
+	function nextWithKey() {
+		$result = $this->next();
 		if (empty($this->idFields)) {
 			$key = null;
 		} else {
@@ -101,8 +102,7 @@ class DBRowIterator extends ItemIterator {
 				$key .= (string)$result[$idField];
 			}
 		}
-		$returner = array($key, &$result);
-		return $returner;
+		return array($key, $result);
 	}
 
 	/**
@@ -152,7 +152,7 @@ class DBRowIterator extends ItemIterator {
 	function eof() {
 		if ($this->records == null) return true;
 		if ($this->records->EOF) {
-			$this->_cleanup();
+			$this->close();
 			return true;
 		}
 		return false;
@@ -167,10 +167,10 @@ class DBRowIterator extends ItemIterator {
 	}
 
 	/**
-	 * PRIVATE function used internally to clean up the record set.
+	 * Clean up the record set.
 	 * This is called aggressively because it can free resources.
 	 */
-	function _cleanup() {
+	function close() {
 		$this->records->close();
 		unset($this->records);
 		$this->records = null;
@@ -180,7 +180,7 @@ class DBRowIterator extends ItemIterator {
 	 * Convert this iterator to an array.
 	 * @return array
 	 */
-	function &toArray() {
+	function toArray() {
 		$returner = array();
 		while (!$this->eof()) {
 			$returner[] = $this->next();
@@ -188,5 +188,3 @@ class DBRowIterator extends ItemIterator {
 		return $returner;
 	}
 }
-
-?>

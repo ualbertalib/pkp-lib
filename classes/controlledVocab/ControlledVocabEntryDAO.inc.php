@@ -3,9 +3,9 @@
 /**
  * @file classes/controlledVocab/ControlledVocabEntryDAO.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ControlledVocabEntryDAO
  * @ingroup controlled_vocab
@@ -17,12 +17,6 @@
 import('lib.pkp.classes.controlledVocab.ControlledVocabEntry');
 
 class ControlledVocabEntryDAO extends DAO {
-	/**
-	 * Constructor
-	 */
-	function ControlledVocabEntryDAO() {
-		parent::DAO();
-	}
 
 	/**
 	 * Return the entry settings DAO.
@@ -140,10 +134,8 @@ class ControlledVocabEntryDAO extends DAO {
 	 */
 	function insertObject($controlledVocabEntry) {
 		$this->update(
-			sprintf('INSERT INTO controlled_vocab_entries
-				(controlled_vocab_id, seq)
-				VALUES
-				(?, ?)'),
+			'INSERT INTO controlled_vocab_entries (controlled_vocab_id, seq)
+			VALUES (?, ?)',
 			array(
 				(int) $controlledVocabEntry->getControlledVocabId(),
 				(float) $controlledVocabEntry->getSequence()
@@ -191,6 +183,40 @@ class ControlledVocabEntryDAO extends DAO {
 			'ORDER BY seq',
 			$params,
 			$rangeInfo
+		);
+
+		return new DAOResultFactory($result, $this, '_fromRow');
+	}
+
+	/**
+	 * Retrieve an array of controlled vocab entries that exist for a given context
+	 * (assigned to at least one submission in that context) and which match the
+	 * requested symbolic (eg - keywords/subjects)
+	 *
+	 * @param $symbolic string One of the CONTROLLED_VOCAB_* constants
+	 * @param $contextId int
+	 * @param $locale string
+	 * @return array
+	 */
+	public function getByContextId($symbolic, $contextId, $locale) {
+		$result = $this->retrieve(
+			'SELECT cve.*
+				FROM controlled_vocab_entries AS cve
+				LEFT JOIN controlled_vocabs AS cv ON (cv.controlled_vocab_id = cve.controlled_vocab_id)
+				LEFT JOIN controlled_vocab_entry_settings AS cves ON (cves.controlled_vocab_entry_id = cve.controlled_vocab_entry_id)
+				LEFT JOIN publications as p ON (p.publication_id = cv.assoc_id)
+				LEFT JOIN submissions AS s ON (s.submission_id = p.submission_id)
+				WHERE cv.symbolic = ?
+					AND cv.assoc_type = ?
+					AND s.context_id = ?
+					AND cves.locale = ?
+				ORDER BY cve.seq DESC',
+			[
+				$symbolic,
+				ASSOC_TYPE_PUBLICATION,
+				$contextId,
+				$locale
+			]
 		);
 
 		return new DAOResultFactory($result, $this, '_fromRow');
@@ -250,4 +276,4 @@ class ControlledVocabEntryDAO extends DAO {
 	}
 }
 
-?>
+

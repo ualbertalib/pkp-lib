@@ -3,9 +3,9 @@
 /**
  * @file classes/plugins/PluginGalleryDAO.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PluginGalleryDAO
  * @ingroup plugins
@@ -15,16 +15,11 @@
  */
 
 import('lib.pkp.classes.plugins.GalleryPlugin');
+import('lib.pkp.classes.file.FileWrapper');
 
-define('PLUGIN_GALLERY_XML_URL', 'http://pkp.sfu.ca/ojs/xml/plugins.xml');
+define('PLUGIN_GALLERY_XML_URL', 'https://pkp.sfu.ca/ojs/xml/plugins.xml');
 
 class PluginGalleryDAO extends DAO {
-	/**
-	 * Constructor
-	 */
-	function PluginGalleryDAO() {
-		parent::DAO();
-	}
 
 	/**
 	 * Get a set of GalleryPlugin objects describing the available
@@ -43,8 +38,8 @@ class PluginGalleryDAO extends DAO {
 			// apply search filters if any supplied.
 			if (
 				$plugin &&
-				($category == '' || $plugin->getCategory() == $category) &&
-				($search == '' || String::strpos(String::strtolower(serialize($plugin)), String::strtolower($search)) !== false)
+				($category == '' || $category == PLUGIN_GALLERY_ALL_CATEGORY_SEARCH_VALUE || $plugin->getCategory() == $category) &&
+				($search == '' || PKPString::strpos(PKPString::strtolower(serialize($plugin)), PKPString::strtolower($search)) !== false)
 			) {
 				$plugins[] = $plugin;
 			}
@@ -58,7 +53,8 @@ class PluginGalleryDAO extends DAO {
 	 */
 	private function _getDocument() {
 		$doc = new DOMDocument('1.0');
-		$doc->load(PLUGIN_GALLERY_XML_URL);
+		$gallery = FileWrapper::wrapper(PLUGIN_GALLERY_XML_URL);
+		$doc->loadXML($gallery->contents());
 		return $doc;
 	}
 
@@ -185,7 +181,7 @@ class PluginGalleryDAO extends DAO {
 			}
 		}
 
-		if ($compatible && (!$plugin->getDate() || $plugin->getDate() >= $release['date'])) {
+		if ($compatible && (!$plugin->getData('version') || version_compare($plugin->getData('version'), $release['version'], '<'))) {
 			// This release is newer than the one found earlier, or
 			// this is the first compatible release we've found.
 			$plugin->setDate($release['date']);
@@ -229,4 +225,4 @@ class PluginGalleryDAO extends DAO {
 	}
 }
 
-?>
+

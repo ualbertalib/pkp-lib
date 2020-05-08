@@ -3,9 +3,9 @@
 /**
  * @file classes/security/authorization/internal/SubmissionFileUploaderAccessPolicy.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubmissionFileUploaderAccessPolicy
  * @ingroup security_authorization_internal
@@ -21,8 +21,8 @@ class SubmissionFileUploaderAccessPolicy extends SubmissionFileBaseAccessPolicy 
 	 * Constructor
 	 * @param $request PKPRequest
 	 */
-	function SubmissionFileUploaderAccessPolicy($request, $fileIdAndRevision = null) {
-		parent::SubmissionFileBaseAccessPolicy($request, $fileIdAndRevision);
+	function __construct($request, $fileIdAndRevision = null) {
+		parent::__construct($request, $fileIdAndRevision);
 	}
 
 
@@ -37,7 +37,7 @@ class SubmissionFileUploaderAccessPolicy extends SubmissionFileBaseAccessPolicy 
 
 		// Get the user
 		$user = $request->getUser();
-		if (!is_a($user, 'PKPUser')) return AUTHORIZATION_DENY;
+		if (!is_a($user, 'User')) return AUTHORIZATION_DENY;
 
 		// Get the submission file
 		$submissionFile = $this->getSubmissionFile($request);
@@ -52,4 +52,4 @@ class SubmissionFileUploaderAccessPolicy extends SubmissionFileBaseAccessPolicy 
 	}
 }
 
-?>
+

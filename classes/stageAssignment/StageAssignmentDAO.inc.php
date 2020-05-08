@@ -3,9 +3,9 @@
 /**
  * @file classes/stageAssignment/StageAssignmentDAO.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class StageAssignmentDAO
  * @ingroup stageAssignment
@@ -17,12 +17,6 @@
 import('lib.pkp.classes.stageAssignment.StageAssignment');
 
 class StageAssignmentDAO extends DAO {
-	/**
-	 * Constructor
-	 */
-	function StageAssignmentDAO() {
-		parent::DAO();
-	}
 
 	/**
 	 * Retrieve an assignment by  its ID
@@ -52,8 +46,8 @@ class StageAssignmentDAO extends DAO {
 
 	/**
 	 * Retrieve StageAssignments by submission and role IDs.
-	 * @param $submissionId int
-	 * @param $roleId int
+	 * @param $submissionId int Submission ID
+	 * @param $roleId int ROLE_ID_...
 	 * @param $stageId int (optional)
 	 * @param $userId int (optional)
 	 * @return DAOResultFactory StageAssignment
@@ -63,6 +57,7 @@ class StageAssignmentDAO extends DAO {
 	}
 
 	/**
+	 * Get by user ID
 	 * @param $userId int
 	 * @return StageAssignment
 	 */
@@ -70,11 +65,23 @@ class StageAssignmentDAO extends DAO {
 		return $this->_getByIds(null, null, null, $userId);
 	}
 
+
+	/**
+	 * Retrieve StageAssignments by submission and user IDs
+	 * @param $submissionId int Submission ID
+	 * @param $userId int User ID
+	 * @param $stageId int optional WORKFLOW_STAGE_ID_...
+	 * @return DAOResultFactory StageAssignment
+	 */
+	function getBySubmissionAndUserIdAndStageId($submissionId, $userId, $stageId = null) {
+		return $this->_getByIds($submissionId, $stageId, null, $userId);
+	}
+
 	/**
 	 * Get editor stage assignments.
 	 * @param $submissionId int
 	 * @param $stageId int
-	 * @return array
+	 * @return array StageAssignment
 	 */
 	function getEditorsAssignedToStage($submissionId, $stageId) {
 		$managerAssignmentFactory = $this->getBySubmissionAndRoleId($submissionId, ROLE_ID_MANAGER, $stageId);
@@ -110,13 +117,46 @@ class StageAssignmentDAO extends DAO {
 	}
 
 	/**
+	 * Retrieve all assignments by UserGroupId and ContextId
+	 * @param $userGroupId int
+	 * @param $contextId int
+	 * @return DAOResultFactory
+	 */
+	function getByUserGroupId($userGroupId, $contextId) {
+		$params = array(
+			(int) $userGroupId,
+			(int) $contextId
+		);
+
+		$result = $this->retrieve(
+			'SELECT * FROM stage_assignments sa'
+			. ' JOIN submissions s ON s.submission_id = sa.submission_id'
+			. ' WHERE sa.user_group_id = ? AND s.context_id = ?',
+			$params
+		);
+
+		return new DAOResultFactory($result, $this, '_fromRow');
+	}
+
+	/**
 	 * Fetch a stageAssignment by symbolic info, building it if needed.
 	 * @param $submissionId int
 	 * @param $userGroupId int
 	 * @param $userId int
+	 * @param $recommendOnly boolean
+	 * @param $canChangeMetadata boolean
 	 * @return StageAssignment
 	 */
-	function build($submissionId, $userGroupId, $userId) {
+	function build($submissionId, $userGroupId, $userId, $recommendOnly = false, $canChangeMetadata = null) {
+		if (!isset($canChangeMetadata)) {
+			$userGroupDao = DAORegistry::getDAO('UserGroupDAO'); /* @var $userGroupDao UserGroupDAO */
+
+			/** @var $userGroup UserGroup */
+			$userGroup = $userGroupDao->getById($userGroupId);
+
+			$canChangeMetadata = $userGroup->getPermitMetadataEdit();
+		}
+
 
 		// If one exists, fetch and return.
 		$stageAssignment = $this->getBySubmissionAndStageId($submissionId, null, $userGroupId, $userId);
@@ -127,6 +167,8 @@ class StageAssignmentDAO extends DAO {
 		$stageAssignment->setSubmissionId($submissionId);
 		$stageAssignment->setUserGroupId($userGroupId);
 		$stageAssignment->setUserId($userId);
+		$stageAssignment->setRecommendOnly($recommendOnly);
+		$stageAssignment->setCanChangeMetadata($canChangeMetadata);
 		$this->insertObject($stageAssignment);
 		$stageAssignment->setId($this->getInsertId());
 		return $stageAssignment;
@@ -154,6 +196,8 @@ class StageAssignmentDAO extends DAO {
 		$stageAssignment->setUserGroupId($row['user_group_id']);
 		$stageAssignment->setDateAssigned($row['date_assigned']);
 		$stageAssignment->setStageId($row['stage_id']);
+		$stageAssignment->setRecommendOnly((boolean) $row['recommend_only']);
+		$stageAssignment->setCanChangeMetadata($row['can_change_metadata']);
 
 		return $stageAssignment;
 	}
@@ -161,21 +205,50 @@ class StageAssignmentDAO extends DAO {
 	/**
 	 * Insert a new StageAssignment.
 	 * @param $stageAssignment StageAssignment
-	 * @return bool
 	 */
 	function insertObject($stageAssignment) {
-		return $this->update(
+		$this->update(
 			sprintf(
 				'INSERT INTO stage_assignments
-					(submission_id, user_group_id, user_id, date_assigned)
+					(submission_id, user_group_id, user_id, date_assigned, recommend_only, can_change_metadata)
 				VALUES
-					(?, ?, ?, %s)',
+					(?, ?, ?, %s, ?, ?)',
 				$this->datetimeToDB(Core::getCurrentDate())
 			),
 			array(
 				$stageAssignment->getSubmissionId(),
 				$this->nullOrInt($stageAssignment->getUserGroupId()),
-				$this->nullOrInt($stageAssignment->getUserId())
+				$this->nullOrInt($stageAssignment->getUserId()),
+				(int) $stageAssignment->getRecommendOnly(),
+				(int) $stageAssignment->getCanChangeMetadata()
+			)
+		);
+	}
+
+	/**
+	 * Update a new StageAssignment.
+	 * @param $stageAssignment StageAssignment
+	 */
+	function updateObject($stageAssignment) {
+		$this->update(
+			sprintf(
+				'UPDATE stage_assignments SET
+					submission_id = ?,
+					user_group_id = ?,
+					user_id = ?,
+					date_assigned = %s,
+					recommend_only = ?,
+					can_change_metadata = ?
+				WHERE	stage_assignment_id = ?',
+				$this->datetimeToDB(Core::getCurrentDate())
+			),
+			array(
+				(int) $stageAssignment->getSubmissionId(),
+				$this->nullOrInt($stageAssignment->getUserGroupId()),
+				$this->nullOrInt($stageAssignment->getUserId()),
+				(int) $stageAssignment->getRecommendOnly(),
+				(int) $stageAssignment->getCanChangeMetadata(),
+				(int) $stageAssignment->getId()
 			)
 		);
 	}
@@ -183,10 +256,9 @@ class StageAssignmentDAO extends DAO {
 	/**
 	 * Delete a StageAssignment.
 	 * @param $stageAssignment StageAssignment
-	 * @return int
 	 */
 	function deleteObject($stageAssignment) {
-		return $this->deleteByAll(
+		$this->deleteByAll(
 			$stageAssignment->getSubmissionId(),
 			$stageAssignment->getUserGroupId(),
 			$stageAssignment->getUserId()
@@ -195,13 +267,12 @@ class StageAssignmentDAO extends DAO {
 
 	/**
 	 * Delete a stageAssignment by matching on all fields.
-	 * @param $submissionId int
-	 * @param $userGroupId int
-	 * @param $userId int
-	 * @return boolean
+	 * @param $submissionId int Submission ID
+	 * @param $userGroupId int User group ID
+	 * @param $userId int User ID
 	 */
 	function deleteByAll($submissionId, $userGroupId, $userId) {
-		return $this->update(
+		$this->update(
 			'DELETE FROM stage_assignments
 			WHERE	submission_id = ?
 				AND user_group_id = ?
@@ -227,8 +298,9 @@ class StageAssignmentDAO extends DAO {
 	 * @param $stageId int optional
 	 * @param $userGroupId int optional
 	 * @param $userId int optional
+	 * @param $roleId int optional ROLE_ID_...
 	 * @param $single bool specify if only one stage assignment (default is a ResultFactory)
-	 * @return StageAssignment or ResultFactory
+	 * @return StageAssignment|ResultFactory Mixed, depending on $single
 	 */
 	function _getByIds($submissionId = null, $stageId = null, $userGroupId = null, $userId = null, $roleId = null, $single = false) {
 		$conditions = array();
@@ -262,19 +334,18 @@ class StageAssignmentDAO extends DAO {
 			$params
 		);
 
-		$returner = null;
-		if ( $single ) {
-				// all four parameters must be specified for a single record to be returned
-				if (!$submissionId && !$stageId && !$userGroupId && !$userId) return false;
-				// no matches were found.
-				if ($result->RecordCount() == 0) return false;
-				$returner = $this->_fromRow($result->GetRowAssoc(false));
-				$result->Close();
+		if ($single) {
+			// all four parameters must be specified for a single record to be returned
+			if (!$submissionId && !$stageId && !$userGroupId && !$userId) return false;
+			// no matches were found.
+			if ($result->RecordCount() == 0) return false;
+			$returner = $this->_fromRow($result->GetRowAssoc(false));
+			$result->Close();
+			return $returner;
 		} else {
 			// In any other case, return a list of all assignments
-			$returner = new DAOResultFactory($result, $this, '_fromRow');
+			return new DAOResultFactory($result, $this, '_fromRow');
 		}
-		return $returner;
 	}
 
 	/**
@@ -287,4 +358,4 @@ class StageAssignmentDAO extends DAO {
 	}
 }
 
-?>
+

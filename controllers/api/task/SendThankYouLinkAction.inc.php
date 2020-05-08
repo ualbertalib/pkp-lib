@@ -3,9 +3,9 @@
 /**
  * @file controllers/api/task/SendThankYouLinkAction.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SendThankYouLinkAction
  * @ingroup controllers_api_task
@@ -22,7 +22,7 @@ class SendThankYouLinkAction extends LinkAction {
 	 * @param $request Request
 	 * @param $actionArgs array The action arguments.
 	 */
-	function SendThankYouLinkAction($request, $modalTitle, $actionArgs) {
+	function __construct($request, $modalTitle, $actionArgs) {
 		// Instantiate the send thank you modal.
 		$router = $request->getRouter();
 		import('lib.pkp.classes.linkAction.request.AjaxModal');
@@ -34,12 +34,12 @@ class SendThankYouLinkAction extends LinkAction {
 		);
 
 		// Configure the link action.
-		parent::LinkAction(
+		parent::__construct(
 			'thankReviewer', $ajaxModal,
-			__('common.accepted'),
+			__('editor.review.thankReviewer'),
 			'accepted'
 		);
 	}
 }
 
-?>
+

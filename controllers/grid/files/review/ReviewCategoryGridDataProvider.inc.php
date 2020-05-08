@@ -2,9 +2,9 @@
 /**
  * @file controllers/grid/files/review/ReviewCategoryGridDataProvider.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ReviewGridCategoryDataProvider
  * @ingroup controllers_grid_files_review
@@ -23,8 +23,8 @@ class ReviewCategoryGridDataProvider extends SubmissionFilesCategoryGridDataProv
 	 * @param $viewableOnly int Will be passed to the review grid data provider.
 	 * See parameter description there.
 	 */
-	function ReviewCategoryGridDataProvider($fileStage, $viewableOnly = false) {
-		parent::SubmissionFilesCategoryGridDataProvider($fileStage, array('viewableOnly' => $viewableOnly));
+	function __construct($fileStage, $viewableOnly = false) {
+		parent::__construct($fileStage, array('viewableOnly' => $viewableOnly));
 	}
 
 
@@ -46,7 +46,7 @@ class ReviewCategoryGridDataProvider extends SubmissionFilesCategoryGridDataProv
 	/**
 	 * @copydoc SubmissionFilesCategoryGridDataProvider::loadCategoryData()
 	 */
-	function loadCategoryData($request, $categoryDataElement, $filter = null) {
+	function loadCategoryData($request, $categoryDataElement, $filter = null, $reviewRound = null) {
 		$reviewRound = $this->getReviewRound();
 		return parent::loadCategoryData($request, $categoryDataElement, $filter, $reviewRound);
 	}
@@ -54,7 +54,7 @@ class ReviewCategoryGridDataProvider extends SubmissionFilesCategoryGridDataProv
 	/**
 	 * @copydoc SubmissionFilesCategoryGridDataProvider::initGridDataProvider()
 	 */
-	function initGridDataProvider($fileStage, $initParams) {
+	function initGridDataProvider($fileStage, $initParams = null) {
 		// This category grid data provider will use almost all the
 		// same implementation of the ReviewGridDataProvider.
 		import('lib.pkp.controllers.grid.files.review.ReviewGridDataProvider');
@@ -77,4 +77,4 @@ class ReviewCategoryGridDataProvider extends SubmissionFilesCategoryGridDataProv
 	}
 }
 
-?>
+

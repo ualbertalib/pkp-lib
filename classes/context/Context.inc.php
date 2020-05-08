@@ -3,9 +3,9 @@
 /**
  * @file classes/context/Context.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class Context
  * @ingroup core
@@ -13,13 +13,14 @@
  * @brief Basic class describing a context.
  */
 
-class Context extends DataObject {
-	/**
-	 * Constructor
-	 */
-	function Context() {
-		parent::DataObject();
-	}
+ // Constant used to distinguish whether metadata is enabled and whether it
+ // should be requested or required during submission
+ define('METADATA_DISABLE', 0);
+ define('METADATA_ENABLE', 'enable');
+ define('METADATA_REQUEST', 'request');
+ define('METADATA_REQUIRE', 'require');
+
+abstract class Context extends DataObject {
 
 	/**
 	 * Get the localized name of the context
@@ -27,7 +28,7 @@ class Context extends DataObject {
 	 * @return string
 	 */
 	function getLocalizedName($preferredLocale = null) {
-		return $this->getLocalizedSetting('name', $preferredLocale);
+		return $this->getLocalizedData('name', $preferredLocale);
 	}
 
 	/**
@@ -42,7 +43,7 @@ class Context extends DataObject {
 	 * get the name of the context
 	 */
 	function getName($locale = null) {
-		return $this->getSetting('name', $locale);
+		return $this->getData('name', $locale);
 	}
 
 	/**
@@ -50,7 +51,7 @@ class Context extends DataObject {
 	 * @return string
 	 */
 	function getContactName() {
-		return $this->getSetting('contactName');
+		return $this->getData('contactName');
 	}
 
 	/**
@@ -66,7 +67,7 @@ class Context extends DataObject {
 	 * @return string
 	 */
 	function getContactEmail() {
-		return $this->getSetting('contactEmail');
+		return $this->getData('contactEmail');
 	}
 
 	/**
@@ -100,7 +101,7 @@ class Context extends DataObject {
 	 * @return string
 	 */
 	function getPath() {
-		return $this->getData('path');
+		return $this->getData('urlPath');
 	}
 
 	/**
@@ -108,7 +109,7 @@ class Context extends DataObject {
 	 * @param $path string
 	 */
 	function setPath($path) {
-		return $this->setData('path', $path);
+		$this->setData('urlPath', $path);
 	}
 
 	/**
@@ -124,7 +125,7 @@ class Context extends DataObject {
 	 * @param $enabled int
 	 */
 	function setEnabled($enabled) {
-		return $this->setData('enabled', $enabled);
+		$this->setData('enabled', $enabled);
 	}
 
 	/**
@@ -140,7 +141,7 @@ class Context extends DataObject {
 	 * @param $locale string
 	 */
 	function setPrimaryLocale($primaryLocale) {
-		return $this->setData('primaryLocale', $primaryLocale);
+		$this->setData('primaryLocale', $primaryLocale);
 	}
 	/**
 	 * Get sequence of context in site-wide list.
@@ -155,7 +156,7 @@ class Context extends DataObject {
 	 * @param $sequence float
 	 */
 	function setSequence($sequence) {
-		return $this->setData('sequence', $sequence);
+		$this->setData('sequence', $sequence);
 	}
 
 	/**
@@ -163,7 +164,7 @@ class Context extends DataObject {
 	 * @return string
 	 */
 	function getLocalizedDescription() {
-		return $this->getLocalizedSetting('description');
+		return $this->getLocalizedData('description');
 	}
 
 	/**
@@ -171,7 +172,7 @@ class Context extends DataObject {
 	 * @return string
 	 */
 	function getLocalizedAcronym() {
-		return $this->getLocalizedSetting('acronym');
+		return $this->getLocalizedData('acronym');
 	}
 
 	/**
@@ -180,7 +181,19 @@ class Context extends DataObject {
 	 * @return string
 	 */
 	function getAcronym($locale) {
-		return $this->getSetting('acronym', $locale);
+		return $this->getData('acronym', $locale);
+	}
+
+	/**
+	 * Get localized favicon
+	 * @return string
+	 */
+	function getLocalizedFavicon() {
+		$faviconArray = $this->getData('favicon');
+		foreach (array(AppLocale::getLocale(), AppLocale::getPrimaryLocale()) as $locale) {
+			if (isset($faviconArray[$locale])) return $faviconArray[$locale];
+		}
+		return null;
 	}
 
 	/**
@@ -188,7 +201,7 @@ class Context extends DataObject {
 	 * @return array
 	 */
 	function getSupportedFormLocales() {
-		return $this->getSetting('supportedFormLocales');
+		return $this->getData('supportedFormLocales');
 	}
 
 	/**
@@ -221,7 +234,7 @@ class Context extends DataObject {
 	 * @return array
 	 */
 	function getSupportedSubmissionLocales() {
-		return $this->getSetting('supportedSubmissionLocales');
+		return $this->getData('supportedSubmissionLocales');
 	}
 
 	/**
@@ -255,7 +268,7 @@ class Context extends DataObject {
 	 * @return array
 	 */
 	function getSupportedLocales() {
-		return $this->getSetting('supportedLocales');
+		return $this->getData('supportedLocales');
 	}
 
 	/**
@@ -287,46 +300,22 @@ class Context extends DataObject {
 	 * Get the association type for this context.
 	 * @return int
 	 */
-	function getAssocType() {
-		assert(false); // Must be overridden by subclasses
+	public abstract function getAssocType();
+
+	/**
+	 * @deprecated Most settings should be available from self::getData(). In
+	 *  other cases, use the context settings DAO directly.
+	 */
+	function getSetting($name, $locale = null) {
+		return $this->getData($name, $locale);
 	}
 
 	/**
-	 * Get the settings DAO for this context object.
-	 * @return DAO
+	 * @deprecated Most settings should be available from self::getData(). In
+	 *  other cases, use the context settings DAO directly.
 	 */
-	static function getSettingsDAO() {
-		assert(false); // Must be implemented by subclasses
-	}
-
-	/**
-	 * Get the DAO for this context object.
-	 * @return DAO
-	 */
-	static function getDAO() {
-		assert(false); // Must be implemented by subclasses
-	}
-
-	/**
-	 * Retrieve array of settings.
-	 * @return array
-	 */
-	function &getSettings() {
-		$settingsDao = $this->getSettingsDAO();
-		$settings =& $settingsDao->getSettings($this->getId());
-		return $settings;
-	}
-
-	/**
-	 * Retrieve a context setting value.
-	 * @param $name string
-	 * @param $locale string
-	 * @return mixed
-	 */
-	function &getSetting($name, $locale = null) {
-		$settingsDao = $this->getSettingsDAO();
-		$setting =& $settingsDao->getSetting($this->getId(), $name, $locale);
-		return $setting;
+	function getLocalizedSetting($name, $locale = null) {
+		return $this->getLocalizedData($name, $locale);
 	}
 
 	/**
@@ -337,21 +326,8 @@ class Context extends DataObject {
 	 * @param $isLocalized boolean optional
 	 */
 	function updateSetting($name, $value, $type = null, $isLocalized = false) {
-		$settingsDao = $this->getSettingsDAO();
+		$settingsDao = Application::getContextSettingsDAO();
 		return $settingsDao->updateSetting($this->getId(), $name, $value, $type, $isLocalized);
-	}
-
-	/**
-	 * Get a localized context setting by name.
-	 * @param $name string
-	 * @return mixed
-	 */
-	function &getLocalizedSetting($name) {
-		$returner = $this->getSetting($name, AppLocale::getLocale());
-		if ($returner === null) {
-			$returner = $this->getSetting($name, AppLocale::getPrimaryLocale());
-		}
-		return $returner;
 	}
 
 	/**
@@ -359,7 +335,7 @@ class Context extends DataObject {
 	 * @return int
 	 */
 	function getViews() {
-		$application = Application::getApplication();
+		$application = Application::get();
 		return $application->getPrimaryMetricByAssoc(Application::getContextAssocType(), $this->getId());
 	}
 
@@ -374,8 +350,8 @@ class Context extends DataObject {
 	*/
 	function getMetricTypes($withDisplayNames = false) {
 		// Retrieve report plugins enabled for this journal.
-		$reportPlugins =& PluginRegistry::loadCategory('reports', true, $this->getId());
-		if (!is_array($reportPlugins)) return array();
+		$reportPlugins = PluginRegistry::loadCategory('reports', true, $this->getId());
+		if (empty($reportPlugins)) return array();
 
 		// Run through all report plugins and retrieve all supported metrics.
 		$metricTypes = array();
@@ -402,7 +378,7 @@ class Context extends DataObject {
 	*   type could be identified.
 	*/
 	function getDefaultMetricType() {
-		$defaultMetricType = $this->getSetting('defaultMetricType');
+		$defaultMetricType = $this->getData('defaultMetricType');
 
 		// Check whether the selected metric type is valid.
 		$availableMetrics = $this->getMetricTypes();
@@ -412,7 +388,7 @@ class Context extends DataObject {
 				$defaultMetricType = $availableMetrics[0];
 			} else {
 				// Use the site-wide default metric.
-				$application = PKPApplication::getApplication();
+				$application = Application::get();
 				$defaultMetricType = $application->getDefaultMetricType();
 			}
 		} else {
@@ -425,7 +401,7 @@ class Context extends DataObject {
 	/**
 	* Retrieve a statistics report pre-filtered on this context.
 	*
-	* @see <http://pkp.sfu.ca/wiki/index.php/OJSdeStatisticsConcept#Input_and_Output_Formats_.28Aggregation.2C_Filters.2C_Metrics_Data.29>
+	* @see <https://pkp.sfu.ca/wiki/index.php/OJSdeStatisticsConcept#Input_and_Output_Formats_.28Aggregation.2C_Filters.2C_Metrics_Data.29>
 	* for a full specification of the input and output format of this method.
 	*
 	* @param $metricType null|integer|array metrics selection
@@ -440,9 +416,7 @@ class Context extends DataObject {
 	function getMetrics($metricType = null, $columns = array(), $filter = array(), $orderBy = array(), $range = null) {
 		// Add a context filter and run the report.
 		$filter[STATISTICS_DIMENSION_CONTEXT_ID] = $this->getId();
-		$application = PKPApplication::getApplication();
+		$application = Application::get();
 		return $application->getMetrics($metricType, $columns, $filter, $orderBy, $range);
 	}
 }
-
-?>

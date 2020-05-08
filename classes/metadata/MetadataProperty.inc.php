@@ -3,9 +3,9 @@
 /**
  * @file classes/metadata/MetadataProperty.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class MetadataProperty
  * @ingroup metadata
@@ -87,12 +87,12 @@ class MetadataProperty {
 	 * @param $validationMessage string A string that can be displayed in case a user tries to set an invalid value for this property.
 	 * @param $mandatory boolean Is this a mandatory property within the schema?
 	 */
-	function MetadataProperty($name, $assocTypes = array(), $allowedTypes = METADATA_PROPERTY_TYPE_STRING,
+	function __construct($name, $assocTypes = array(), $allowedTypes = METADATA_PROPERTY_TYPE_STRING,
 			$translated = false, $cardinality = METADATA_PROPERTY_CARDINALITY_ONE, $displayName = null, $validationMessage = null, $mandatory = false) {
 
 		// Validate name and assoc type array
-		assert(is_string($name));
-		assert(is_array($assocTypes));
+		if (!is_string($name)) throw new InvalidArgumentException('$name should be a string.');
+		if (!is_array($assocTypes)) throw new InvalidArgumentException('$assocTypes should be an array.');
 
 		// A single type will be transformed to an
 		// array of types so that we can handle them
@@ -120,7 +120,7 @@ class MetadataProperty {
 			}
 
 			// Validate type
-			assert(in_array($allowedTypeId, MetadataProperty::getSupportedTypes()));
+			if (!in_array($allowedTypeId, MetadataProperty::getSupportedTypes())) throw new InvalidArgumentException('Allowed types must be supported types!');
 
 			// Transform the type array in a
 			// structure that is easy to handle
@@ -131,33 +131,33 @@ class MetadataProperty {
 			switch($allowedTypeId) {
 				case METADATA_PROPERTY_TYPE_COMPOSITE:
 					// Validate the assoc id of the composite.
-					assert(is_integer($allowedTypeParam));
+					if (!is_integer($allowedTypeParam)) throw new InvalidArgumentException('Allowed type parameter should be an integer.');
 					// Properties that allow composite types cannot be translated.
-					assert(!$translated);
+					if ($translated) throw new InvalidArgumentException('Properties that allow composite types cannot be translated.');
 					break;
 
 				case METADATA_PROPERTY_TYPE_VOCABULARY:
 					// Validate the symbolic name of the vocabulary.
-					assert(is_string($allowedTypeParam));
+					if (!is_string($allowedTypeParam)) throw new InvalidArgumentException('Allowed type parameter should be a string.');
 					break;
 
 				default:
 					// No other types support an additional parameter
-					assert(is_null($allowedTypeParam));
+					if (!is_null($allowedTypeParam)) throw new InvalidArgumentException('An additional parameter was supplied for an unsupported metadata property type.');
 			}
 		}
 
 		// Validate translation and cardinality
-		assert(is_bool($translated));
-		assert(in_array($cardinality, MetadataProperty::getSupportedCardinalities()));
+		if (!is_bool($translated)) throw new InvalidArgumentException('$translated must be a boolean');
+		if (!in_array($cardinality, MetadataProperty::getSupportedCardinalities())) throw new InvalidArgumentException('$cardinality must be a supported cardinality.');
 
 		// Default display name
 		if (is_null($displayName)) $displayName = 'metadata.property.displayName.'.$name;
-		assert(is_string($displayName));
+		if (!is_string($displayName)) throw new InvalidArgumentException('$displayName must be a string.');
 
 		// Default validation message
 		if (is_null($validationMessage)) $validationMessage = 'metadata.property.validationMessage.'.$name;
-		assert(is_string($validationMessage));
+		if (!is_string($validationMessage)) throw new InvalidArgumentException('$validationMessage must be a string.');
 
 
 		// Initialize the class
@@ -195,7 +195,7 @@ class MetadataProperty {
 			'-', '', '', '', '-'
 		);
 		$propertyId = trim(str_replace($from, $to, $this->getName()), '-');
-		$propertyId = String::camelize($propertyId);
+		$propertyId = PKPString::camelize($propertyId);
 		return $propertyId;
 	}
 
@@ -349,7 +349,7 @@ class MetadataProperty {
 
 							if (is_string($value)) {
 								// Try to translate the string value into a controlled vocab entry
-								$controlledVocabEntryDao = DAORegistry::getDao('ControlledVocabEntryDAO'); /* @var $controlledVocabEntryDao ControlledVocabEntryDAO */
+								$controlledVocabEntryDao = DAORegistry::getDAO('ControlledVocabEntryDAO'); /* @var $controlledVocabEntryDao ControlledVocabEntryDAO */
 								if (!is_null($controlledVocabEntryDao->getBySetting($value, $symbolic, $assocType, $assocId, 'name', $locale))) {
 									// The string was successfully translated so mark it as "valid".
 									return array(METADATA_PROPERTY_TYPE_VOCABULARY => $allowedTypeParam);
@@ -368,10 +368,14 @@ class MetadataProperty {
 							break;
 
 						case METADATA_PROPERTY_TYPE_URI:
-							// Validate with the URI validator
-							import('lib.pkp.classes.validation.ValidatorUri');
-							$validator = new ValidatorUri();
-							if ($validator->isValid($value)) return array(METADATA_PROPERTY_TYPE_URI => null);
+							import('lib.pkp.classes.validation.ValidatorFactory');
+							$validator = ValidatorFactory::make(
+								array('uri' => $value),
+								array('uri' => 'url')
+							);
+							if (!$validator->fails()) {
+								return array(METADATA_PROPERTY_TYPE_URI => null);
+							}
 							break;
 
 						case METADATA_PROPERTY_TYPE_DATE:
@@ -452,4 +456,4 @@ class MetadataProperty {
 	}
 }
 
-?>
+

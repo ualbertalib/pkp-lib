@@ -8,25 +8,20 @@
 /**
  * @file classes/currency/Currency.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class Currency
  * @ingroup currency
  * @see CurrencyDAO
+ * @deprecated Use \Sokil\IsoCodes directly.
  *
  * @brief Basic class describing a currency.
  *
  */
 
 class Currency extends DataObject {
-	/**
-	 * Constructor
-	 */
-	function Currency() {
-		parent::DataObject();
-	}
 
 	//
 	// Get/set methods
@@ -34,6 +29,7 @@ class Currency extends DataObject {
 
 	/**
 	 * Get the name of the currency.
+	 * @deprecated Use \Sokil\IsoCodes directly.
 	 * @return string
 	 */
 	function getName() {
@@ -42,14 +38,16 @@ class Currency extends DataObject {
 
 	/**
 	 * Set the name of the currency.
+	 * @deprecated Use \Sokil\IsoCodes directly.
 	 * @param $name string
 	 */
 	function setName($name) {
-		return $this->setData('name', $name);
+		$this->setData('name', $name);
 	}
 
 	/**
 	 * Get currency alpha code.
+	 * @deprecated Use \Sokil\IsoCodes directly.
 	 * @return string
 	 */
 	function getCodeAlpha() {
@@ -58,14 +56,16 @@ class Currency extends DataObject {
 
 	/**
 	 * Set currency alpha code.
+	 * @deprecated Use \Sokil\IsoCodes directly.
 	 * @param $alphaCode string
 	 */
 	function setCodeAlpha($codeAlpha) {
-		return $this->setData('codeAlpha', $codeAlpha);
+		$this->setData('codeAlpha', $codeAlpha);
 	}
 
 	/**
 	 * Get currency numeric code.
+	 * @deprecated Use \Sokil\IsoCodes directly.
 	 * @return int
 	 */
 	function getCodeNumeric() {
@@ -74,11 +74,27 @@ class Currency extends DataObject {
 
 	/**
 	 * Set currency numeric code.
+	 * @deprecated Use \Sokil\IsoCodes directly.
 	 * @param $codeNumeric string
 	 */
 	function setCodeNumeric($codeNumeric) {
-		return $this->setData('codeNumeric', $codeNumeric);
+		$this->setData('codeNumeric', $codeNumeric);
+	}
+
+	/**
+	 * Format a number per a currency.
+	 * @deprecated Use \Sokil\IsoCodes directly.
+	 * @param $amount numeric|null Numeric amount, or null
+	 * @return string|null Formatted amount, or null if null was supplied as amount
+	 */
+	function format($amount) {
+		if ($amount === null) return $amount;
+
+		// Some systems (e.g. Windows) do not provide money_format. Convert directly to string in that case.
+		if (!function_exists('money_format')) return (string) $amount;
+		setlocale(LC_MONETARY, 'en_US.UTF-8');
+		return money_format('%n', $amount);
 	}
 }
 
-?>
+

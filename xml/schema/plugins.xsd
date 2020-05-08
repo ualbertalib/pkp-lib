@@ -20,13 +20,11 @@
 		<attribute name="category" use="required">
 			<simpleType>
 				<restriction base="string">
-					<enumeration value="viewableFiles" />
 					<enumeration value="metadata" />
 					<enumeration value="auth" />
 					<enumeration value="blocks" />
 					<enumeration value="gateways" />
 					<enumeration value="generic" />
-					<enumeration value="implicitAuth" />
 					<enumeration value="importexport" />
 					<enumeration value="oaiMetadataFormats" />
 					<enumeration value="paymethod" />
@@ -78,6 +76,7 @@
 		<attribute name="application" use="required">
 			<simpleType>
 				<restriction base="string">
+					<enumeration value="ops" />
 					<enumeration value="ojs2" />
 					<enumeration value="ocs2" />
 					<enumeration value="omp" />

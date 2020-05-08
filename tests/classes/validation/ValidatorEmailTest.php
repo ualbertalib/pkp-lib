@@ -3,9 +3,9 @@
 /**
  * @file tests/classes/validation/ValidatorEmailTest.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ValidatorEmailTest
  * @ingroup tests_classes_validation
@@ -25,9 +25,12 @@ class ValidatorEmailTest extends PKPTestCase {
 	public function testValidatorEmail() {
 		$validator = new ValidatorEmail();
 		self::assertTrue($validator->isValid('some.address@gmail.com'));
+		self::assertTrue($validator->isValid('anything@localhost'));
+		self::assertTrue($validator->isValid("allowedchars!#$%&'*+./=?^_`{|}@gmail.com"));
+		self::assertTrue($validator->isValid('"quoted.username"@gmail.com'));
 		self::assertFalse($validator->isValid('anything else'));
-
-		self::assertEquals('/^[-a-z0-9!#\$%&\'\*\+\/=\?\^_\`\{\|\}~]+(\.[-a-z0-9!#\$%&\'\*\+\/=\?\^_\`\{\|\}~]+)*@(([a-z0-9]([-a-z0-9]*[a-z0-9]+)?){1,63}\.)+([a-z0-9]([-a-z0-9]*[a-z0-9]+)?){2,63}$/i', ValidatorEmail::getRegexp());
+		self::assertFalse($validator->isValid('double@@gmail.com'));
+		self::assertFalse($validator->isValid('no"quotes"in.middle@gmail.com'));
 	}
 }
-?>
+

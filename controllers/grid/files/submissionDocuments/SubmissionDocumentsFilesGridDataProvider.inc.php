@@ -2,9 +2,9 @@
 /**
  * @file controllers/grid/files/submissionDocuments/SubmissionDocumentsFilesGridDataProvider.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubmissionDocumentsFilesGridDataProvider
  * @ingroup controllers_grid_files_submissionDocuments
@@ -17,19 +17,11 @@ import('lib.pkp.classes.controllers.grid.CategoryGridDataProvider');
 class SubmissionDocumentsFilesGridDataProvider extends CategoryGridDataProvider {
 
 	/**
-	 * Constructor
-	 */
-	function SubmissionDocumentsFilesGridDataProvider() {
-		parent::CategoryGridDataProvider();
-	}
-
-	/**
 	 * @copydoc GridDataProvider::getAuthorizationPolicy()
 	 */
 	function getAuthorizationPolicy($request, $args, $roleAssignments) {
-		import('classes.security.authorization.SubmissionAccessPolicy');
-		$policy = new SubmissionAccessPolicy($request, $args, $roleAssignments, 'submissionId');
-		return $policy;
+		import('lib.pkp.classes.security.authorization.SubmissionAccessPolicy');
+		return new SubmissionAccessPolicy($request, $args, $roleAssignments, 'submissionId');
 	}
 
 	//
@@ -40,7 +32,7 @@ class SubmissionDocumentsFilesGridDataProvider extends CategoryGridDataProvider 
 	 * Get the authorized submission.
 	 * @return Submission
 	 */
-	function &getSubmission() {
+	function getSubmission() {
 		return $this->getAuthorizedContextObject(ASSOC_TYPE_SUBMISSION);
 	}
 
@@ -57,7 +49,7 @@ class SubmissionDocumentsFilesGridDataProvider extends CategoryGridDataProvider 
 	/**
 	 * @copydoc CategoryGridHandler::loadCategoryData()
 	 */
-	function loadCategoryData($request, &$fileType, $filter = null) {
+	function loadCategoryData($request, $fileType, $filter = null) {
 
 		// Retrieve all library files for the given submission document category.
 		$submission = $this->getSubmission();
@@ -69,4 +61,4 @@ class SubmissionDocumentsFilesGridDataProvider extends CategoryGridDataProvider 
 	}
 }
 
-?>
+

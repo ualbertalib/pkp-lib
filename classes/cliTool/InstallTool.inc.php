@@ -3,9 +3,9 @@
 /**
  * @file classes/cliTool/InstallTool.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class installTool
  * @ingroup tools
@@ -28,8 +28,8 @@ class InstallTool extends CommandLineTool {
 	 * Constructor.
 	 * @param $argv array command-line arguments
 	 */
-	function InstallTool($argv = array()) {
-		parent::CommandLineTool($argv);
+	function __construct($argv = array()) {
+		parent::__construct($argv);
 	}
 
 	/**
@@ -94,15 +94,10 @@ class InstallTool extends CommandLineTool {
 		$this->readParamOptions('additionalLocales', 'installer.additionalLocales', $installForm->supportedLocales, '', true);
 		$this->readParamOptions('clientCharset', 'installer.clientCharset', $installForm->supportedClientCharsets, 'utf-8');
 		$this->readParamOptions('connectionCharset', 'installer.connectionCharset', $installForm->supportedConnectionCharsets, '');
-		$this->readParamOptions('databaseCharset', 'installer.databaseCharset', $installForm->supportedDatabaseCharsets, '');
 
 		// File Settings
 		$this->printTitle('installer.fileSettings');
 		$this->readParam('filesDir', 'installer.filesDir');
-
-		// Security Settings
-		$this->printTitle('installer.securitySettings');
-		$this->readParamOptions('encryption', 'installer.encryption', $installForm->supportedEncryptionAlgorithms, 'md5');
 
 		// Administrator Account
 		$this->printTitle('installer.administratorAccount');
@@ -129,6 +124,8 @@ class InstallTool extends CommandLineTool {
 		// Miscellaneous Settings
 		$this->printTitle('installer.miscSettings');
 		$this->readParam('oaiRepositoryId', 'installer.oaiRepositoryId');
+
+		$this->readParamBoolean('enableBeacon', 'installer.beacon.enable', 'Y');
 
 		printf("\n*** ");
 	}
@@ -256,4 +253,4 @@ class InstallTool extends CommandLineTool {
 
 }
 
-?>
+

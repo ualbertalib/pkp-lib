@@ -3,9 +3,9 @@
 /**
  * @file tests/classes/xslt/XMLTypeDescriptionTest.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class XMLTypeDescriptionTest
  * @ingroup tests_classes_xslt
@@ -22,7 +22,7 @@ class XMLTypeDescriptionTest extends PKPTestCase {
 	/**
 	 * @see PHPUnit_Framework_TestCase::tearDown()
 	 */
-	function tearDown() {
+	function tearDown() : void {
 		PKPTestHelper::xdebugScream(true);
 	}
 
@@ -83,13 +83,5 @@ class XMLTypeDescriptionTest extends PKPTestCase {
 		self::assertTrue($typeDescription->isCompatible($testXmlDom));
 	}
 
-	/**
-	 * @covers XMLTypeDescription
-	 * @expectedException PHPUnit_Framework_Error
-	 */
-	public function testInstantiateWithInvalidTypeDescriptor1() {
-		// Type name is not fully qualified.
-		$typeDescription = new XMLTypeDescription('Nlm30CitationSchema(CITATION)');
-	}
 }
-?>
+

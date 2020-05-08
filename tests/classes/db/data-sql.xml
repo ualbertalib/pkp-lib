@@ -4,9 +4,9 @@
 <!--
   * tests/classes/db/data-sql.xml
   *
-  * Copyright (c) 2014 Simon Fraser University Library
-  * Copyright (c) 2003-2014 John Willinsky
-  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+  * Copyright (c) 2014-2020 Simon Fraser University
+  * Copyright (c) 2003-2020 John Willinsky
+  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
   *
   * XML data test file.
   -->
@@ -14,7 +14,8 @@
 	<sql>
 		<query>RAW QUERY</query>
 		<query driver="mysql">RAW MYSQL QUERY</query>
-		<query driver="postgres7">RAW POSTGRESQL QUERY</query>
+		<query driver="mysqli">RAW MYSQL QUERY</query>
+		<query driver="postgres9">RAW POSTGRESQL QUERY</query>
 		<query driver="bobs-flatfiles">RAW BOBS-FLATFILE QUERY</query>
 	</sql>
 </data>

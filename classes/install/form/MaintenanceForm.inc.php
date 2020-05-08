@@ -3,9 +3,9 @@
 /**
  * @file classes/install/form/MaintenanceForm.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class MaintenanceForm
  * @ingroup install_form
@@ -23,29 +23,29 @@ class MaintenanceForm extends Form {
 	/**
 	 * Constructor.
 	 */
-	function MaintenanceForm($request, $template) {
-		parent::Form($template);
+	function __construct($request, $template) {
+		parent::__construct($template);
 		$this->_request = $request;
 		$this->addCheck(new FormValidatorPost($this));
 	}
 
 	/**
-	 * Display the form.
+	 * @copydoc Form::display
 	 */
-	function display() {
+	function display($request = null, $template = null) {
 		$templateMgr = TemplateManager::getManager($this->_request);
 		$templateMgr->assign('version', VersionCheck::getCurrentCodeVersion());
-
-		parent::display($this->_request);
+		parent::display($request, $template);
 	}
 
 	/**
 	 * Fail with a generic installation error.
 	 * @param $errorMsg string
+	 * @param $translate boolean
 	 */
-	function installError($errorMsg) {
+	function installError($errorMsg, $translate = true) {
 		$templateMgr = TemplateManager::getManager($this->_request);
-		$templateMgr->assign(array('isInstallError' => true, 'errorMsg' => $errorMsg));
+		$templateMgr->assign(array('isInstallError' => true, 'errorMsg' => $errorMsg, 'translateErrorMsg' => $translate));
 		$this->display($this->_request);
 	}
 
@@ -59,7 +59,6 @@ class MaintenanceForm extends Form {
 		error_log($errorMsg);
 		$this->display($this->_request);
 	}
-
 }
 
-?>
+

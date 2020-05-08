@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/settings/reviewForms/ReviewFormGridHandler.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ReviewFormGridHandler
  * @ingroup controllers_grid_settings_reviewForms
@@ -26,8 +26,8 @@ class ReviewFormGridHandler extends GridHandler {
 	/**
 	 * Constructor
 	 */
-	function ReviewFormGridHandler() {
-		parent::GridHandler();
+	function __construct() {
+		parent::__construct();
 		$this->addRoleAssignment(
 			array(ROLE_ID_MANAGER),
 			array('fetchGrid', 'fetchRow', 'createReviewForm', 'editReviewForm', 'updateReviewForm',
@@ -42,16 +42,16 @@ class ReviewFormGridHandler extends GridHandler {
 	// Implement template methods from PKPHandler.
 	//
 	/**
-	 * @see PKPHandler::initialize()
+	 * @copydoc GridHandler::initialize()
 	 */
-	function initialize($request) {
+	function initialize($request, $args = null) {
+		parent::initialize($request, $args);
+
 		// Load user-related translations.
 		AppLocale::requireComponents(
 			LOCALE_COMPONENT_APP_ADMIN,
 			LOCALE_COMPONENT_APP_MANAGER,
-			LOCALE_COMPONENT_APP_COMMON,
 			LOCALE_COMPONENT_PKP_USER,
-			LOCALE_COMPONENT_PKP_GRID,
 			LOCALE_COMPONENT_PKP_MANAGER
 		);
 
@@ -150,18 +150,16 @@ class ReviewFormGridHandler extends GridHandler {
 	 * @see GridHandler::getRowInstance()
 	 * @return UserGridRow
 	 */
-	function getRowInstance() {
+	protected function getRowInstance() {
 		return new ReviewFormGridRow();
 	}
 
 	/**
-	 * @see GridHandler::loadData()
-	 * @param $request PKPRequest
-	 * @return array Grid data.
+	 * @copydoc GridHandler::loadData()
 	 */
-	function loadData($request) {
+	protected function loadData($request, $filter = null) {
 		// Get all review forms.
-		$reviewFormDao = DAORegistry::getDAO('ReviewFormDAO');
+		$reviewFormDao = DAORegistry::getDAO('ReviewFormDAO'); /* @var $reviewFormDao ReviewFormDAO */
 		$context = $request->getContext();
 		$reviewForms = $reviewFormDao->getByAssocId(Application::getContextAssocType(), $context->getId());
 
@@ -169,12 +167,12 @@ class ReviewFormGridHandler extends GridHandler {
 	}
 
 	/**
-	 * @see lib/pkp/classes/controllers/grid/GridHandler::setDataElementSequence()
+	 * @copydoc GridHandler::setDataElementSequence()
 	 */
-	function setDataElementSequence($request, $rowId, $reviewForm, $newSequence) {
+	function setDataElementSequence($request, $rowId, $gridDataElement, $newSequence) {
 		$reviewFormDao = DAORegistry::getDAO('ReviewFormDAO'); /* @var $reviewFormDao ReviewFormDAO */
-		$reviewForm->setSequence($newSequence);
-		$reviewFormDao->updateObject($reviewForm);
+		$gridDataElement->setSequence($newSequence);
+		$reviewFormDao->updateObject($gridDataElement);
 	}
 
 	/**
@@ -200,7 +198,7 @@ class ReviewFormGridHandler extends GridHandler {
 	 * Preview a review form.
 	 * @param $args array
 	 * @param $request PKPRequest
-	 * @return string Serialized JSON object
+	 * @return JSONMessage JSON object
 	 */
 	function reviewFormPreview($args, $request) {
 		// Identify the review form ID.
@@ -210,55 +208,56 @@ class ReviewFormGridHandler extends GridHandler {
 		$context = $request->getContext();
 
 		// Get review form object
-		$reviewFormDao = DAORegistry::getDAO('ReviewFormDAO');
+		$reviewFormDao = DAORegistry::getDAO('ReviewFormDAO'); /* @var $reviewFormDao ReviewFormDAO */
 		$reviewForm = $reviewFormDao->getById($reviewFormId, Application::getContextAssocType(), $context->getId());
 
 		$previewReviewForm = new PreviewReviewForm($reviewFormId);
-		$previewReviewForm->initData($request);
-		$json = new JSONMessage(true, $previewReviewForm->fetch($args, $request));
-
-		return $json->getString();
+		$previewReviewForm->initData();
+		return new JSONMessage(true, $previewReviewForm->fetch($request));
 	}
 
 	/**
 	 * Add a new review form.
 	 * @param $args array
 	 * @param $request PKPRequest
+	 * @return JSONMessage JSON object
 	 */
 	function createReviewForm($args, $request) {
 		// Form handling.
 		$reviewFormForm = new ReviewFormForm(null);
-		$reviewFormForm->initData($request);
-		$json = new JSONMessage(true, $reviewFormForm->fetch($args, $request));
-
-		return $json->getString();
+		$reviewFormForm->initData();
+		return new JSONMessage(true, $reviewFormForm->fetch($request));
 	}
 
 	/**
 	 * Edit an existing review form.
 	 * @param $args array
 	 * @param $request PKPRequest
+	 * @return JSONMessage JSON object
 	 */
 	function editReviewForm($args, $request) {
-		// Identify the review form ID
-		$reviewFormId = (int) $request->getUserVar('rowId');
-		$reviewFormDao = DAORegistry::getDAO('ReviewFormDAO');
+		$reviewFormDao = DAORegistry::getDAO('ReviewFormDAO'); /* @var $reviewFormDao ReviewFormDAO */
 		$context = $request->getContext();
-		$reviewForm = $reviewFormDao->getById($reviewFormId, Application::getContextAssocType(), $context->getId());
+		$reviewForm = $reviewFormDao->getById(
+			$request->getUserVar('rowId'),
+			Application::getContextAssocType(), $context->getId()
+		);
 
 		// Display 'editReviewForm' tabs
 		$templateMgr = TemplateManager::getManager($request);
-		$templateMgr->assign('preview', $request->getUserVar('preview'));
-		$templateMgr->assign('reviewFormId', $reviewFormId);
-		$templateMgr->assign('canEdit', $reviewForm->getIncompleteCount() == 0 && $reviewForm->getCompleteCount() == 0);
-		$json = new JSONMessage(true, $templateMgr->fetch('controllers/grid/settings/reviewForms/editReviewForm.tpl'));
-		return $json->getString();
+		$templateMgr->assign(array(
+			'preview' => $request->getUserVar('preview'),
+			'reviewFormId' => $reviewForm->getId(),
+			'canEdit' => $reviewForm->getIncompleteCount() == 0 && $reviewForm->getCompleteCount() == 0,
+		));
+		return new JSONMessage(true, $templateMgr->fetch('controllers/grid/settings/reviewForms/editReviewForm.tpl'));
 	}
 
 	/**
 	 * Edit an existing review form's basics (title, description)
 	 * @param $args array
 	 * @param $request PKPRequest
+	 * @return JSONMessage JSON object
 	 */
 	function reviewFormBasics($args, $request) {
 		// Identify the review form Id
@@ -266,10 +265,8 @@ class ReviewFormGridHandler extends GridHandler {
 
 		// Form handling
 		$reviewFormForm = new ReviewFormForm($reviewFormId);
-		$reviewFormForm->initData($request);
-		$json = new JSONMessage(true, $reviewFormForm->fetch($args, $request));
-
-		return $json->getString();
+		$reviewFormForm->initData();
+		return new JSONMessage(true, $reviewFormForm->fetch($request));
 	}
 
 
@@ -277,23 +274,26 @@ class ReviewFormGridHandler extends GridHandler {
 	 * Display a list of the review form elements within a review form.
 	 * @param $args array
 	 * @param $request PKPRequest
+	 * @return JSONMessage JSON object
 	 */
 	function reviewFormElements($args, $request) {
-		// Identify the review form ID
-		$reviewFormId = (int) $request->getUserVar('reviewFormId');
-
 		$templateMgr = TemplateManager::getManager($request);
-		$templateMgr->assign('reviewFormId', $reviewFormId);
-
-		$json = new JSONMessage(true, $templateMgr->fetch('controllers/grid/settings/reviewForms/reviewFormElements.tpl'));
-		return $json->getString();
+		$dispatcher = $request->getDispatcher();
+		return $templateMgr->fetchAjax(
+			'reviewFormElementsGridContainer',
+			$dispatcher->url(
+				$request, ROUTE_COMPONENT, null,
+				'grid.settings.reviewForms.ReviewFormElementsGridHandler', 'fetchGrid', null,
+				array('reviewFormId' => (int) $request->getUserVar('reviewFormId'))
+			)
+		);
 	}
 
 	/**
 	 * Update an existing review form.
 	 * @param $args array
 	 * @param $request PKPRequest
-	 * @return string Serialized JSON object
+	 * @return JSONMessage JSON message
 	 */
 	function updateReviewForm($args, $request) {
 		// Identify the review form Id.
@@ -303,7 +303,7 @@ class ReviewFormGridHandler extends GridHandler {
 		$context = $request->getContext();
 
 		// Get review form object
-		$reviewFormDao = DAORegistry::getDAO('ReviewFormDAO');
+		$reviewFormDao = DAORegistry::getDAO('ReviewFormDAO'); /* @var $reviewFormDao ReviewFormDAO */
 		$reviewForm = $reviewFormDao->getById($reviewFormId, Application::getContextAssocType(), $context->getId());
 
 		// Form handling.
@@ -311,7 +311,7 @@ class ReviewFormGridHandler extends GridHandler {
 		$reviewFormForm->readInputData();
 
 		if ($reviewFormForm->validate()) {
-			$reviewFormForm->execute($request);
+			$reviewFormForm->execute();
 
 			// Create the notification.
 			$notificationMgr = new NotificationManager();
@@ -322,15 +322,14 @@ class ReviewFormGridHandler extends GridHandler {
 
 		}
 
-		$json = new JSONMessage(false);
-		return $json->getString();
+		return new JSONMessage(false);
 	}
 
 	/**
 	 * Copy a review form.
 	 * @param $args array
 	 * @param $request PKPRequest
-	 * @return string Serialized JSON object
+	 * @return JSONMessage JSON object
 	 */
 	function copyReviewForm($args, $request) {
 		// Identify the current review form
@@ -340,16 +339,16 @@ class ReviewFormGridHandler extends GridHandler {
 		$context = $request->getContext();
 
 		// Get review form object
-		$reviewFormDao = DAORegistry::getDAO('ReviewFormDAO');
+		$reviewFormDao = DAORegistry::getDAO('ReviewFormDAO'); /* @var $reviewFormDao ReviewFormDAO */
 		$reviewForm = $reviewFormDao->getById($reviewFormId, Application::getContextAssocType(), $context->getId());
 
-		if (isset($reviewForm)) {
+		if ($request->checkCSRF() && isset($reviewForm)) {
 			$reviewForm->setActive(0);
 			$reviewForm->setSequence(REALLY_BIG_NUMBER);
 			$newReviewFormId = $reviewFormDao->insertObject($reviewForm);
 			$reviewFormDao->resequenceReviewForms(Application::getContextAssocType(), $context->getId());
 
-			$reviewFormElementDao = DAORegistry::getDAO('ReviewFormElementDAO');
+			$reviewFormElementDao = DAORegistry::getDAO('ReviewFormElementDAO'); /* @var $reviewFormElementDao ReviewFormElementDAO */
 			$reviewFormElements = $reviewFormElementDao->getByReviewFormId($reviewFormId);
 			while ($reviewFormElement = $reviewFormElements->next()) {
 				$reviewFormElement->setReviewFormId($newReviewFormId);
@@ -366,15 +365,14 @@ class ReviewFormGridHandler extends GridHandler {
 			return DAO::getDataChangedEvent($newReviewFormId);
 		}
 
-		$json = new JSONMessage(false);
-		return $json->getString();
+		return new JSONMessage(false);
 	}
 
 	/**
 	 * Activate a review form.
 	 * @param $args array
 	 * @param $request PKPRequest
-	 * @return string Serialized JSON object
+	 * @return JSONMessage JSON object
 	 */
 	function activateReviewForm($args, $request) {
 		// Identify the current review form
@@ -384,10 +382,10 @@ class ReviewFormGridHandler extends GridHandler {
 		$context = $request->getContext();
 
 		// Get review form object
-		$reviewFormDao = DAORegistry::getDAO('ReviewFormDAO');
+		$reviewFormDao = DAORegistry::getDAO('ReviewFormDAO'); /* @var $reviewFormDao ReviewFormDAO */
 		$reviewForm = $reviewFormDao->getById($reviewFormId, Application::getContextAssocType(), $context->getId());
 
-		if (isset($reviewForm) && !$reviewForm->getActive()) {
+		if ($request->checkCSRF() && isset($reviewForm) && !$reviewForm->getActive()) {
 			$reviewForm->setActive(1);
 			$reviewFormDao->updateObject($reviewForm);
 
@@ -399,8 +397,7 @@ class ReviewFormGridHandler extends GridHandler {
 			return DAO::getDataChangedEvent($reviewFormId);
 		}
 
-		$json = new JSONMessage(false);
-		return $json->getString();
+		return new JSONMessage(false);
 	}
 
 
@@ -408,7 +405,7 @@ class ReviewFormGridHandler extends GridHandler {
 	 * Deactivate a review form.
 	 * @param $args array
 	 * @param $request PKPRequest
-	 * @return string Serialized JSON object
+	 * @return JSONMessage JSON object
 	 */
 	function deactivateReviewForm($args, $request) {
 
@@ -419,10 +416,10 @@ class ReviewFormGridHandler extends GridHandler {
 		$context = $request->getContext();
 
 		// Get review form object
-		$reviewFormDao = DAORegistry::getDAO('ReviewFormDAO');
+		$reviewFormDao = DAORegistry::getDAO('ReviewFormDAO'); /* @var $reviewFormDao ReviewFormDAO */
 		$reviewForm = $reviewFormDao->getById($reviewFormId, Application::getContextAssocType(), $context->getId());
 
-		if (isset($reviewForm) && $reviewForm->getActive()) {
+		if ($request->checkCSRF() && isset($reviewForm) && $reviewForm->getActive()) {
 			$reviewForm->setActive(0);
 			$reviewFormDao->updateObject($reviewForm);
 
@@ -434,15 +431,14 @@ class ReviewFormGridHandler extends GridHandler {
 			return DAO::getDataChangedEvent($reviewFormId);
 		}
 
-		$json = new JSONMessage(false);
-		return $json->getString();
+		return new JSONMessage(false);
 	}
 
 	/**
 	 * Delete a review form.
 	 * @param $args array
 	 * @param $request PKPRequest
-	 * @return string Serialized JSON object
+	 * @return JSONMessage JSON object
 	 */
 	function deleteReviewForm($args, $request) {
 		// Identify the current review form
@@ -452,14 +448,11 @@ class ReviewFormGridHandler extends GridHandler {
 		$context = $request->getContext();
 
 		// Get review form object
-		$reviewFormDao = DAORegistry::getDAO('ReviewFormDAO');
+		$reviewFormDao = DAORegistry::getDAO('ReviewFormDAO'); /* @var $reviewFormDao ReviewFormDAO */
 		$reviewForm = $reviewFormDao->getById($reviewFormId, Application::getContextAssocType(), $context->getId());
 
-		$completeCounts = $reviewFormDao->getUseCounts(Application::getContextAssocType(), $context->getId(), true);
-		$incompleteCounts = $reviewFormDao->getUseCounts(Application::getContextAssocType(), $context->getId(), false);
-
-		if (isset($reviewForm) && $completeCounts[$reviewFormId] == 0 && $incompleteCounts[$reviewFormId] == 0) {
-			$reviewAssignmentDao = DAORegistry::getDAO('ReviewAssignmentDAO');
+		if ($request->checkCSRF() && isset($reviewForm) && $reviewForm->getCompleteCount() == 0 && $reviewForm->getIncompleteCount() == 0) {
+			$reviewAssignmentDao = DAORegistry::getDAO('ReviewAssignmentDAO'); /* @var $reviewAssignmentDao ReviewAssignmentDAO */
 			$reviewAssignments = $reviewAssignmentDao->getByReviewFormId($reviewFormId);
 
 			foreach ($reviewAssignments as $reviewAssignment) {
@@ -477,9 +470,8 @@ class ReviewFormGridHandler extends GridHandler {
 			return DAO::getDataChangedEvent($reviewFormId);
 		}
 
-		$json = new JSONMessage(false);
-		return $json->getString();
+		return new JSONMessage(false);
 	}
 }
 
-?>
+

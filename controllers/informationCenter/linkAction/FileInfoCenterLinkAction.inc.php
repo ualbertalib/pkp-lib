@@ -2,9 +2,9 @@
 /**
  * @file controllers/informationCenter/linkAction/FileInfoCenterLinkAction.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class FileInfoCenterLinkAction
  * @ingroup controllers_informationCenter
@@ -23,12 +23,12 @@ class FileInfoCenterLinkAction extends FileLinkAction {
 	 * to show information about.
 	 * @param $stageId int (optional) The stage id that user is looking at.
 	 */
-	function FileInfoCenterLinkAction($request, $submissionFile, $stageId = null) {
+	function __construct($request, $submissionFile, $stageId = null) {
 		// Instantiate the information center modal.
 		$ajaxModal = $this->getModal($request, $submissionFile, $stageId);
 
 		// Configure the file link action.
-		parent::FileLinkAction(
+		parent::__construct(
 			'moreInformation', $ajaxModal,
 			__('grid.action.moreInformation'), 'more_info'
 		);
@@ -45,7 +45,7 @@ class FileInfoCenterLinkAction extends FileLinkAction {
 		import('lib.pkp.classes.linkAction.request.AjaxModal');
 		$router = $request->getRouter();
 
-		$title = (isset($submissionFile)) ? implode(': ', array(__('informationCenter.informationCenter'), $submissionFile->getLocalizedName())) : __('informationCenter.informationCenter');
+		$title = (isset($submissionFile)) ? implode(': ', array(__('informationCenter.informationCenter'), htmlspecialchars($submissionFile->getLocalizedName()))) : __('informationCenter.informationCenter');
 
 		$ajaxModal = new AjaxModal(
 			$router->url(
@@ -61,4 +61,4 @@ class FileInfoCenterLinkAction extends FileLinkAction {
 	}
 }
 
-?>
+

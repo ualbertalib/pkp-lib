@@ -3,9 +3,9 @@
 /**
  * @file classes/site/VersionDAO.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class VersionDAO
  * @ingroup site
@@ -18,12 +18,6 @@
 import('lib.pkp.classes.site.Version');
 
 class VersionDAO extends DAO {
-	/**
-	 * Constructor
-	 */
-	function VersionDAO() {
-		parent::DAO();
-	}
 
 	/**
 	 * Retrieve the current version.
@@ -32,9 +26,9 @@ class VersionDAO extends DAO {
 	 * @param $isPlugin boolean
 	 * @return Version
 	 */
-	function &getCurrentVersion($productType = null, $product = null, $isPlugin = false) {
+	function getCurrentVersion($productType = null, $product = null, $isPlugin = false) {
 		if(!$productType || !$product) {
-			$application = PKPApplication::getApplication();
+			$application = Application::get();
 			$productType = 'core';
 			$product = $application->getName();
 		}
@@ -51,8 +45,8 @@ class VersionDAO extends DAO {
 			// the application version before the introduction of products
 			// into the versions table.
 			if ($result->RecordCount() == 1) {
-				$oldVersion =& $this->_returnVersionFromRow($result->GetRowAssoc(false));
-				if (isset($oldVersion)) $returner =& $oldVersion;
+				$oldVersion = $this->_returnVersionFromRow($result->GetRowAssoc(false));
+				if (isset($oldVersion)) $returner = $oldVersion;
 			}
 			$result->Close();
 		}
@@ -66,7 +60,7 @@ class VersionDAO extends DAO {
 			);
 			$versionCount = $result->RecordCount();
 			if ($versionCount == 1) {
-				$returner =& $this->_returnVersionFromRow($result->GetRowAssoc(false));
+				$returner = $this->_returnVersionFromRow($result->GetRowAssoc(false));
 			} elseif ($versionCount >1) {
 				fatalError('More than one current version defined for the product type "'.$productType.'" and product "'.$product.'"!');
 			}
@@ -82,11 +76,11 @@ class VersionDAO extends DAO {
 	 * @param $product string
 	 * @return array Versions
 	 */
-	function &getVersionHistory($productType = null, $product = null) {
+	function getVersionHistory($productType = null, $product = null) {
 		$versions = array();
 
 		if(!$productType || !$product) {
-			$application = PKPApplication::getApplication();
+			$application = Application::get();
 			$productType = 'core';
 			$product = $application->getName();
 		}
@@ -110,7 +104,7 @@ class VersionDAO extends DAO {
 	 * @param $row array
 	 * @return Version
 	 */
-	function &_returnVersionFromRow($row) {
+	function _returnVersionFromRow($row) {
 		$version = new Version(
 			$row['major'],
 			$row['minor'],
@@ -135,15 +129,15 @@ class VersionDAO extends DAO {
 	 * @param $version Version
 	 * @param $isPlugin boolean
 	 */
-	function insertVersion(&$version, $isPlugin = false) {
+	function insertVersion($version, $isPlugin = false) {
 		$isNewVersion = true;
 
 		if ($version->getCurrent()) {
 			// Find out whether the last installed version is the same as the
 			// one to be inserted.
-			$versionHistory =& $this->getVersionHistory($version->getProductType(), $version->getProduct());
+			$versionHistory = $this->getVersionHistory($version->getProductType(), $version->getProduct());
 
-			$oldVersion =& array_shift($versionHistory);
+			$oldVersion = array_shift($versionHistory);
 			if ($oldVersion) {
 				if ($version->compare($oldVersion) == 0) {
 					// The old and the new current versions are the same so we need
@@ -218,7 +212,7 @@ class VersionDAO extends DAO {
 	 *  products enabled in that context will be returned.
 	 * @return array
 	 */
-	function &getCurrentProducts($context) {
+	function getCurrentProducts($context) {
 
 		$contextColumn = Application::getPluginSettingsContextColumnName();
 		if (count($context)) {
@@ -240,7 +234,7 @@ class VersionDAO extends DAO {
 		$productArray = array();
 		while(!$result->EOF) {
 			$row = $result->getRowAssoc(false);
-			$productArray[$row['product_type']][$row['product']] =& $this->_returnVersionFromRow($row);
+			$productArray[$row['product_type']][$row['product']] = $this->_returnVersionFromRow($row);
 			$result->MoveNext();
 		}
 		$result->_close();
@@ -260,4 +254,4 @@ class VersionDAO extends DAO {
 	}
 }
 
-?>
+

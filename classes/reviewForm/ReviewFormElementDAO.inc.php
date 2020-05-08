@@ -3,9 +3,9 @@
 /**
  * @file classes/reviewForm/ReviewFormElementDAO.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ReviewFormElementDAO
  * @ingroup reviewForm
@@ -18,12 +18,6 @@
 import ('lib.pkp.classes.reviewForm.ReviewFormElement');
 
 class ReviewFormElementDAO extends DAO {
-	/**
-	 * Constructor
-	 */
-	function ReviewFormElementDAO() {
-		parent::DAO();
-	}
 
 	/**
 	 * Retrieve a review form element by ID.
@@ -87,7 +81,7 @@ class ReviewFormElementDAO extends DAO {
 	 * @return array
 	 */
 	function getLocaleFieldNames() {
-		return array('question', 'possibleResponses');
+		return array('question', 'description', 'possibleResponses');
 	}
 
 	/**
@@ -164,7 +158,7 @@ class ReviewFormElementDAO extends DAO {
 	 * @param $reviewFormElementId int
 	 */
 	function deleteById($reviewFormElementId) {
-		$reviewFormResponseDao = DAORegistry::getDAO('ReviewFormResponseDAO');
+		$reviewFormResponseDao = DAORegistry::getDAO('ReviewFormResponseDAO'); /* @var $reviewFormResponseDao ReviewFormResponseDAO */
 		$reviewFormResponseDao->deleteByReviewFormElementId($reviewFormElementId);
 
 		$this->update('DELETE FROM review_form_element_settings WHERE review_form_element_id = ?', (int) $reviewFormElementId);
@@ -178,8 +172,8 @@ class ReviewFormElementDAO extends DAO {
 	 */
 	function deleteByReviewFormId($reviewFormId) {
 		$reviewFormElements = $this->getByReviewFormId($reviewFormId);
-		foreach ($reviewFormElements as $reviewFormElementId => $reviewFormElement) {
-			$this->deleteById($reviewFormElementId);
+		while ($reviewFormElement = $reviewFormElements->next()) {
+			$this->deleteById($reviewFormElement->getId());
 		}
 	}
 
@@ -205,11 +199,17 @@ class ReviewFormElementDAO extends DAO {
 	 * Retrieve all elements for a review form.
 	 * @param $reviewFormId int
 	 * @param $rangeInfo object RangeInfo object (optional)
+	 * @param $included boolean True for only included comments; false for non-included; null for both
 	 * @return DAOResultFactory containing ReviewFormElements ordered by sequence
 	 */
-	function getByReviewFormId($reviewFormId, $rangeInfo = null) {
+	function getByReviewFormId($reviewFormId, $rangeInfo = null, $included = null) {
 		$result = $this->retrieveRange(
-			'SELECT * FROM review_form_elements WHERE review_form_id = ? ORDER BY seq',
+			'SELECT * 
+			FROM review_form_elements 
+			WHERE review_form_id = ?
+			' . ($included === true?' AND included = 1':'') . '
+			' . ($included === false?' AND included = 0':'') . ' 
+			ORDER BY seq',
 			(int) $reviewFormId, $rangeInfo
 		);
 
@@ -295,4 +295,3 @@ class ReviewFormElementDAO extends DAO {
 	}
 }
 
-?>

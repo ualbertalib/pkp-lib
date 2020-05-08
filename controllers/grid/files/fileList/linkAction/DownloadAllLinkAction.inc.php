@@ -6,9 +6,9 @@
 /**
  * @file controllers/grid/files/fileList/linkAction/DownloadAllLinkAction.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class DownloadAllLinkAction
  * @ingroup controllers_grid_files_fileList_linkAction
@@ -26,7 +26,7 @@ class DownloadAllLinkAction extends LinkAction {
 	 * @param $actionArgs array
 	 * @param $files array Files to be downloaded.
 	 */
-	function DownloadAllLinkAction($request, $actionArgs, $files) {
+	function __construct($request, $actionArgs, $files) {
 		// Instantiate the redirect action request.
 		$router = $request->getRouter();
 		$filesIdsAndRevisions = $this->_getFilesIdsAndRevisions($files);
@@ -36,7 +36,7 @@ class DownloadAllLinkAction extends LinkAction {
 			$router->url($request, null, 'api.file.FileApiHandler', 'downloadAllFiles', null, $actionArgs));
 
 		// Configure the link action.
-		parent::LinkAction('downloadAll', $redirectRequest, __('submission.files.downloadAll'), 'getPackage');
+		parent::__construct('downloadAll', $redirectRequest, __('submission.files.downloadAll'), 'getPackage');
 	}
 
 
@@ -62,4 +62,4 @@ class DownloadAllLinkAction extends LinkAction {
 	}
 }
 
-?>
+

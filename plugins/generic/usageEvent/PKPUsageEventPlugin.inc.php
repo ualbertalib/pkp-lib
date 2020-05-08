@@ -3,9 +3,9 @@
 /**
  * @file plugins/generic/usageEvent/PKPUsageEventPlugin.inc.php
  *
- * Copyright (c) 2013 Simon Fraser University Library
- * Copyright (c) 2003-2013 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2013-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPUsageEventPlugin
  * @ingroup plugins_generic_usageEvent
@@ -27,10 +27,10 @@ abstract class PKPUsageEventPlugin extends GenericPlugin {
 	// Implement methods from PKPPlugin.
 	//
 	/**
-	* @see LazyLoadPlugin::register()
-	*/
-	function register($category, $path) {
-		$success = parent::register($category, $path);
+	 * @copydoc Plugin::register()
+	 */
+	function register($category, $path, $mainContextId = null) {
+		$success = parent::register($category, $path, $mainContextId);
 
 		if ($success) {
 			$eventHooks = $this->getEventHooks();
@@ -43,52 +43,45 @@ abstract class PKPUsageEventPlugin extends GenericPlugin {
 	}
 
 	/**
-	 * @see LazyLoadPlugin::getName()
+	 * @copydoc LazyLoadPlugin::getName()
 	 */
 	function getName() {
 		return 'usageeventplugin';
 	}
 
 	/**
-	 * @see Plugin::getInstallSitePluginSettingsFile()
+	 * @copydoc Plugin::getInstallSitePluginSettingsFile()
 	 */
 	function getInstallSitePluginSettingsFile() {
-		return PKP_LIB_PATH . DIRECTORY_SEPARATOR . $this->getPluginPath() .  DIRECTORY_SEPARATOR . 'settings.xml';
+		return PKP_LIB_PATH . DIRECTORY_SEPARATOR . $this->getPluginPath() . DIRECTORY_SEPARATOR . 'settings.xml';
 	}
 
 	/**
-	 * @see Plugin::getDisplayName()
+	 * @copydoc Plugin::getDisplayName()
 	 */
 	function getDisplayName() {
 		return __('plugins.generic.usageEvent.displayName');
 	}
 
 	/**
-	 * @see Plugin::getDescription()
+	 * @copydoc Plugin::getDescription()
 	 */
 	function getDescription() {
 		return __('plugins.generic.usageEvent.description');
 	}
 
 	/**
-	 * @see LazyLoadPlugin::getEnabled()
+	 * @copydoc LazyLoadPlugin::getEnabled()
 	 */
-	function getEnabled() {
+	function getEnabled($contextId = null) {
 		return true;
 	}
 
 	/**
-	 * @see Plugin::isSitePlugin()
+	 * @copydoc Plugin::isSitePlugin()
 	 */
 	function isSitePlugin() {
 		return true;
-	}
-
-	/**
-	 * @see GenericPlugin::getManagementVerbs()
-	 */
-	function getManagementVerbs() {
-		return array();
 	}
 
 
@@ -100,7 +93,7 @@ abstract class PKPUsageEventPlugin extends GenericPlugin {
 	 * @return mixed string or null
 	 */
 	function getUniqueSiteId() {
-		return $this->getSetting(0, 'uniqueSiteId');
+		return $this->getSetting(CONTEXT_SITE, 'uniqueSiteId');
 	}
 
 
@@ -112,8 +105,7 @@ abstract class PKPUsageEventPlugin extends GenericPlugin {
 	 */
 	function getUsageEvent($hookName, $args) {
 		// Check if we have a registration to receive the usage event.
-		$hooks = HookRegistry::getHooks();
-		if (array_key_exists('UsageEventPlugin::getUsageEvent', $hooks)) {
+		if (HookRegistry::getHooks('UsageEventPlugin::getUsageEvent')) {
 
 			$usageEvent = $this->buildUsageEvent($hookName, $args);
 			HookRegistry::call('UsageEventPlugin::getUsageEvent', array_merge(array($hookName, $usageEvent), $args));
@@ -138,6 +130,17 @@ abstract class PKPUsageEventPlugin extends GenericPlugin {
 	}
 
 	/**
+	 * Get all hooks that define the
+	 * finished file download.
+	 * @return array
+	 */
+	protected function getDownloadFinishedEventHooks() {
+		return array(
+			'FileManager::downloadFileFinished'
+		);
+	}
+
+	/**
 	 * Build an usage event.
 	 * @param $hookName string
 	 * @param $args array
@@ -145,13 +148,13 @@ abstract class PKPUsageEventPlugin extends GenericPlugin {
 	 */
 	protected function buildUsageEvent($hookName, $args) {
 		// Finished downloading a file?
-		if ($hookName == 'FileManager::downloadFileFinished') {
+		if (in_array($hookName, $this->getDownloadFinishedEventHooks())) {
 			// The usage event for this request is already build and
 			// passed to any other registered hook.
 			return null;
 		}
 
-		$application = Application::getApplication();
+		$application = Application::get();
 		$request = $application->getRequest();
 		$router = $request->getRouter(); /* @var $router PageRouter */
 		$templateMgr = $args[0]; /* @var $templateMgr TemplateManager */
@@ -188,6 +191,21 @@ abstract class PKPUsageEventPlugin extends GenericPlugin {
 			$request, null, $canonicalUrlPage, $canonicalUrlOp, $canonicalUrlParams
 		);
 
+		// Make sure we log the server name and not aliases.
+		$configBaseUrl = Config::getVar('general', 'base_url');
+		$requestBaseUrl = $request->getBaseUrl();
+		if ($requestBaseUrl !== $configBaseUrl) {
+			// Make sure it's not an url override (no alias on that case).
+			if (!in_array($requestBaseUrl, Config::getContextBaseUrls()) &&
+					$requestBaseUrl !== Config::getVar('general', 'base_url[index]')) {
+				// Alias found, replace it by base_url from config file.
+				// Make sure we use the correct base url override value for the context, if any.
+				$baseUrlReplacement = Config::getVar('general', 'base_url['.$context->getPath().']');
+				if (!$baseUrlReplacement) $baseUrlReplacement = $configBaseUrl;
+				$canonicalUrl = str_replace($requestBaseUrl, $baseUrlReplacement, $canonicalUrl);
+			}
+		}
+
 		// Public identifiers.
 		// 1) A unique system internal ID that will help us to easily attribute
 		//    statistics to a specific publication object.
@@ -210,10 +228,10 @@ abstract class PKPUsageEventPlugin extends GenericPlugin {
 		// 2) Standardized public identifiers, e.g. DOI, URN, etc.
 		if ($this->isPubIdObjectType($pubObject)) {
 			$pubIdPlugins = PluginRegistry::loadCategory('pubIds', true, $context->getId());
-			if (is_array($pubIdPlugins)) {
+			if (!empty($pubIdPlugins)) {
 				foreach ($pubIdPlugins as $pubIdPlugin) {
 					if (!$pubIdPlugin->getEnabled()) continue;
-					$pubId = $pubIdPlugin->getPubId($pubObject);
+					$pubId = $pubObject->getStoredPubId($pubIdPlugin->getPubIdType());
 					if ($pubId) {
 						$identifiers[$pubIdPlugin->getPubIdType()] = $pubId;
 					}
@@ -334,7 +352,7 @@ abstract class PKPUsageEventPlugin extends GenericPlugin {
 
 			// First check for a context index page view.
 			if (($page == 'index' || empty($page)) && $op == 'index') {
-				$pubObject = $templateMgr->get_template_vars('currentContext');
+				$pubObject = $templateMgr->getTemplateVars('currentContext');
 				if (is_a($pubObject, 'Context')) {
 					$assocType = Application::getContextAssocType();
 					$canonicalUrlOp = '';
@@ -367,4 +385,4 @@ abstract class PKPUsageEventPlugin extends GenericPlugin {
 
 }
 
-?>
+

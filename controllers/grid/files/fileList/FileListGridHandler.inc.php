@@ -6,9 +6,9 @@
 /**
  * @file controllers/grid/files/fileList/FileListGridHandler.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class FileListGridHandler
  * @ingroup controllers_grid_files_fileList
@@ -28,8 +28,8 @@ class FileListGridHandler extends SubmissionFilesGridHandler {
 	 * @param $capabilities integer A bit map with zero or more
 	 *  FILE_GRID_* capabilities set.
 	 */
-	function FileListGridHandler($dataProvider, $stageId, $capabilities = 0) {
-		parent::SubmissionFilesGridHandler($dataProvider, $stageId, $capabilities);
+	function __construct($dataProvider, $stageId, $capabilities = 0) {
+		parent::__construct($dataProvider, $stageId, $capabilities);
 	}
 
 
@@ -39,8 +39,8 @@ class FileListGridHandler extends SubmissionFilesGridHandler {
 	/**
 	 * @copydoc SubmissionFilesGridHandler::initialize()
 	 */
-	function initialize($request) {
-		parent::initialize($request);
+	function initialize($request, $args = null) {
+		parent::initialize($request, $args);
 
 		// Add the "manage files" action if required.
 		$capabilities = $this->getCapabilities();
@@ -55,4 +55,4 @@ class FileListGridHandler extends SubmissionFilesGridHandler {
 	}
 }
 
-?>
+

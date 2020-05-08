@@ -3,9 +3,9 @@
 /**
  * @file classes/file/wrappers/HTTPSFileWrapper.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class HTTPSFileWrapper
  * @ingroup file_wrappers
@@ -19,8 +19,8 @@
 import('lib.pkp.classes.file.wrappers.HTTPFileWrapper');
 
 class HTTPSFileWrapper extends HTTPFileWrapper {
-	function HTTPSFileWrapper($url, &$info) {
-		parent::HTTPFileWrapper($url, $info);
+	function __construct($url, &$info) {
+		parent::__construct($url, $info);
 		$this->setDefaultPort(443);
 		$this->setDefaultHost('ssl://localhost');
 		if (isset($this->info['host'])) {
@@ -29,4 +29,4 @@ class HTTPSFileWrapper extends HTTPFileWrapper {
 	}
 }
 
-?>
+

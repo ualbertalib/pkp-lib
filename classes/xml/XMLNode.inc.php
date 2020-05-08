@@ -3,9 +3,9 @@
 /**
  * @file classes/xml/XMLNode.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class XMLNode
  * @ingroup xml
@@ -36,7 +36,7 @@ class XMLNode {
 	 * Constructor.
 	 * @param $name element/tag name
 	 */
-	function XMLNode($name = null) {
+	function __construct($name = null) {
 		$this->name = $name;
 		$this->parent = null;
 		$this->attributes = array();
@@ -198,7 +198,9 @@ class XMLNode {
 				$value = XMLNode::xmlentities($value);
 				$out .= " $name=\"$value\"";
 			}
-			$out .= '>';
+			if ($this->name !== '!--') {
+				$out .= '>';
+			}
 		}
 		$out .= XMLNode::xmlentities($this->value, ENT_NOQUOTES);
 		foreach ($this->children as $child) {
@@ -209,7 +211,11 @@ class XMLNode {
 			}
 			$out .= $child->toXml($output);
 		}
-		if ($this->name !== null) $out .= '</' . $this->name . '>';
+		if ($this->name === '!--') {
+			$out .= '-->';
+		} else if ($this->name !== null) {
+			$out .= '</' . $this->name . '>';
+		}
 		if ($output !== null) {
 			if ($output === true) echo $out;
 			else fwrite ($output, $out);
@@ -218,7 +224,7 @@ class XMLNode {
 		return $out;
 	}
 
-	function xmlentities($string, $quote_style=ENT_QUOTES) {
+	static function xmlentities($string, $quote_style=ENT_QUOTES) {
 		return htmlspecialchars($string, $quote_style, 'UTF-8');
 	}
 
@@ -231,4 +237,4 @@ class XMLNode {
 	}
 }
 
-?>
+

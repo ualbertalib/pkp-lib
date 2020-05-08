@@ -11,7 +11,6 @@ debug = Off
 [general]
 installed = On
 base_url = "http://pkp.sfu.ca/ojs"
-registry_dir = registry
 session_cookie_name = OJSSID
 session_lifetime = 30
 scheduled_tasks = Off
@@ -39,8 +38,6 @@ web_cache_hours = 1
 locale = en_US
 client_charset = utf-8
 connection_charset = utf8
-database_charset = utf8
-charset_normalization = On
 
 [files]
 files_dir = files
@@ -76,7 +73,6 @@ allowed_html = "<a> <em> <strong> <cite> <code> <ul> <ol> <li> <dl> <dt> <dd> <b
 ; smtp_password = password
 ; allow_envelope_sender = Off
 ; default_envelope_sender = my_address@my_host.com
-enable_attachments = On
 time_between_emails = 3600
 max_recipients = 10
 require_validation = Off

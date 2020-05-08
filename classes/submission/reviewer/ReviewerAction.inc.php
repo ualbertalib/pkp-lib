@@ -3,9 +3,9 @@
 /**
  * @file classes/submission/reviewer/ReviewerAction.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ReviewerAction
  * @ingroup submission
@@ -16,15 +16,13 @@
 
 // Access decision actions constants.
 import('classes.workflow.EditorDecisionActionsManager');
-import('lib.pkp.classes.submission.action.PKPAction');
 
-class ReviewerAction extends PKPAction {
+class ReviewerAction {
 
 	/**
 	 * Constructor
 	 */
-	function ReviewerAction() {
-		parent::PKPAction();
+	function __construct() {
 	}
 
 	//
@@ -39,8 +37,8 @@ class ReviewerAction extends PKPAction {
 	 * @param $emailText string optional
 	 */
 	function confirmReview($request, $reviewAssignment, $submission, $decline, $emailText = null) {
-		$reviewAssignmentDao = DAORegistry::getDAO('ReviewAssignmentDAO');
-		$userDao = DAORegistry::getDAO('UserDAO');
+		$reviewAssignmentDao = DAORegistry::getDAO('ReviewAssignmentDAO'); /* @var $reviewAssignmentDao ReviewAssignmentDAO */
+		$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 
 		$reviewer = $userDao->getById($reviewAssignment->getReviewerId());
 		if (!isset($reviewer)) return true;
@@ -53,10 +51,14 @@ class ReviewerAction extends PKPAction {
 			// key, in which case the user is not technically logged in
 			$email->setReplyTo($reviewer->getEmail(), $reviewer->getFullName());
 			HookRegistry::call('ReviewerAction::confirmReview', array($request, &$submission, &$email, $decline));
-			import('lib.pkp.classes.log.PKPSubmissionEmailLogEntry'); // Import email event constants
+			import('lib.pkp.classes.log.SubmissionEmailLogEntry'); // Import email event constants
 			$email->setEventType($decline?SUBMISSION_EMAIL_REVIEW_DECLINE:SUBMISSION_EMAIL_REVIEW_CONFIRM);
 			if ($emailText) $email->setBody($emailText);
-			$email->send($request);
+			if (!$email->send($request)) {
+				import('classes.notification.NotificationManager');
+				$notificationMgr = new NotificationManager();
+				$notificationMgr->createTrivialNotification($request->getUser()->getId(), NOTIFICATION_TYPE_ERROR, array('contents' => __('email.compose.error')));
+			}
 
 			$reviewAssignment->setDeclined($decline);
 			$reviewAssignment->setDateConfirmed(Core::getCurrentDate());
@@ -67,18 +69,13 @@ class ReviewerAction extends PKPAction {
 			import('lib.pkp.classes.log.SubmissionLog');
 			import('classes.log.SubmissionEventLogEntry');
 
-			$entry = new SubmissionEventLogEntry();
-			$entry->setSubmissionId($reviewAssignment->getSubmissionId());
-			$entry->setUserId($reviewer->getId());
-			$entry->setDateLogged(Core::getCurrentDate());
-			$entry->setEventType($decline?SUBMISSION_LOG_REVIEW_DECLINE:SUBMISSION_LOG_REVIEW_ACCEPT);
-
 			SubmissionLog::logEvent(
 				$request,
 				$submission,
 				$decline?SUBMISSION_LOG_REVIEW_DECLINE:SUBMISSION_LOG_REVIEW_ACCEPT,
 				$decline?'log.review.reviewDeclined':'log.review.reviewAccepted',
 				array(
+					'reviewAssignmentId' => $reviewAssignment->getId(),
 					'reviewerName' => $reviewer->getFullName(),
 					'submissionId' => $reviewAssignment->getSubmissionId(),
 					'round' => $reviewAssignment->getRound()
@@ -95,13 +92,26 @@ class ReviewerAction extends PKPAction {
 		$email = new SubmissionMailTemplate($submission, $decline?'REVIEW_DECLINE':'REVIEW_CONFIRM');
 
 		// Get reviewer
-		$userDao = DAORegistry::getDAO('UserDAO');
+		$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 		$reviewer = $userDao->getById($reviewAssignment->getReviewerId());
 
 		// Get editorial contact name
-		$context = $request->getContext();
-		$email->addRecipient($context->getSetting('contactEmail'), $context->getSetting('contactName'));
-		$editorialContactName = $context->getSetting('contactName');
+		$stageAssignmentDao = DAORegistry::getDAO('StageAssignmentDAO'); /* @var $stageAssignmentDao StageAssignmentDAO */
+		$userGroupDao = DAORegistry::getDAO('UserGroupDAO'); /* @var $userGroupDao UserGroupDAO */
+		$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
+		$stageAssignments = $stageAssignmentDao->getBySubmissionAndStageId($submission->getId(), $reviewAssignment->getStageId());
+		$recipient = null;
+		while ($stageAssignment = $stageAssignments->next()) {
+			$userGroup = $userGroupDao->getById($stageAssignment->getUserGroupId());
+			if (!in_array($userGroup->getRoleId(), array(ROLE_ID_MANAGER, ROLE_ID_SUB_EDITOR))) continue;
+
+			$recipient = $userDao->getById($stageAssignment->getUserId());
+			$email->addRecipient($recipient->getEmail(), $recipient->getFullName());
+		}
+		if (!$recipient) {
+			$context = $request->getContext();
+			$email->addRecipient($context->getData('contactEmail'), $context->getData('contactName'));
+		}
 
 		// Get due date
 		$reviewDueDate = strtotime($reviewAssignment->getDateDue());
@@ -112,13 +122,13 @@ class ReviewerAction extends PKPAction {
 		$email->setReplyTo($reviewer->getEmail(), $reviewer->getFullName());
 
 		$email->assignParams(array(
-			'editorialContactName' => $editorialContactName,
 			'reviewerName' => $reviewer->getFullName(),
 			'reviewDueDate' => $reviewDueDate
 		));
+		$email->replaceParams();
 
 		return $email;
 	}
 }
 
-?>
+

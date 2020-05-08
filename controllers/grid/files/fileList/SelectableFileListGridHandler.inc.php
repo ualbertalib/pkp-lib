@@ -2,9 +2,9 @@
 /**
  * @file controllers/grid/files/fileList/SelectableFileListGridHandler.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SelectableFileListGridHandler
  * @ingroup controllers_grid_files_fileList
@@ -25,8 +25,8 @@ class SelectableFileListGridHandler extends FileListGridHandler {
 	 * @param $capabilities integer A bit map with zero or more
 	 *  FILE_GRID_* capabilities set.
 	 */
-	function SelectableFileListGridHandler($dataProvider, $stageId, $capabilities = 0) {
-		parent::FileListGridHandler($dataProvider, $stageId, $capabilities);
+	function __construct($dataProvider, $stageId, $capabilities = 0) {
+		parent::__construct($dataProvider, $stageId, $capabilities);
 	}
 
 
@@ -61,4 +61,4 @@ class SelectableFileListGridHandler extends FileListGridHandler {
 	}
 }
 
-?>
+

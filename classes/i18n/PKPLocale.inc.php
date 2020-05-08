@@ -8,9 +8,9 @@
 /**
  * @file classes/i18n/PKPLocale.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPLocale
  * @ingroup i18n
@@ -22,7 +22,7 @@
 import('lib.pkp.classes.i18n.LocaleFile');
 
 if (!defined('LOCALE_REGISTRY_FILE')) {
-	define('LOCALE_REGISTRY_FILE', Config::getVar('general', 'registry_dir') . DIRECTORY_SEPARATOR . 'locales.xml');
+	define('LOCALE_REGISTRY_FILE', 'registry/locales.xml');
 }
 if (!defined('LOCALE_DEFAULT')) {
 	define('LOCALE_DEFAULT', Config::getVar('i18n', 'locale'));
@@ -57,6 +57,7 @@ define('LOCALE_COMPONENT_PKP_GRID',		0x00000008);
 define('LOCALE_COMPONENT_PKP_DEFAULT',		0x00000009);
 define('LOCALE_COMPONENT_PKP_EDITOR',		0x0000000A);
 define('LOCALE_COMPONENT_PKP_REVIEWER',		0x0000000B);
+define('LOCALE_COMPONENT_PKP_API',		0x0000000C);
 
 // Application-specific locale components
 define('LOCALE_COMPONENT_APP_COMMON',		0x00000100);
@@ -66,6 +67,8 @@ define('LOCALE_COMPONENT_APP_AUTHOR',		0x00000103);
 define('LOCALE_COMPONENT_APP_EDITOR',		0x00000104);
 define('LOCALE_COMPONENT_APP_ADMIN',		0x00000105);
 define('LOCALE_COMPONENT_APP_DEFAULT',		0x00000106);
+define('LOCALE_COMPONENT_APP_API',		0x00000107);
+define('LOCALE_COMPONENT_APP_EMAIL',		0x00000108);
 
 class PKPLocale {
 	static $request;
@@ -85,15 +88,25 @@ class PKPLocale {
 	}
 
 	/**
+	 * Add octothorpes to a key name for presentation of the key as missing.
+	 * @param @key string
+	 * @return string
+	 */
+	public static function addOctothorpes($key) {
+		return '##' . htmlentities($key) . '##';
+	}
+
+	/**
 	 * Translate a string using the selected locale.
 	 * Substitution works by replacing tokens like "{$foo}" with the value
 	 * of the parameter named "foo" (if supplied).
 	 * @param $key string
 	 * @param $params array named substitution parameters
 	 * @param $locale string the locale to use
+	 * @param $missingKeyHandler function Callback to be invoked when a key cannot be found.
 	 * @return string
 	 */
-	static function translate($key, $params = array(), $locale = null) {
+	static function translate($key, $params = array(), $locale = null, $missingKeyHandler = array(__CLASS__, 'addOctothorpes')) {
 		if (!isset($locale)) $locale = AppLocale::getLocale();
 		if (($key = trim($key)) == '') return '';
 
@@ -108,8 +121,12 @@ class PKPLocale {
 		$notes =& Registry::get('system.debug.notes');
 		$notes[] = array('debug.notes.missingLocaleKey', array('key' => $key));
 
-		// Add some octothorpes to missing keys to make them more obvious
-		return '##' . htmlentities($key) . '##';
+		if (!HookRegistry::call('PKPLocale::translate', array(&$key, &$params, &$locale, &$localeFiles, &$value))) {
+			// Add some octothorpes to missing keys to make them more obvious
+			return $missingKeyHandler($key);
+		} else {
+			return $value;
+		}
 	}
 
 	/**
@@ -121,16 +138,45 @@ class PKPLocale {
 
 		// Use defaults if locale info unspecified.
 		$locale = AppLocale::getLocale();
+		setlocale(LC_ALL, $locale . '.' . LOCALE_ENCODING, $locale);
 
-		$sysLocale = $locale . '.' . LOCALE_ENCODING;
-		if (!@setlocale(LC_ALL, $sysLocale, $locale)) {
-			// For PHP < 4.3.0
-			if(setlocale(LC_ALL, $sysLocale) != $sysLocale) {
-				setlocale(LC_ALL, $locale);
+		AppLocale::registerLocaleFile($locale, "lib/pkp/locale/$locale/common.po");
+
+		// Set site time zone
+		// Starting from PHP 5.3.0 PHP will throw an E_WARNING if the default
+		// time zone is not set and date/time functions are used
+		// http://pl.php.net/manual/en/function.date-default-timezone-set.php
+		$timeZone = self::getTimeZone();
+		date_default_timezone_set($timeZone);
+
+		if (Config::getVar('general', 'installed')) {
+			// Set the time zone for DB
+			// Get the offset from UTC
+			$now = new DateTime();
+			$mins = $now->getOffset() / 60;
+			$sgn = ($mins < 0 ? -1 : 1);
+			$mins = abs($mins);
+			$hrs = floor($mins / 60);
+			$mins -= $hrs * 60;
+			$offset = sprintf('%+d:%02d', $hrs*$sgn, $mins);
+
+			$conn = DBConnection::getInstance();
+			$dbconn =& $conn->getDBConn();
+			switch($conn->getDriver()) {
+				case 'mysql':
+				case 'mysqli':
+					$dbconn->execute('SET time_zone = \''.$offset.'\'');
+					break;
+				case 'postgres':
+				case 'postgres64':
+				case 'postgres7':
+				case 'postgres8':
+				case 'postgres9':
+					$dbconn->execute('SET TIME ZONE INTERVAL \''.$offset.'\' HOUR TO MINUTE');
+					break;
+				default: assert(false);
 			}
 		}
-
-		AppLocale::registerLocaleFile($locale, "lib/pkp/locale/$locale/common.xml");
 	}
 
 	/**
@@ -143,17 +189,18 @@ class PKPLocale {
 		$baseDir = "lib/pkp/locale/$locale/";
 
 		return array(
-			LOCALE_COMPONENT_PKP_COMMON => $baseDir . 'common.xml',
-			LOCALE_COMPONENT_PKP_ADMIN => $baseDir . 'admin.xml',
-			LOCALE_COMPONENT_PKP_INSTALLER => $baseDir . 'installer.xml',
-			LOCALE_COMPONENT_PKP_MANAGER => $baseDir . 'manager.xml',
-			LOCALE_COMPONENT_PKP_READER => $baseDir . 'reader.xml',
-			LOCALE_COMPONENT_PKP_SUBMISSION => $baseDir . 'submission.xml',
-			LOCALE_COMPONENT_PKP_EDITOR => $baseDir . 'editor.xml',
-			LOCALE_COMPONENT_PKP_REVIEWER => $baseDir . 'reviewer.xml',
-			LOCALE_COMPONENT_PKP_USER => $baseDir . 'user.xml',
-			LOCALE_COMPONENT_PKP_GRID => $baseDir . 'grid.xml',
-			LOCALE_COMPONENT_PKP_DEFAULT => $baseDir . 'default.xml',
+			LOCALE_COMPONENT_PKP_COMMON => $baseDir . 'common.po',
+			LOCALE_COMPONENT_PKP_ADMIN => $baseDir . 'admin.po',
+			LOCALE_COMPONENT_PKP_INSTALLER => $baseDir . 'installer.po',
+			LOCALE_COMPONENT_PKP_MANAGER => $baseDir . 'manager.po',
+			LOCALE_COMPONENT_PKP_READER => $baseDir . 'reader.po',
+			LOCALE_COMPONENT_PKP_SUBMISSION => $baseDir . 'submission.po',
+			LOCALE_COMPONENT_PKP_EDITOR => $baseDir . 'editor.po',
+			LOCALE_COMPONENT_PKP_REVIEWER => $baseDir . 'reviewer.po',
+			LOCALE_COMPONENT_PKP_USER => $baseDir . 'user.po',
+			LOCALE_COMPONENT_PKP_GRID => $baseDir . 'grid.po',
+			LOCALE_COMPONENT_PKP_DEFAULT => $baseDir . 'default.po',
+			LOCALE_COMPONENT_PKP_API => $baseDir . 'api.po',
 		);
 	}
 
@@ -177,6 +224,7 @@ class PKPLocale {
 	 */
 	static function requireComponents() {
 		$params = func_get_args();
+
 		$paramCount = count($params);
 		if ($paramCount === 0) return;
 
@@ -226,8 +274,9 @@ class PKPLocale {
 	static function registerLocaleFile ($locale, $filename, $addToTop = false) {
 		$localeFiles =& AppLocale::getLocaleFiles($locale);
 		$localeFile = new LocaleFile($locale, $filename);
-		if (!$localeFile->isValid()) {
-			return null;
+
+		if (!HookRegistry::call('PKPLocale::registerLocaleFile::isValidLocaleFile', array(&$localeFile))) {
+			if (!$localeFile->isValid()) return null;
 		}
 		if ($addToTop) {
 			// Work-around: unshift by reference.
@@ -242,8 +291,6 @@ class PKPLocale {
 
 	/**
 	 * Get the stylesheet filename for a particular locale.
-	 * (These can be optionally specified to deal with things like
-	 * RTL directionality.)
 	 * @param $locale string
 	 * @return string or null if none configured.
 	 */
@@ -253,6 +300,25 @@ class PKPLocale {
 			return $contents[$locale]['stylesheet'];
 		}
 		return null;
+	}
+
+	/**
+	 * Get the reading direction for a particular locale.
+	 *
+	 * A locale can specify a reading direction with the `direction` attribute. If no
+	 * direction is specified, defaults to `ltr` (left-to-right). The only
+	 * other value that is expected is `rtl`. This value is used in HTML and
+	 * CSS markup to present a right-to-left layout.
+	 *
+	 * @param $locale string
+	 * @return string
+	 */
+	static function getLocaleDirection($locale) {
+		$contents =& AppLocale::_getAllLocalesCacheContent();
+		if (isset($contents[$locale]['direction'])) {
+			return $contents[$locale]['direction'];
+		}
+		return 'ltr';
 	}
 
 	/**
@@ -270,13 +336,27 @@ class PKPLocale {
 	}
 
 	/**
+	 * Determine whether or not a locale uses family name first.
+	 * @param $locale xx_XX symbolic name of locale to check
+	 * @return boolean
+	 */
+	static function isLocaleWithFamilyFirst($locale) {
+		$contents =& AppLocale::_getAllLocalesCacheContent();
+		if (isset($contents[$locale]) && isset($contents[$locale]['familyFirst']) && $contents[$locale]['familyFirst'] == 'true') {
+			return true;
+		}
+		return false;
+	}
+
+	/**
 	 * Check if the supplied locale is currently installable.
 	 * @param $locale string
 	 * @return boolean
 	 */
 	static function isLocaleValid($locale) {
 		if (empty($locale)) return false;
-		if (!preg_match('/^[a-z][a-z]_[A-Z][A-Z]$/', $locale)) return false;
+		// variants can be composed of five to eight letters, or of four characters starting with a digit
+		if (!preg_match('/^[a-z][a-z]_[A-Z][A-Z](@([A-Za-z0-9]{5,8}|\d[A-Za-z0-9]{3}))?$/', $locale)) return false;
 		if (file_exists('locale/' . $locale)) return true;
 		return false;
 	}
@@ -329,8 +409,9 @@ class PKPLocale {
 		// Install default locale-specific data
 		import('lib.pkp.classes.db.DBDataXMLParser');
 
-		$emailTemplateDao = DAORegistry::getDAO('EmailTemplateDAO');
-		$emailTemplateDao->installEmailTemplateData($emailTemplateDao->getMainEmailTemplateDataFilename($locale));
+		$emailTemplateDao = DAORegistry::getDAO('EmailTemplateDAO'); /* @var $emailTemplateDao EmailTemplateDAO */
+		AppLocale::requireComponents(LOCALE_COMPONENT_APP_EMAIL, $locale);
+		$emailTemplateDao->installEmailTemplateLocaleData($emailTemplateDao->getMainEmailTemplatesFilename(), array($locale));
 
 		// Load all plugins so they can add locale data if needed
 		$categories = PluginRegistry::getCategories();
@@ -346,7 +427,7 @@ class PKPLocale {
 	 */
 	static function uninstallLocale($locale) {
 		// Delete locale-specific data
-		$emailTemplateDao = DAORegistry::getDAO('EmailTemplateDAO');
+		$emailTemplateDao = DAORegistry::getDAO('EmailTemplateDAO'); /* @var $emailTemplateDao EmailTemplateDAO */
 		$emailTemplateDao->deleteEmailTemplatesByLocale($locale);
 		$emailTemplateDao->deleteDefaultEmailTemplatesByLocale($locale);
 	}
@@ -368,7 +449,7 @@ class PKPLocale {
 	 */
 	static function getParameterNames($source) {
 		$matches = null;
-		String::regexp_match_all('/({\$[^}]+})/' /* '/{\$[^}]+})/' */, $source, $matches);
+		PKPString::regexp_match_all('/({\$[^}]+})/' /* '/{\$[^}]+})/' */, $source, $matches);
 		array_shift($matches); // Knock the top element off the array
 		if (isset($matches[0])) return $matches[0];
 		return array();
@@ -419,7 +500,7 @@ class PKPLocale {
 	 * @return string
 	 */
 	static function get3LetterIsoFromLocale($locale) {
-		assert(strlen($locale) == 5);
+		assert(strlen($locale) >= 5);
 		$iso2Letter = substr($locale, 0, 2);
 		return AppLocale::get3LetterFrom2LetterIsoLanguage($iso2Letter);
 	}
@@ -518,7 +599,7 @@ class PKPLocale {
 	 * @return string
 	 */
 	static function getIso3FromLocale($locale) {
-		assert(strlen($locale) == 5);
+		assert(strlen($locale) >= 5);
 		$iso1 = substr($locale, 0, 2);
 		return AppLocale::getIso3FromIso1($iso1);
 	}
@@ -530,7 +611,7 @@ class PKPLocale {
 	* @return string
 	*/
 	static function getIso1FromLocale($locale) {
-		assert(strlen($locale) == 5);
+		assert(strlen($locale) >= 5);
 		return substr($locale, 0, 2);
 	}
 
@@ -690,8 +771,6 @@ class PKPLocale {
  * @param $locale string the locale to use
  * @return string
  */
-function __($key, $params = array(), $locale = null) {
-	return AppLocale::translate($key, $params, $locale);
+function __($key, $params = array(), $locale = null, $missingKeyHandler = array('PKPLocale', 'addOctothorpes')) {
+	return AppLocale::translate($key, $params, $locale, $missingKeyHandler);
 }
-
-?>

@@ -2,9 +2,9 @@
 /**
  * @file classes/linkAction/request/OpenWindowAction.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class OpenWindowAction
  * @ingroup linkAction_request
@@ -23,8 +23,8 @@ class OpenWindowAction extends LinkActionRequest {
 	 * Constructor
 	 * @param $url string Target URL
 	 */
-	function OpenWindowAction($url) {
-		parent::LinkActionRequest();
+	function __construct($url) {
+		parent::__construct();
 		$this->_url = $url;
 	}
 
@@ -59,4 +59,4 @@ class OpenWindowAction extends LinkActionRequest {
 	}
 }
 
-?>
+

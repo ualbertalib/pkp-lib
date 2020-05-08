@@ -3,9 +3,9 @@
 /**
  * @file classes/search/SearchHelperParser.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SearchHelperParser
  * @ingroup search
@@ -21,8 +21,8 @@ class SearchHelperParser extends SearchFileParser {
 	/** @var string Type should match an index[$type] setting in the "search" section of config.inc.php */
 	var $type;
 
-	function SearchHelperParser($type, $filePath) {
-		parent::SearchFileParser($filePath);
+	function __construct($type, $filePath) {
+		parent::__construct($filePath);
 		$this->type = $type;
 	}
 
@@ -30,7 +30,7 @@ class SearchHelperParser extends SearchFileParser {
 		$prog = Config::getVar('search', 'index[' . $this->type . ']');
 
 		if (isset($prog)) {
-			$exec = sprintf($prog, escapeshellcmd($this->getFilePath()));
+			$exec = sprintf($prog, escapeshellarg($this->getFilePath()));
 			$this->fp = @popen($exec, 'r');
 			return $this->fp ? true : false;
 		}
@@ -43,4 +43,4 @@ class SearchHelperParser extends SearchFileParser {
 	}
 }
 
-?>
+

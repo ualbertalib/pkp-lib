@@ -3,9 +3,9 @@
 /**
  * @file controllers/informationCenter/linkAction/SubmissionInfoCenterLinkAction.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubmissionInfoCenterLinkAction
  * @ingroup controllers_informationCenter
@@ -24,10 +24,10 @@ class SubmissionInfoCenterLinkAction extends LinkAction {
 	 * to show information about.
 	 * @param $linkKey string optional locale key to display for link
 	 */
-	function SubmissionInfoCenterLinkAction($request, $submissionId, $linkKey = 'informationCenter.editorialHistory') {
+	function __construct($request, $submissionId, $linkKey = 'informationCenter.editorialHistory') {
 		// Instantiate the information center modal.
 
-		$submissionDao = Application::getSubmissionDAO();
+		$submissionDao = DAORegistry::getDAO('SubmissionDAO'); /* @var $submissionDao SubmissionDAO */
 		$submission = $submissionDao->getById($submissionId);
 
 		$primaryAuthor = $submission->getPrimaryAuthor();
@@ -38,7 +38,7 @@ class SubmissionInfoCenterLinkAction extends LinkAction {
 			}
 		}
 
-		$title = (isset($primaryAuthor)) ? implode(', ', array($primaryAuthor->getLastName(), $submission->getLocalizedTitle())) : $submission->getLocalizedTitle();
+		$title = (isset($primaryAuthor)) ? implode(', ', array($primaryAuthor->getFullName(), $submission->getLocalizedTitle())) : $submission->getLocalizedTitle();
 
 		$dispatcher = $request->getDispatcher();
 		import('lib.pkp.classes.linkAction.request.AjaxModal');
@@ -50,16 +50,16 @@ class SubmissionInfoCenterLinkAction extends LinkAction {
 				null,
 				array('submissionId' => $submissionId)
 			),
-			$title,
+			htmlspecialchars($title),
 			'modal_information'
 		);
 
 		// Configure the link action.
-		parent::LinkAction(
+		parent::__construct(
 			'editorialHistory', $ajaxModal,
 			__($linkKey), 'more_info'
 		);
 	}
 }
 
-?>
+

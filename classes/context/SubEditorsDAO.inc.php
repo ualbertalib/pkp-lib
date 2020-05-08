@@ -3,9 +3,9 @@
 /**
  * @file classes/context/SubEditorsDAO.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubEditorsDAO
  * @ingroup context
@@ -14,12 +14,6 @@
  */
 
 class SubEditorsDAO extends DAO {
-	/**
-	 * Constructor
-	 */
-	function SubEditorsDAO() {
-		parent::DAO();
-	}
 
 	/**
 	 * Insert a new section editor.
@@ -65,48 +59,21 @@ class SubEditorsDAO extends DAO {
 	 * @return array matching Users
 	 */
 	function getBySectionId($sectionId, $contextId) {
+		$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
+		$params = array((int) $contextId, (int) $sectionId);
+		$params = array_merge($userDao->getFetchParameters(), $params);
 		$result = $this->retrieve(
-			'SELECT	u.user_id
+			'SELECT	u.user_id,
+			' . $userDao->getFetchColumns() . '
 			FROM	section_editors e
 				JOIN users u ON (e.user_id = u.user_id)
+				' . $userDao->getFetchJoins() . '
 			WHERE	e.context_id = ? AND
 				e.section_id = ?
-			ORDER BY u.last_name, u.first_name',
-			array((int) $contextId, (int) $sectionId)
+			' . $userDao->getOrderBy(),
+			$params
 		);
 
-		$users = array();
-		$userDao = DAORegistry::getDAO('UserDAO');
-		while (!$result->EOF) {
-			$row = $result->GetRowAssoc(false);
-			$user = $userDao->getById($row['user_id']);
-			$users[$user->getId()] = $user;
-			$result->MoveNext();
-		}
-
-		$result->Close();
-		return $users;
-	}
-
-	/**
-	 * Retrieve a list of all section editors not assigned to the specified section.
-	 * @param $contextId int
-	 * @param $sectionId int
-	 * @return array matching Users
-	 */
-	function getEditorsNotInSection($contextId, $sectionId) {
-		$result = $this->retrieve(
-			'SELECT	u.user_id
-			FROM	users u
-				JOIN user_user_groups uug ON (u.user_id = uug.user_id)
-				JOIN user_groups ug ON (uug.user_group_id = ug.user_group_id AND ug.role_id = ? AND ug.context_id = ?)
-				LEFT JOIN section_editors e ON (e.user_id = u.user_id AND e.context_id = ug.context_id AND e.section_id = ?)
-			WHERE	e.section_id IS NULL
-			ORDER BY u.last_name, u.first_name',
-			array(ROLE_ID_SUB_EDITOR, (int) $contextId, (int) $sectionId)
-		);
-
-		$userDao = DAORegistry::getDAO('UserDAO');
 		$users = array();
 		while (!$result->EOF) {
 			$row = $result->GetRowAssoc(false);
@@ -172,4 +139,4 @@ class SubEditorsDAO extends DAO {
 	}
 }
 
-?>
+

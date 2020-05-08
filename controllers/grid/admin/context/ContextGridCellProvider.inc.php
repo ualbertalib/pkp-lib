@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/admin/context/ContextGridCellProvider.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ContextGridCellProvider
  * @ingroup controllers_grid_admin_context
@@ -16,12 +16,6 @@
 import('lib.pkp.classes.controllers.grid.GridCellProvider');
 
 class ContextGridCellProvider extends GridCellProvider {
-	/**
-	 * Constructor
-	 */
-	function ContextGridCellProvider() {
-		parent::GridCellProvider();
-	}
 
 	/**
 	 * Extracts variables for a given column from a data element
@@ -39,7 +33,7 @@ class ContextGridCellProvider extends GridCellProvider {
 				$label = $element->getLocalizedName() != '' ? $element->getLocalizedName() : __('common.untitled');
 				return array('label' => $label);
 				break;
-			case 'path':
+			case 'urlPath':
 				$label = $element->getPath();
 				return array('label' => $label);
 				break;
@@ -48,5 +42,3 @@ class ContextGridCellProvider extends GridCellProvider {
 		}
 	}
 }
-
-?>

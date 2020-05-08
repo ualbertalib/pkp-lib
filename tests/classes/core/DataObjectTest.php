@@ -3,9 +3,9 @@
 /**
  * @file tests/classes/core/DataObjectTest.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class DataObjectTest
  * @ingroup tests_classes_core
@@ -21,7 +21,7 @@ class DataObjectTest extends PKPTestCase {
 	/** @var DataObject */
 	protected $dataObject;
 
-	protected function setUp() {
+	protected function setUp() : void {
 		parent::setUp();
 		$this->dataObject = new DataObject();
 	}
@@ -136,4 +136,4 @@ class DataObjectTest extends PKPTestCase {
 		self::assertFalse($this->dataObject->hasData('testVar3', 'en_US'));
 	}
 }
-?>
+

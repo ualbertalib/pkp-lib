@@ -1,9 +1,9 @@
 /**
  * @file js/classes/linkAction/ModalRequest.js
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ModalRequest
  * @ingroup js_classes_linkAction
@@ -39,11 +39,11 @@
 	// Private properties
 	//
 	/**
-	 * A pointer to the dialog HTML element.
+	 * A pointer to the modal HTML element.
 	 * @private
 	 * @type {jQueryObject}
 	 */
-	$.pkp.classes.linkAction.ModalRequest.prototype.$dialog_ = null;
+	$.pkp.classes.linkAction.ModalRequest.prototype.$modal_ = null;
 
 
 	//
@@ -64,7 +64,7 @@
 				$linkActionElement,
 				linkActionHandler,
 				handlerOptions,
-				dialogHandler;
+				modalHandler;
 
 		if (modalOptions.title === undefined) {
 			if (title === '') {
@@ -91,14 +91,16 @@
 				this.getLinkActionElement());
 		linkActionHandler = $.pkp.classes.Handler.getHandler($linkActionElement);
 		handlerOptions = $.extend(true,
-				{$eventBridge: linkActionHandler.getStaticId()}, modalOptions);
-		this.$dialog_ = $('<div id=' + uuid + '></div>').pkpHandler(
-				modalOptions.modalHandler, handlerOptions);
+				{eventBridge: linkActionHandler.getStaticId()}, modalOptions);
+		this.$modal_ = $(
+				'<div id="' + uuid + '" ' +
+				'class="pkp_modal pkpModalWrapper" tabindex="-1"></div>')
+				.pkpHandler(modalOptions.modalHandler, handlerOptions);
 
-		// Subscribe to the dialog handler's 'removed' event so that
+		// Subscribe to the modal handler's 'removed' event so that
 		// we can clean up.
-		dialogHandler = $.pkp.classes.Handler.getHandler(this.$dialog_);
-		dialogHandler.bind('pkpRemoveHandler',
+		modalHandler = $.pkp.classes.Handler.getHandler(this.$modal_);
+		modalHandler.bind('pkpRemoveHandler',
 				$.pkp.classes.Helper.curry(this.finish, this));
 
 		return /** @type {boolean} */ (this.parent('activate', element, event));
@@ -111,10 +113,20 @@
 	$.pkp.classes.linkAction.ModalRequest.prototype.finish =
 			function() {
 
-		this.$dialog_.remove();
+		// A workaround for a bug in IE9-11 (and maybe others), whereby restoring
+		// the focus to the New Review Round tab causes the modal to be opened
+		// again. This hack effects accessibility and should be removed if/when we
+		// move away from jQueryUI tabs.
+		// See: https://github.com/pkp/pkp-lib/issues/2703
+		if (this.$linkActionElement.attr('id')
+				.indexOf('newRoundTabContainer') !== 0) {
+			// Put the focus back on the linkAction which launched the modal
+			this.$linkActionElement.focus();
+		}
+
+		this.$modal_.remove();
 		return /** @type {boolean} */ (this.parent('finish'));
 	};
 
 
-/** @param {jQuery} $ jQuery closure. */
 }(jQuery));

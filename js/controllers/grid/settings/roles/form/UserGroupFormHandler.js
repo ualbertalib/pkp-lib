@@ -4,9 +4,9 @@
 /**
  * @file js/controllers/grid/settings/roles/form/UserGroupFormHandler.js
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class UserGroupFormHandler
  * @ingroup js_controllers_grid_settings_roles_form
@@ -46,6 +46,19 @@
 			this.selfRegistrationRoleIds_ = options.selfRegistrationRoleIds;
 		}
 
+		// Set the role IDs for which the recommendOnly checkbox
+		// is relevant.
+		if (options.recommendOnlyRoleIds) {
+			this.recommendOnlyRoleIds_ = options.recommendOnlyRoleIds;
+		}
+
+		// Set the roles that are not able to change
+		// submission metadata edit perissions
+		if (options.notChangeMetadataEditPermissionRoles) {
+			this.notChangeMetadataEditPermissionRoles_ =
+					options.notChangeMetadataEditPermissionRoles;
+		}
+
 		this.roleForbiddenStages_ = options.roleForbiddenStagesJSON.content;
 		this.stagesSelector_ = options.stagesSelector;
 
@@ -54,9 +67,19 @@
 		this.updatePermitSelfRegistration(
 				/** @type {string} */ ($roleId.val()));
 
+		// Initialize the "permit metadata edit" checkbox disabled
+		// state based on the form's current selection
+		this.updatePermitMetadataEdit(
+				/** @type {string} */ ($roleId.val()), false);
+
 		// ...also initialize the stage options, disabling the ones
 		// that are forbidden for the current role.
 		this.updateStageOptions(
+				/** @type {string} */ ($roleId.val()));
+
+		// ...also initialize the recommendOnly option, disabling it
+		// if it is forbidden for the current role.
+		this.updateRecommendOnly(
 				/** @type {string} */ ($roleId.val()));
 
 		// ...and make sure both it's updated when changing roles.
@@ -97,6 +120,15 @@
 			UserGroupFormHandler.prototype.stagesSelector_ = null;
 
 
+	/**
+	 * The list of not allowed to change submission metadata edit permissions roles
+	 * @private
+	 * @type {Object?}
+	 */
+	$.pkp.controllers.grid.settings.roles.form.
+			UserGroupFormHandler.prototype.notChangeMetadataEditPermissionRoles_ = null;
+
+
 	//
 	// Private methods.
 	//
@@ -107,12 +139,16 @@
 	$.pkp.controllers.grid.settings.roles.form.UserGroupFormHandler.prototype.
 			changeRoleId = function(dropdown) {
 
-		var dropDownValue = $(dropdown).val(); /** @type {string} */
+		var dropDownValue = /** @type {string} */ ($(dropdown).val());
 
 		this.updatePermitSelfRegistration((dropDownValue));
+		this.updatePermitMetadataEdit(/** @type {string} */ (dropDownValue), true);
 
 		// Also update the stages options.
 		this.updateStageOptions(/** @type {string} */ (dropDownValue));
+
+		this.updateRecommendOnly(/** @type {string} */ (dropDownValue));
+
 	};
 
 
@@ -147,6 +183,37 @@
 
 
 	/**
+	 * Update the enabled/disabled state of the PermitMetadataEdit
+	 * checkbox.
+	 * @param {number|string} roleId The role ID to select.
+	 * @param {boolean} roleIdChanged True iff the role ID changed.
+	 */
+	$.pkp.controllers.grid.settings.roles.form.UserGroupFormHandler.prototype.
+			updatePermitMetadataEdit = function(roleId, roleIdChanged) {
+		var i, $checkbox = $('[id^="permitMetadataEdit"]'),
+				found = false;
+
+		for (i = 0; i < this.notChangeMetadataEditPermissionRoles_.length; i++) {
+			if (this.notChangeMetadataEditPermissionRoles_[i] == roleId) {
+				found = true;
+			}
+		}
+
+		// If found then the check box should be disabled and checked
+		if (found) {
+			$checkbox.attr('disabled', 'disabled');
+			$checkbox.attr('checked', 'checked');
+			$checkbox.prop('checked', 'checked');
+		} else {
+			$checkbox.removeAttr('disabled');
+			if (roleIdChanged) {
+				$checkbox.removeAttr('checked');
+			}
+		}
+	};
+
+
+	/**
 	 * Update the stage options.
 	 * @param {number|string} roleId The role ID to select.
 	 */
@@ -154,8 +221,9 @@
 			updateStageOptions = function(roleId) {
 
 		// JQuerify the element
-		var $stageOptions = $(this.stagesSelector_, this.getHtmlElement()).
-				filter('input'),
+		var $htmlElement = this.getHtmlElement(),
+				$stageContainer = $htmlElement.find('#userGroupStageContainer'),
+				$stageOptions = $(this.stagesSelector_, $htmlElement).filter('input'),
 				i,
 				stageId = null;
 
@@ -168,8 +236,43 @@
 						attr('disabled', 'disabled');
 			}
 		}
+
+		if ($htmlElement.find(
+				'input[id^=\'assignedStages-\']:enabled').length == 0) {
+			$stageContainer.hide('slow');
+			$('#showTitle').attr('disabled', 'disabled');
+		} else {
+			$stageContainer.show('slow');
+			$('#showTitle').removeAttr('disabled');
+		}
 	};
 
 
-/** @param {jQuery} $ jQuery closure. */
+	/**
+	 * Update the enabled/disabled state of the recommendOnly checkbox.
+	 * @param {number|string} roleId The role ID to select.
+	 */
+	$.pkp.controllers.grid.settings.roles.form.UserGroupFormHandler.prototype.
+			updateRecommendOnly = function(roleId) {
+
+		// JQuerify the element
+		var $checkbox = $('[id^=\'recommendOnly\']', this.getHtmlElement()),
+				i,
+				found = false;
+
+		for (i = 0; i < this.recommendOnlyRoleIds_.length; i++) {
+			if (this.recommendOnlyRoleIds_[i] == roleId) {
+				found = true;
+			}
+		}
+
+		if (found) {
+			$checkbox.removeAttr('disabled');
+		} else {
+			$checkbox.attr('disabled', 'disabled');
+			$checkbox.removeAttr('checked');
+		}
+	};
+
+
 }(jQuery));

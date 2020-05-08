@@ -1,18 +1,16 @@
 {**
  * templates/user/loginChangePassword.tpl
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * Form to change a user's password in order to login.
  *
  *}
-{strip}
-{assign var="pageTitle" value="user.changePassword"}
-{url|assign:"currentUrl" page="login" op="changePassword"}
-{include file="common/header.tpl"}
-{/strip}
+{include file="common/header.tpl" pageTitle="user.changePassword"}
+
+<div class="pkp_page_content pkp_page_loginChangePassword">
 
 <script>
 	$(function() {ldelim}
@@ -22,14 +20,14 @@
 </script>
 
 {if !$passwordLengthRestrictionLocaleKey}
-	{assign var="passwordLengthRestrictionLocaleKey" value="user.register.passwordLengthRestriction"}
+	{assign var="passwordLengthRestrictionLocaleKey" value="user.register.form.passwordLengthRestriction"}
 {/if}
 
 <form class="pkp_form" id="loginChangePassword" method="post" action="{url page="login" op="savePassword"}">
+	{csrf}
+	{include file="common/formErrors.tpl"}
 
-{include file="common/formErrors.tpl"}
-
-<p><span class="instruct">{translate key="user.login.changePasswordInstructions"}</span></p>
+	<p><span class="instruct">{translate key="user.login.changePasswordInstructions"}</span></p>
 
 	{fbvFormArea id="loginFields"}
 		{fbvFormSection label="user.login" for="username"}
@@ -48,7 +46,14 @@
 		{fbvFormButtons}
 	{/fbvFormArea}
 
+	<p>
+		{capture assign="privacyUrl"}{url router=$smarty.const.ROUTE_PAGE page="about" op="privacy"}{/capture}
+		{translate key="user.privacyLink" privacyUrl=$privacyUrl}
+	</p>
+
+	<p><span class="formRequired">{translate key="common.requiredField"}</span></p>
 </form>
-<p><span class="formRequired">{translate key="common.requiredField"}</span></p>
+
+</div>
 
 {include file="common/footer.tpl"}

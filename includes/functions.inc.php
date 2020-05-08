@@ -3,9 +3,9 @@
 /**
  * @file includes/functions.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @ingroup index
  *
@@ -41,7 +41,7 @@ function fatalError($reason) {
 		$isErrorCondition = false;
 	}
 
-	echo "<h1>$reason</h1>";
+	echo "<h1>" . htmlspecialchars($reason) . "</h1>";
 
 	if ($showStackTrace) {
 		echo "<h4>Stack Trace:</h4>\n";
@@ -246,9 +246,11 @@ function &instantiate($fullyQualifiedClassName, $expectedTypes = null, $expected
  * @param $array array
  * @return array
  */
-function arrayClean(&$array) {
+function arrayClean($array) {
 	if (!is_array($array)) return null;
-	return array_filter($array, create_function('$o', 'return !empty($o);'));
+	return array_filter($array, function($o) {
+		return !empty($o);
+	});
 }
 
 
@@ -279,17 +281,69 @@ function strtolower_codesafe($str) {
 }
 
 /**
- * Convert a Windows path to a cygwin path.
- * @param string $path Windows path
- * @return string Cygwin path.
+ * Perform a code-safe strtoupper, i.e. one that doesn't behave differently
+ * based on different locales. (tr_TR, I'm looking at you.)
+ * @param $str string Input string
+ * @return string
  */
-function cygwinConversion($path) {
-	$path = str_replace('\\', '/', $path);
-	$matches = null;
-	String::regexp_match_get('/^([A-Z]):/i', $path, $matches);
-	if (isset($matches[1]) && strlen($matches[1]) === 1) {
-		$path = String::regexp_replace('/^[A-Z]:/i', '/cygdrive/' . strtolower($matches[1]), $path);
-	}
-	return $path;
+function strtoupper_codesafe($str) {
+	return strtr($str, 'abcdefghijklmnopqrstuvwxyz', 'ABCDEFGHIJKLMNOPQRSTUVWXYZ');
 }
-?>
+
+/**
+ * Perform a code-safe lcfirst, i.e. one that doesn't behave differently
+ * based on different locales. (tr_TR, I'm looking at you.)
+ * @param $str string Input string
+ * @return string
+ */
+function lcfirst_codesafe($str) {
+	return strtolower_codesafe(substr($str, 0, 1)) . substr($str, 1);
+}
+
+/**
+ * Perform a code-safe ucfirst, i.e. one that doesn't behave differently
+ * based on different locales. (tr_TR, I'm looking at you.)
+ * @param $str string Input string
+ * @return string
+ */
+function ucfirst_codesafe($str) {
+	return strtoupper_codesafe(substr($str, 0, 1)) . substr($str, 1);
+}
+
+/**
+ * Helper function to define custom autoloader 
+ * @param string $rootPath
+ * @param string $prefix
+ * @param string $class
+ * 
+ * @return void
+ */
+function customAutoload($rootPath, $prefix, $class) {
+	if (substr($class, 0, strlen($prefix)) !== $prefix) {
+		return;
+	}
+
+	$class = substr($class, strlen($prefix));
+	$parts = explode('\\', $class);
+
+	// we expect at least one folder in the namespace
+	// there is no class defined directly under classes/ folder
+	if (count($parts) < 2) {
+		return;
+	}
+
+	$className = Core::cleanFileVar(array_pop($parts));
+	$parts = array_map(function($part) {
+		$part = Core::cleanFileVar($part);
+		if (strlen($part)>1) $part[0] = strtolower_codesafe($part[0]); // pkp/pkp-lib#5731
+		return $part;
+	}, $parts);
+
+	$subParts = join('/', $parts);
+	$filePath = "{$rootPath}/{$subParts}/{$className}.inc.php";
+
+	if (is_file($filePath)) {
+		require_once($filePath);
+	}
+}
+

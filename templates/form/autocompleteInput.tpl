@@ -1,20 +1,18 @@
 {**
  * templates/form/autocompleteInput.tpl
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * an autocomplete input
  *}
-{translate|assign:"jLabelText" key="common.startTyping"}
 <script>
 	$(function() {ldelim}
 		$('#{$FBV_id}_container').pkpHandler('$.pkp.controllers.AutocompleteHandler',
 			{ldelim}
 				{if $FBV_disableSync}disableSync: true,{/if}
-				sourceUrl: "{$FBV_autocompleteUrl|escape:javascript}",
-				jLabelText: '{$jLabelText|escape:javascript}'
+				sourceUrl: {$FBV_autocompleteUrl|json_encode},
 			{rdelim});
 	{rdelim});
 </script>

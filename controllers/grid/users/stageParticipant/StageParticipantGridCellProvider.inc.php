@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/users/stageParticipant/StageParticipantGridCellProvider.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class DataObjectGridCellProvider
  * @ingroup controllers_grid_users_submissionContributor
@@ -16,12 +16,6 @@
 import('lib.pkp.classes.controllers.grid.DataObjectGridCellProvider');
 
 class StageParticipantGridCellProvider extends DataObjectGridCellProvider {
-	/**
-	 * Constructor
-	 */
-	function StageParticipantGridCellProvider() {
-		parent::DataObjectGridCellProvider();
-	}
 
 	//
 	// Template methods from GridCellProvider
@@ -36,7 +30,7 @@ class StageParticipantGridCellProvider extends DataObjectGridCellProvider {
 	function getTemplateVarsFromRowColumn($row, $column) {
 		switch ($column->getId()) {
 			case 'participants':
-				$stageAssignment =& $row->getData();
+				$stageAssignment = $row->getData();
 				$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 				$user = $userDao->getById($stageAssignment->getUserId());
 				return array('label' => $user->getFullName());
@@ -46,4 +40,4 @@ class StageParticipantGridCellProvider extends DataObjectGridCellProvider {
 	}
 }
 
-?>
+

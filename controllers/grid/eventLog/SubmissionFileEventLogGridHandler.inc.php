@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/eventLog/SubmissionFileEventLogGridHandler.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubmissionFileEventLogGridHandler
  * @ingroup controllers_grid_eventLog
@@ -17,13 +17,6 @@
 import('lib.pkp.controllers.grid.eventLog.SubmissionEventLogGridHandler');
 
 class SubmissionFileEventLogGridHandler extends SubmissionEventLogGridHandler {
-	/**
-	 * Constructor
-	 */
-	function SubmissionFileEventLogGridHandler() {
-		parent::SubmissionEventLogGridHandler();
-	}
-
 
 	//
 	// Getters/Setters
@@ -55,17 +48,17 @@ class SubmissionFileEventLogGridHandler extends SubmissionEventLogGridHandler {
 	 * @param $roleAssignments array
 	 */
 	function authorize($request, &$args, $roleAssignments) {
-		import('classes.security.authorization.SubmissionFileAccessPolicy');
+		import('lib.pkp.classes.security.authorization.SubmissionFileAccessPolicy');
 		$this->addPolicy(new SubmissionFileAccessPolicy($request, $args, $roleAssignments, SUBMISSION_FILE_ACCESS_READ));
 		return parent::authorize($request, $args, $roleAssignments);
 	}
 
 	/**
 	 * Configure the grid
-	 * @param $request PKPRequest
+	 * @see SubmissionEventLogGridHandler::initialize
 	 */
-	function initialize($request) {
-		parent::initialize($request);
+	function initialize($request, $args = null) {
+		parent::initialize($request, $args);
 
 		// Retrieve the authorized monograph.
 		$submission = $this->getAuthorizedContextObject(ASSOC_TYPE_SUBMISSION);
@@ -95,9 +88,9 @@ class SubmissionFileEventLogGridHandler extends SubmissionEventLogGridHandler {
 	/**
 	 * @copydoc GridHandler::loadData
 	 */
-	function loadData($request, $filter = null) {
+	protected function loadData($request, $filter = null) {
 		$submissionFile = $this->getSubmissionFile();
-		$submissionFileEventLogDao = DAORegistry::getDAO('SubmissionFileEventLogDAO');
+		$submissionFileEventLogDao = DAORegistry::getDAO('SubmissionFileEventLogDAO'); /* @var $submissionFileEventLogDao SubmissionFileEventLogDAO */
 		$eventLogEntries = $submissionFileEventLogDao->getByFileId(
 			$submissionFile->getFileId()
 		);
@@ -105,7 +98,7 @@ class SubmissionFileEventLogGridHandler extends SubmissionEventLogGridHandler {
 
 		if ($filter['allEvents']) {
 			// Also include events from past versions
-			$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO');
+			$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO'); /* @var $submissionFileDao SubmissionFileDAO */
 			while (true) {
 				$submissionFile = $submissionFileDao->getRevision($submissionFile->getSourceFileId(), $submissionFile->getSourceRevision());
 				if (!$submissionFile) break;
@@ -122,7 +115,7 @@ class SubmissionFileEventLogGridHandler extends SubmissionEventLogGridHandler {
 	 * @copydoc GridHandler::getFilterForm()
 	 * @return string Filter template.
 	 */
-	function getFilterForm() {
+	protected function getFilterForm() {
 		// If the user only has an author role, do not permit access
 		// to earlier stages.
 		$userRoles = $this->getAuthorizedContextObject(ASSOC_TYPE_USER_ROLES);
@@ -140,4 +133,4 @@ class SubmissionFileEventLogGridHandler extends SubmissionEventLogGridHandler {
 	}
 }
 
-?>
+

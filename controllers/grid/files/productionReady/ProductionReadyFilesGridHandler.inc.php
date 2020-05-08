@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/files/productionReady/ProductionReadyFilesGridHandler.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ProductionReadyFilesGridHandler
  * @ingroup controllers_grid_files_productionready
@@ -13,19 +13,18 @@
  * @brief Handle the fair copy files grid (displays copyedited files ready to move to proofreading)
  */
 
-import('lib.pkp.controllers.grid.files.SubmissionFilesGridHandler');
-import('lib.pkp.controllers.grid.files.UploaderUserGroupGridColumn');
+import('lib.pkp.controllers.grid.files.fileList.FileListGridHandler');
 
-class ProductionReadyFilesGridHandler extends SubmissionFilesGridHandler {
+class ProductionReadyFilesGridHandler extends FileListGridHandler {
 	/**
 	 * Constructor
 	 */
-	function ProductionReadyFilesGridHandler() {
+	function __construct() {
 		import('lib.pkp.controllers.grid.files.SubmissionFilesGridDataProvider');
-		parent::SubmissionFilesGridHandler(
+		parent::__construct(
 			new SubmissionFilesGridDataProvider(SUBMISSION_FILE_PRODUCTION_READY),
 			WORKFLOW_STAGE_ID_PRODUCTION,
-			FILE_GRID_ADD|FILE_GRID_DELETE|FILE_GRID_VIEW_NOTES
+			FILE_GRID_ADD|FILE_GRID_DELETE|FILE_GRID_VIEW_NOTES|FILE_GRID_EDIT
 		);
 
 		$this->addRoleAssignment(
@@ -39,40 +38,17 @@ class ProductionReadyFilesGridHandler extends SubmissionFilesGridHandler {
 				'addFile',
 				'downloadFile',
 				'deleteFile',
-				'signOffFile'
 			)
 		);
 	}
 
 	/**
-	 * @copydoc PKPHandler::initialize()
+	 * @copydoc FileListGridHandler::initialize()
 	 */
-	function initialize($request) {
-		parent::initialize($request);
-
+	function initialize($request, $args = null) {
+		parent::initialize($request, $args);
 		$this->setTitle('editor.submission.production.productionReadyFiles');
-		$this->setInstructions('editor.submission.production.productionReadyFilesDescription');
-
-		$currentUser = $request->getUser();
-
-		// Get all the uploader user group id's
-		$uploaderUserGroupIds = array();
-		$dataElements = $this->getGridDataElements($request);
-		foreach ($dataElements as $id => $rowElement) {
-			$submissionFile = $rowElement['submissionFile'];
-			$uploaderUserGroupIds[] = $submissionFile->getUserGroupId();
-		}
-		// Make sure each is only present once
-		$uploaderUserGroupIds = array_unique($uploaderUserGroupIds);
-
-		// Add a Uploader UserGroup column for each group
-		$userGroupDao = DAORegistry::getDAO('UserGroupDAO');
-		foreach ($uploaderUserGroupIds as $userGroupId) {
-			$userGroup = $userGroupDao->getById($userGroupId);
-			assert(is_a($userGroup, 'UserGroup'));
-			$this->addColumn(new UploaderUserGroupGridColumn($userGroup));
-		}
 	}
 }
 
-?>
+

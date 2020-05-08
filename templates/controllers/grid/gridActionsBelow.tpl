@@ -1,16 +1,17 @@
 {**
  * templates/controllers/grid/gridActionsBelow.tpl
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * Grid actions in bottom position
  *}
 
-<div class="actions pkp_linkActions grid_link_actions_below">
+<ul class="actions btm">
 	{foreach from=$grid->getActions($smarty.const.GRID_ACTION_POSITION_BELOW) item=action}
-		{include file="linkAction/linkAction.tpl" action=$action contextId=$gridId}
+		<li>
+			{include file="linkAction/linkAction.tpl" action=$action contextId=$gridId}
+		</li>
 	{/foreach}
-	<div class="pkp_helpers_clear"></div>
-</div>
+</ul>

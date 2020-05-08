@@ -3,9 +3,9 @@
 /**
  * @file classes/cliTool/ScheduledTaskTool.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ScheduledTaskTool
  * @ingroup tools
@@ -15,7 +15,7 @@
 
 
 /** Default XML tasks file to parse if none is specified */
-define('TASKS_REGISTRY_FILE', Config::getVar('general', 'registry_dir') . '/scheduledTasks.xml');
+define('TASKS_REGISTRY_FILE', 'registry/scheduledTasks.xml');
 
 import('lib.pkp.classes.scheduledTask.ScheduledTask');
 import('lib.pkp.classes.scheduledTask.ScheduledTaskHelper');
@@ -34,8 +34,8 @@ class ScheduledTaskTool extends CommandLineTool {
 	 * 		If specified, the first parameter should be the path to
 	 *		a tasks XML descriptor file (other than the default)
 	 */
-	function ScheduledTaskTool($argv = array()) {
-		parent::CommandLineTool($argv);
+	function __construct($argv = array()) {
+		parent::__construct($argv);
 
 		if (isset($this->argv[0])) {
 			$this->file = $this->argv[0];
@@ -75,7 +75,6 @@ class ScheduledTaskTool extends CommandLineTool {
 		$tree = $xmlParser->parse($file);
 
 		if (!$tree) {
-			$xmlParser->destroy();
 			printf("Unable to parse file \"%s\"!\n", $file);
 			exit(1);
 		}
@@ -95,8 +94,6 @@ class ScheduledTaskTool extends CommandLineTool {
 				$this->executeTask($className, ScheduledTaskHelper::getTaskArgs($task));
 			}
 		}
-
-		$xmlParser->destroy();
 	}
 
 	/**
@@ -109,9 +106,9 @@ class ScheduledTaskTool extends CommandLineTool {
 		if (!is_object($task = instantiate($className, null, null, 'execute', $args))) {
 			fatalError('Cannot instantiate task class.');
 		}
-		$task->execute();
 		$this->taskDao->updateLastRunTime($className);
+		$task->execute();
 	}
 }
 
-?>
+

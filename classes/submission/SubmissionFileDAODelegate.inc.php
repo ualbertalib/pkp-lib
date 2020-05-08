@@ -3,9 +3,9 @@
 /**
  * @file classes/submission/SubmissionFileDAODelegate.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubmissionFileDAODelegate
  * @ingroup submission
@@ -16,15 +16,9 @@
  */
 
 import('lib.pkp.classes.db.DAO');
+import('lib.pkp.classes.submission.SubmissionFile');
 
 class SubmissionFileDAODelegate extends DAO {
-	/**
-	 * Constructor
-	 */
-	function SubmissionFileDAODelegate() {
-		parent::DAO();
-	}
-
 
 	//
 	// Abstract public methods to be implemented by subclasses.
@@ -63,7 +57,6 @@ class SubmissionFileDAODelegate extends DAO {
 			(int)$submissionFile->getFileStage(),
 			(boolean)$submissionFile->getViewable() ? 1 : 0,
 			is_null($submissionFile->getUploaderUserId()) ? null : (int)$submissionFile->getUploaderUserId(),
-			is_null($submissionFile->getUserGroupId()) ? null : (int)$submissionFile->getUserGroupId(),
 			is_null($submissionFile->getAssocType()) ? null : (int)$submissionFile->getAssocType(),
 			is_null($submissionFile->getAssocId()) ? null : (int)$submissionFile->getAssocId(),
 			is_null($submissionFile->getGenreId()) ? null : (int)$submissionFile->getGenreId(),
@@ -72,20 +65,34 @@ class SubmissionFileDAODelegate extends DAO {
 		);
 
 		if ($fileId) {
-			array_unshift($params, $fileId);
+			array_unshift($params, (int) $fileId);
 		}
 
 		$this->update(
 			sprintf('INSERT INTO submission_files
-				(' . ($fileId ? 'file_id, ' : '') . 'revision, submission_id, source_file_id, source_revision, file_type, file_size, original_file_name, file_stage, date_uploaded, date_modified, viewable, uploader_user_id, user_group_id, assoc_type, assoc_id, genre_id, direct_sales_price, sales_type)
+				(' . ($fileId ? 'file_id, ' : '') . 'revision, submission_id, source_file_id, source_revision, file_type, file_size, original_file_name, file_stage, date_uploaded, date_modified, viewable, uploader_user_id, assoc_type, assoc_id, genre_id, direct_sales_price, sales_type)
 				VALUES
-				(' . ($fileId ? '?, ' : '') . '?, ?, ?, ?, ?, ?, ?, ?, %s, %s, ?, ?, ?, ?, ?, ?, ?, ?)',
+				(' . ($fileId ? '?, ' : '') . '?, ?, ?, ?, ?, ?, ?, ?, %s, %s, ?, ?, ?, ?, ?, ?, ?)',
 				$this->datetimeToDB($submissionFile->getDateUploaded()), $this->datetimeToDB($submissionFile->getDateModified())),
 			$params
 		);
 
 		if (!$fileId) {
 			$submissionFile->setFileId($this->_getInsertId('submission_files', 'file_id'));
+		}
+
+		$submissionLocale = $submissionFile->getSubmissionLocale();
+
+		$reviewStage = in_array($submissionFile->getFileStage(), array(
+				SUBMISSION_FILE_REVIEW_FILE, SUBMISSION_FILE_REVIEW_ATTACHMENT, SUBMISSION_FILE_REVIEW_REVISION
+		));
+
+		if ($reviewStage) {
+			$submissionFile->setName($submissionFile->_generateName(true), $submissionLocale);
+		} else {
+			if ($isUpload || !$submissionFile->getName($submissionLocale)) {
+				$submissionFile->setName($submissionFile->_generateName(), $submissionLocale);
+			}
 		}
 
 		$this->updateLocaleFields($submissionFile);
@@ -144,7 +151,6 @@ class SubmissionFileDAODelegate extends DAO {
 					date_modified = %s,
 					viewable = ?,
 					uploader_user_id = ?,
-					user_group_id = ?,
 					assoc_type = ?,
 					assoc_id = ?,
 					genre_id = ?,
@@ -164,7 +170,6 @@ class SubmissionFileDAODelegate extends DAO {
 				$submissionFile->getFileStage(),
 				(boolean)$submissionFile->getViewable() ? 1 : 0,
 				is_null($submissionFile->getUploaderUserId()) ? null : (int)$submissionFile->getUploaderUserId(),
-				is_null($submissionFile->getUserGroupId()) ? null : (int)$submissionFile->getUserGroupId(),
 				is_null($submissionFile->getAssocType()) ? null : (int)$submissionFile->getAssocType(),
 				is_null($submissionFile->getAssocId()) ? null : (int)$submissionFile->getAssocId(),
 				is_null($submissionFile->getGenreId()) ? null : (int)$submissionFile->getGenreId(),
@@ -191,7 +196,7 @@ class SubmissionFileDAODelegate extends DAO {
 			import('lib.pkp.classes.file.FileManager');
 			$fileManager = new FileManager();
 			if (!$fileManager->copyFile($previousFilePath, $targetFilePath)) return false;
-			if (!$fileManager->deleteFile($previousFilePath)) return false;
+			if (!$fileManager->deleteByPath($previousFilePath)) return false;
 		}
 
 		return file_exists($targetFilePath);
@@ -233,7 +238,7 @@ class SubmissionFileDAODelegate extends DAO {
 
 		import('lib.pkp.classes.file.FileManager');
 		$fileManager = new FileManager();
-		$fileManager->deleteFile($filePath);
+		$fileManager->deleteByPath($filePath);
 
 		return !file_exists($filePath);
 	}
@@ -246,6 +251,7 @@ class SubmissionFileDAODelegate extends DAO {
 	function fromRow($row) {
 		$submissionFile = $this->newDataObject();
 		$submissionFile->setFileId((int)$row['submission_file_id']);
+		$submissionFile->setSubmissionLocale($row['submission_locale']);
 		$submissionFile->setRevision((int)$row['submission_revision']);
 		$submissionFile->setAssocType(is_null($row['assoc_type']) ? null : (int)$row['assoc_type']);
 		$submissionFile->setAssocId(is_null($row['assoc_id']) ? null : (int)$row['assoc_id']);
@@ -258,7 +264,6 @@ class SubmissionFileDAODelegate extends DAO {
 		$submissionFile->setGenreId(is_null($row['genre_id']) ? null : (int)$row['genre_id']);
 		$submissionFile->setFileSize((int)$row['file_size']);
 		$submissionFile->setUploaderUserId(is_null($row['uploader_user_id']) ? null : (int)$row['uploader_user_id']);
-		$submissionFile->setUserGroupId(is_null($row['user_group_id']) ? null : (int)$row['user_group_id']);
 		$submissionFile->setViewable((boolean)$row['viewable']);
 		$submissionFile->setDateUploaded($this->datetimeFromDB($row['date_uploaded']));
 		$submissionFile->setDateModified($this->datetimeFromDB($row['date_modified']));
@@ -275,7 +280,7 @@ class SubmissionFileDAODelegate extends DAO {
 	 * @return SubmissionFile
 	 */
 	function newDataObject() {
-		assert(false);
+		return new SubmissionFile();
 	}
 
 
@@ -293,6 +298,18 @@ class SubmissionFileDAODelegate extends DAO {
 	}
 
 	/**
+	 * Get a list of additional fields that do not have
+	 * dedicated accessors.
+	 * @return array
+	 */
+	function getAdditionalFieldNames() {
+		$additionalFields = parent::getAdditionalFieldNames();
+		$additionalFields[] = 'pub-id::publisher-id';
+		$additionalFields[] = 'chapterId';
+		return $additionalFields;
+	}
+
+	/**
 	 * Update the localized fields for this submission file.
 	 * @param $submissionFile SubmissionFile
 	 */
@@ -301,6 +318,93 @@ class SubmissionFileDAODelegate extends DAO {
 		$this->updateDataObjectSettings('submission_file_settings', $submissionFile, array(
 			'file_id' => $submissionFile->getFileId()
 		));
+	}
+
+	/**
+	 * Checks if public identifier exists (other than for the specified
+	 * submission file ID, which is treated as an exception).
+	 * @param $pubIdType string One of the NLM pub-id-type values or
+	 * 'other::something' if not part of the official NLM list
+	 * (see <http://dtd.nlm.nih.gov/publishing/tag-library/n-4zh0.html>).
+	 * @param $pubId string
+	 * @param $fileId int An ID to be excluded from the search.
+	 * @param $contextId int
+	 * @return boolean
+	 */
+	function pubIdExists($pubIdType, $pubId, $excludePubObjectId, $contextId) {
+		$result = $this->retrieve(
+			'SELECT COUNT(*)
+			FROM submission_file_settings sfs
+				INNER JOIN submission_files sf ON sfs.file_id = sf.file_id
+				INNER JOIN submissions s ON sf.submission_id = s.submission_id
+			WHERE sfs.setting_name = ? AND sfs.setting_value = ? AND sfs.file_id <> ? AND s.context_id = ?',
+			array(
+				'pub-id::'.$pubIdType,
+				$pubId,
+				(int) $excludePubObjectId,
+				(int) $contextId
+			)
+		);
+		$returner = $result->fields[0] ? true : false;
+		$result->Close();
+		return $returner;
+	}
+
+	/**
+	 * @copydoc PKPPubIdPluginDAO::changePubId()
+	 */
+	function changePubId($pubObjectId, $pubIdType, $pubId) {
+		$idFields = array(
+			'file_id', 'locale', 'setting_name'
+		);
+		$updateArray = array(
+			'file_id' => (int) $pubObjectId,
+			'locale' => '',
+			'setting_name' => 'pub-id::'.$pubIdType,
+			'setting_type' => 'string',
+			'setting_value' => (string)$pubId
+		);
+		$this->replace('submission_file_settings', $updateArray, $idFields);
+		$this->flushCache();
+	}
+
+	/**
+	 * @copydoc PKPPubIdPluginDAO::deletePubId()
+	 */
+	function deletePubId($pubObjectId, $pubIdType) {
+		$settingName = 'pub-id::'.$pubIdType;
+		$this->update(
+			'DELETE FROM submission_file_settings WHERE setting_name = ? AND file_id = ?',
+			array(
+				$settingName,
+				(int)$pubObjectId
+			)
+		);
+		$this->flushCache();
+	}
+
+	/**
+	 * @copydoc PKPPubIdPluginDAO::deleteAllPubIds()
+	 */
+	function deleteAllPubIds($contextId, $pubIdType) {
+		$settingName = 'pub-id::'.$pubIdType;
+
+		$submissionDao = DAORegistry::getDAO('SubmissionDAO'); /* @var $submissionDao SubmissionDAO */
+		$submissions = $submissionDao->getByContextId($contextId);
+		$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO'); /* @var $submissionFileDao SubmissionFileDAO */
+		while ($submission = $submissions->next()) {
+			$submissionFiles = $submissionFileDao->getBySubmissionId($submission->getId());
+			foreach ($submissionFiles as $submissionFile) {
+				$this->update(
+					'DELETE FROM submission_file_settings WHERE setting_name = ? AND file_id = ?',
+					array(
+						$settingName,
+						(int)$submissionFile->getFileId()
+					)
+				);
+			}
+		}
+		$this->flushCache();
 	}
 
 	//
@@ -319,17 +423,6 @@ class SubmissionFileDAODelegate extends DAO {
 				$previousFile->getRevision() == $submissionFile->getRevision()
 		) return;
 
-		// Update signoffs that refer to this file.
-		$signoffDao = DAORegistry::getDAO('SignoffDAO'); /* @var $signoffDao SignoffDAO */
-		$signoffFactory = $signoffDao->getByFileRevision(
-				$previousFile->getFileId(), $previousFile->getRevision()
-		);
-		while ($signoff = $signoffFactory->next()) { /* @var $signoff Signoff */
-			$signoff->setFileId($submissionFile->getFileId());
-			$signoff->setFileRevision($submissionFile->getRevision());
-			$signoffDao->updateObject($signoff);
-		}
-
 		// Update file views that refer to this file.
 		$viewsDao = DAORegistry::getDAO('ViewsDAO'); /* @var $viewsDao ViewsDAO */
 		$viewsDao->moveViews(
@@ -343,15 +436,6 @@ class SubmissionFileDAODelegate extends DAO {
 	 * @param $submissionFile SubmissionFile
 	 */
 	function _deleteDependentObjects($submissionFile) {
-		// Delete signoffs that refer to this file.
-		$signoffDao = DAORegistry::getDAO('SignoffDAO'); /* @var $signoffDao SignoffDAO */
-		$signoffFactory = $signoffDao->getByFileRevision(
-				$submissionFile->getFileId(), $submissionFile->getRevision()
-		);
-		while ($signoff = $signoffFactory->next()) { /* @var $signoff Signoff */
-			$signoffDao->deleteObject($signoff);
-		}
-
 		// Delete file views that refer to this file.
 		$viewsDao = DAORegistry::getDAO('ViewsDAO'); /* @var $viewsDao ViewsDAO */
 		$viewsDao->deleteViews(
@@ -360,4 +444,4 @@ class SubmissionFileDAODelegate extends DAO {
 	}
 }
 
-?>
+

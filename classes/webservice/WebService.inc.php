@@ -3,9 +3,9 @@
 /**
  * @file classes/webservice/WebService.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class WebService
  * @ingroup webservice
@@ -18,6 +18,7 @@ define('WEBSERVICE_RETRIES', 2);
 define('WEBSERVICE_MICROSECONDS_BEFORE_RETRY', 100000);
 
 define('WEBSERVICE_RESPONSE_OK', 200);
+define('WEBSERVICE_RESPONSE_CREATED', 201);
 
 import('lib.pkp.classes.webservice.WebServiceRequest');
 
@@ -26,6 +27,8 @@ class WebService {
 	var $_authUsername;
 	/** @var string */
 	var $_authPassword;
+	/** @var int */
+	var $_sslVersion;
 
 	/** @var integer */
 	var $_lastResponseStatus;
@@ -50,6 +53,14 @@ class WebService {
 	}
 
 	/**
+	 * Sets an (optional) ssl version.
+	 * @param $sslVersion int CURL_SSLVERSION_...
+	 */
+	function setSslVersion($sslVersion) {
+		$this->_sslVersion = $sslVersion;
+	}
+
+	/**
 	 * Returns the last error produced by a web service.
 	 * @return integer
 	 */
@@ -69,12 +80,15 @@ class WebService {
 	function &call(&$webServiceRequest) {
 		assert(is_a($webServiceRequest, 'WebServiceRequest'));
 
+		$usePut = false;
 		switch($webServiceRequest->getMethod()) {
+			case 'PUT':
+				$usePut = true;
 			case 'POST':
 				if ($webServiceRequest->getAsync()) {
-					$result = $this->_callPostWebServiceAsync($webServiceRequest);
+					$result = $this->_callPostWebServiceAsync($webServiceRequest, $usePut);
 				} else {
-					$result = $this->_callPostWebService($webServiceRequest);
+					$result = $this->_callPostWebService($webServiceRequest, $usePut);
 				}
 				break;
 
@@ -83,7 +97,7 @@ class WebService {
 				break;
 
 			default:
-				// We currently only support GET and POST requests
+				// TODO: implement DELETE
 				assert(false);
 		}
 
@@ -91,15 +105,12 @@ class WebService {
 		$nullVar = null;
 		if (!$result) return $nullVar;
 
-		if ($this->_lastResponseStatus >= 400 || $this->_lastResponseStatus <= 599) {
+		if ($this->_lastResponseStatus >= 400 && $this->_lastResponseStatus <= 599) {
 			return $nullVar;
 		}
 
 		// Clean the result
 		$result = stripslashes($result);
-		if ( Config::getVar('i18n', 'charset_normalization') == 'On' && !String::utf8_compliant($result) ) {
-			$result = String::utf8_normalize($result);
-		}
 
 		return $result;
 	}
@@ -109,23 +120,32 @@ class WebService {
 	// Private helper methods
 	//
 	/**
-	 * Call a POST based web services
+	 * Call a POST (or PUT) based web services
 	 * @param $webServiceRequest WebServiceRequest
+	 * @param $usePut boolean
 	 * @return string the web service result or null on failure
 	 */
-	function _callPostWebService($webServiceRequest) {
+	function _callPostWebService($webServiceRequest, $usePut = false) {
 		$url = $webServiceRequest->getUrl();
 		$postOptions = $webServiceRequest->getParams();
 
-		$ch = curl_init();
-		curl_setopt($ch, CURLOPT_URL, $url);
+		$useProxySettings = $webServiceRequest->getUseProxySettings();
+
+		import('lib.pkp.classes.helpers.PKPCurlHelper');
+		$ch = PKPCurlHelper::getCurlObject($url, $useProxySettings);
+		
 		$headers = array('Accept: ' . $webServiceRequest->getAccept());
 		foreach($webServiceRequest->getHeaders() as $header => $content) {
 			$headers[] = $header . ': ' . $content;
 		}
+		
 		curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-		curl_setopt($ch, CURLOPT_POST, 1);
+		if ($usePut) {
+			curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
+		} else {
+			curl_setopt($ch, CURLOPT_POST, 1);
+		}
 
 		// Bug #8518 safety work-around
 		if (is_array($postOptions)) foreach ($postOptions as $paramValue) {
@@ -147,6 +167,9 @@ class WebService {
 
 			// Wait for a short interval before trying again
 			usleep(WEBSERVICE_MICROSECONDS_BEFORE_RETRY);
+		}
+		if (curl_errno($ch)) {
+			trigger_error(curl_error($ch), E_USER_ERROR);
 		}
 
 		$this->_lastResponseStatus = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -178,8 +201,11 @@ class WebService {
 		}
 		$url = $url.$queryString;
 
-		$ch = curl_init();
-		curl_setopt($ch, CURLOPT_URL, $url);
+		$useProxySettings = $webServiceRequest->getUseProxySettings();
+
+		import('lib.pkp.classes.helpers.PKPCurlHelper');
+		$ch = PKPCurlHelper::getCurlObject($url, $useProxySettings);
+
 		$headers = $this->_buildHeaders($webServiceRequest);
 		curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
@@ -198,6 +224,9 @@ class WebService {
 			// Wait for a short interval before trying again
 			usleep(WEBSERVICE_MICROSECONDS_BEFORE_RETRY);
 		}
+		if (curl_errno($ch)) {
+			trigger_error(curl_error($ch), E_USER_ERROR);
+		}
 
 		$this->_lastResponseStatus = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
@@ -215,9 +244,10 @@ class WebService {
 	 * to the client closing the connection.
 	 *
 	 * @param $webServiceRequest WebServiceRequest
+	 * @param $usePut boolean
 	 * @return string the web service result or null on failure
 	 */
-	function _callPostWebServiceAsync($webServiceRequest) {
+	function _callPostWebServiceAsync($webServiceRequest, $usePut = false) {
 		// Parse the request URL.
 		$url = $webServiceRequest->getUrl();
 		$urlParts = parse_url($url);
@@ -252,7 +282,7 @@ class WebService {
 		} else {
 			$path = $urlParts['path'] . (isset($urlParts['query']) ? '?' . $urlParts['query'] : '');
 			$host = $urlParts['host'] . ':' . (isset($urlParts['port']) ? $urlParts['port'] : '80');
-			$out = "POST " . $path . " HTTP/1.1\r\n";
+			$out = ($usePut ? "PUT " : "POST ") . $path . " HTTP/1.1\r\n";
 			$out.= "Host: " . $host . "\r\n";
 			foreach ($headers as $header) {
 				$out.= "$header\r\n";
@@ -291,8 +321,8 @@ class WebService {
 	 */
 	function _checkSSL($ch, $url) {
 		if (substr($url, 0, 6) == 'https:') {
-			curl_setopt($ch, CURLOPT_SSLVERSION, 3);
-			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+			$sslVersion = isset($this->_sslVersion) ? $this->_sslVersion : CURL_SSLVERSION_DEFAULT;
+			curl_setopt($ch, CURLOPT_SSLVERSION, $sslVersion);
 		}
 	}
 
@@ -317,5 +347,3 @@ class WebService {
 		return $headers;
 	}
 }
-
-?>

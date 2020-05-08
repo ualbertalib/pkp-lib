@@ -1,9 +1,9 @@
 {**
  * templates/controllers/informationCenter/note.tpl
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * Display a single information center note.
  *
@@ -17,53 +17,37 @@
 	$(function() {ldelim}
 			// Attach the form handler.
 			$('#{$formId}').pkpHandler('$.pkp.controllers.form.AjaxFormHandler', {ldelim}
-				baseUrl: '{$baseUrl|escape:"javascript"}'
+				baseUrl: {$baseUrl|json_encode}
 			{rdelim});
 	{rdelim});
 </script>
 
-<div id="note-{$noteId}" class="noteWrapper pkp_helpers_dotted_underline">
-	<table width="100%">
-		<tr valign="top">
-			<td colspan="2"{if $noteViewStatus==$smarty.const.RECORD_VIEW_RESULT_INSERTED} class="newNote"{/if}>
-				{assign var="noteUser" value=$note->getUser()}
-				{$noteUser->getFullName()|escape}<br />
-				<span class="pkp_controllers_informationCenter_itemLastEvent">{$note->getDateCreated()|date_format:$datetimeFormatShort}</span>
-			</td>
-			<td class="pkp_helpers_align_right">
-				{* Check that notes are deletable (i.e. not attached to files from previous stages) and the current user has permission to delete. *}
-				{if $notesDeletable && array_intersect(array(ROLE_ID_MANAGER, ROLE_ID_SUB_EDITOR), $userRoles)}
+<div id="note-{$noteId}" class="note{if $noteViewStatus==$smarty.const.RECORD_VIEW_RESULT_INSERTED} new{/if}">
+	<div class="details">
+		<span class="user">
+			{assign var=noteUser value=$note->getUser()}
+			{$noteUser->getFullName()|escape}
+		</span>
+		<span class="date">
+			{$note->getDateCreated()|date_format:$datetimeFormatShort}
+		</span>
+		{if ($notesDeletable && array_intersect(array(ROLE_ID_MANAGER, ROLE_ID_SUB_EDITOR), (array)$userRoles))}
+			<div class="actions">
+				{if $notesDeletable && array_intersect(array(ROLE_ID_MANAGER, ROLE_ID_SUB_EDITOR), (array)$userRoles)}
 					<form class="pkp_form" id="{$formId}" action="{url op="deleteNote" noteId=$noteId params=$linkParams}">
+						{csrf}
 						{assign var=deleteNoteButtonId value="deleteNote-$noteId"}
 						{include file="linkAction/buttonConfirmationLinkAction.tpl" titleIcon="modal_delete" buttonSelector="#$deleteNoteButtonId" dialogText="informationCenter.deleteConfirm"}
-						<input type="submit" id="{$deleteNoteButtonId}" class="xIcon" value="{translate key='common.delete'}" />
+						<button type="submit" id="{$deleteNoteButtonId}" class="pkp_button pkp_button_offset">{translate key='common.delete'}</button>
 					</form>
 				{/if}
-			</td>
-		</tr>
-		<tr valign="top">
-			{assign var="contents" value=$note->getContents()}
-			<td colspan="3">
-				<blockquote>
-				<span>
-					{$contents|truncate:250|nl2br|strip_unsafe_html}
-					{if $contents|strlen > 250}<a href="javascript:$.noop();" class="showMore">{translate key="common.more"}</a>{/if}
-				</span>
-				{if $contents|strlen > 250}
-					<span class="hidden">
-						{$contents|nl2br|strip_unsafe_html} <a href="javascript:$.noop();" class="showLess">{translate key="common.less"}</a>
-					</span>
-				{/if}
-				{if $noteFileDownloadLink}
-					<br />
-					<span class="noteFile">
-						<span class="pkp_helpers_align_left"><strong>{translate key="submission.attachedFile"}:</strong></span>
-						{include file="linkAction/linkAction.tpl" action=$noteFileDownloadLink contextId=$note->getId()}
-					</span>
-				{/if}
-				</blockquote>
-			</td>
-		</tr>
-	</table>
+			</div>
+		{/if}
+	</div>
+	<div class="message">
+		{if $noteFileDownloadLink}
+			{include file="linkAction/linkAction.tpl" action=$noteFileDownloadLink contextId=$note->getId()}
+		{/if}
+		{include file="controllers/revealMore.tpl" content=$note->getContents()|strip_unsafe_html}
+	</div>
 </div>
-

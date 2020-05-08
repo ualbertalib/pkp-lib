@@ -3,9 +3,9 @@
 /**
  * @file classes/xml/XMLParserDOMHandler.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class XMLParserDOMHandler
  * @ingroup xml
@@ -33,7 +33,7 @@ class XMLParserDOMHandler extends XMLParserHandler {
 	/**
 	 * Constructor.
 	 */
-	function XMLParserHandler() {
+	function __construct() {
 		$this->rootNodes = array();
 		$this->currentNode = null;
 	}
@@ -93,4 +93,4 @@ class XMLParserDOMHandler extends XMLParserHandler {
 	}
 }
 
-?>
+

@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/files/final/FinalDraftFilesGridDataProvider.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class FinalDraftFilesGridDataProvider
  * @ingroup controllers_grid_files_final
@@ -20,10 +20,8 @@ class FinalDraftFilesGridDataProvider extends SubmissionFilesGridDataProvider {
 	/**
 	 * Constructor
 	 */
-	function FinalDraftFilesGridDataProvider() {
-		parent::SubmissionFilesGridDataProvider(SUBMISSION_FILE_FINAL);
-
-		$this->setViewableOnly(true);
+	function __construct() {
+		parent::__construct(SUBMISSION_FILE_FINAL);
 	}
 
 	//
@@ -34,17 +32,15 @@ class FinalDraftFilesGridDataProvider extends SubmissionFilesGridDataProvider {
 	 */
 	function getSelectAction($request) {
 		import('lib.pkp.controllers.grid.files.fileList.linkAction.SelectFilesLinkAction');
-		$submission = $this->getSubmission();
-		$actionArgs = array(
-			'submissionId' => $submission->getId(),
-			'stageId' => $this->getStageId()
-		);
-		$selectAction = new SelectFilesLinkAction(
-			$request, $actionArgs,
+		return new SelectFilesLinkAction(
+			$request,
+			array(
+				'submissionId' => $this->getSubmission()->getId(),
+				'stageId' => $this->getStageId()
+			),
 			__('editor.submission.uploadSelectFiles')
 		);
-		return $selectAction;
 	}
 }
 
-?>
+

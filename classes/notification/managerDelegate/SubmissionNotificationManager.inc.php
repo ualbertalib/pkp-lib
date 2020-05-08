@@ -3,9 +3,9 @@
 /**
  * @file classes/notification/managerDelegate/SubmissionNotificationManager.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubmissionNotificationManager
  * @ingroup managerDelegate
@@ -21,16 +21,16 @@ class SubmissionNotificationManager extends NotificationManagerDelegate {
 	 * Constructor.
 	 * @param $notificationType int NOTIFICATION_TYPE_...
 	 */
-	function SubmissionNotificationManager($notificationType) {
-		parent::NotificationManagerDelegate($notificationType);
+	function __construct($notificationType) {
+		parent::__construct($notificationType);
 	}
 
 	/**
-	 * @copydoc NotificationManagerDelegate::getNotificationMessage()
+	 * @copydoc PKPNotificationOperationManager::getNotificationMessage()
 	 */
 	public function getNotificationMessage($request, $notification) {
 		assert($notification->getAssocType() == ASSOC_TYPE_SUBMISSION && is_numeric($notification->getAssocId()));
-		$submissionDao = Application::getSubmissionDAO();
+		$submissionDao = DAORegistry::getDAO('SubmissionDAO'); /* @var $submissionDao SubmissionDAO */
 		$submission = $submissionDao->getById($notification->getAssocId()); /* @var $submission Submission */
 
 		switch ($notification->getType()) {
@@ -46,7 +46,7 @@ class SubmissionNotificationManager extends NotificationManagerDelegate {
 	}
 
 	/**
-	 * @copydoc NotificationManagerDelegate::getNotificationUrl()
+	 * @copydoc PKPNotificationOperationManager::getNotificationUrl()
 	 */
 	public function getNotificationUrl($request, $notification) {
 		$router = $request->getRouter();
@@ -97,4 +97,4 @@ class SubmissionNotificationManager extends NotificationManagerDelegate {
 	}
 }
 
-?>
+

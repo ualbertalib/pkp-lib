@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/files/attachment/EditorReviewAttachmentsGridHandler.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class EditorReviewAttachmentsGridHandler
  * @ingroup controllers_grid_files_attachment
@@ -19,13 +19,13 @@ class EditorReviewAttachmentsGridHandler extends FileListGridHandler {
 	/**
 	 * Constructor
 	 */
-	function EditorReviewAttachmentsGridHandler() {
+	function __construct() {
 		import('lib.pkp.controllers.grid.files.attachment.ReviewerReviewAttachmentGridDataProvider');
 		// Pass in null stageId to be set in initialize from request var.
-		parent::FileListGridHandler(
+		parent::__construct(
 			new ReviewerReviewAttachmentGridDataProvider(SUBMISSION_FILE_REVIEW_ATTACHMENT),
 			null,
-			FILE_GRID_VIEW_NOTES
+			FILE_GRID_DELETE|FILE_GRID_ADD|FILE_GRID_VIEW_NOTES|FILE_GRID_EDIT
 		);
 
 		$this->addRoleAssignment(
@@ -37,4 +37,4 @@ class EditorReviewAttachmentsGridHandler extends FileListGridHandler {
 	}
 }
 
-?>
+

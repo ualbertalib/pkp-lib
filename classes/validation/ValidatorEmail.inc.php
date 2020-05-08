@@ -3,9 +3,9 @@
 /**
  * @file classes/validation/ValidatorEmail.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ValidatorEmail
  * @ingroup validation
@@ -14,27 +14,19 @@
  * @brief Validation check for email addresses.
  */
 
-import('lib.pkp.classes.validation.ValidatorRegExp');
+import('lib.pkp.classes.validation.Validator');
+import('lib.pkp.classes.validation.ValidatorFactory');
 
-class ValidatorEmail extends ValidatorRegExp {
+class ValidatorEmail extends Validator {
 	/**
-	 * Constructor.
+	 * @copydoc Validator::isValid()
 	 */
-	function ValidatorEmail() {
-		parent::ValidatorRegExp(ValidatorEmail::getRegexp());
-	}
+	function isValid($value) {
+		$validator = \ValidatorFactory::make(
+			['value' => $value],
+			['value' => ['required', 'email_or_localhost']]
+		);
 
-
-	//
-	// Public static methods
-	//
-	/**
-	 * Return the regex for an email check.
-	 * @return string
-	 */
-	static function getRegexp() {
-		return '/^' . PCRE_EMAIL_ADDRESS . '$/i';
+		return $validator->passes();
 	}
 }
-
-?>

@@ -2,16 +2,16 @@
 /**
  * @file classes/filter/ClassTypeDescription.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ClassTypeDescription
  * @ingroup filter
  *
  * @brief A type description that validates objects by class type.
  *
- * Example type identifier: 'class::lib.pkp.classes.submission.Submission'
+ * Example type identifier: 'class::lib.pkp.classes.submission.PKPSubmission'
  */
 
 import('lib.pkp.classes.filter.TypeDescription');
@@ -29,8 +29,8 @@ class ClassTypeDescription extends TypeDescription {
 	 *
 	 * @param $typeName string a fully qualified class name.
 	 */
-	function ClassTypeDescription($typeName) {
-		parent::TypeDescription($typeName);
+	function __construct($typeName) {
+		parent::__construct($typeName);
 	}
 
 	//
@@ -100,4 +100,4 @@ class ClassTypeDescription extends TypeDescription {
 		return array($packageName, $className);
 	}
 }
-?>
+

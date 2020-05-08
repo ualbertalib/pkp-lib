@@ -3,9 +3,9 @@
 /**
  * @file classes/file/BaseSubmissionFileManager.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class BaseSubmissionFileManager
  * @ingroup file
@@ -36,8 +36,8 @@ class BaseSubmissionFileManager extends ContextFileManager {
 	 * @param $contextId int
 	 * @param $submissionId int
 	 */
-	function BaseSubmissionFileManager($contextId, $submissionId) {
-		parent::ContextFileManager($contextId);
+	function __construct($contextId, $submissionId) {
+		parent::__construct($contextId);
 		$this->_submissionId = (int) $submissionId;
 	}
 
@@ -47,6 +47,7 @@ class BaseSubmissionFileManager extends ContextFileManager {
 	//
 	/**
 	 * Get the base path for file storage.
+	 * @return string
 	 */
 	function getBasePath() {
 		$dirNames = Application::getFileDirectories();
@@ -55,10 +56,11 @@ class BaseSubmissionFileManager extends ContextFileManager {
 
 	/**
 	 * Get the submission ID that this manager operates upon.
+	 * @return int
 	 */
 	function getSubmissionId() {
 		return $this->_submissionId;
 	}
 }
 
-?>
+

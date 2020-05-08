@@ -3,9 +3,9 @@
 /**
  * @file classes/db/DAOResultFactory.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class DAOResultFactory
  * @ingroup db
@@ -16,6 +16,7 @@
 
 
 import('lib.pkp.classes.core.ItemIterator');
+import('lib.pkp.classes.db.DAOResultIterator');
 
 class DAOResultFactory extends ItemIterator {
 	/** @var DAO The DAO used to create objects */
@@ -23,6 +24,8 @@ class DAOResultFactory extends ItemIterator {
 
 	/** @var string The name of the DAO's factory function (to be called with an associative array of values) */
 	var $functionName;
+
+	var $functionParams;
 
 	/**
 	 * @var array an array of primary key field names that uniquely
@@ -52,9 +55,11 @@ class DAOResultFactory extends ItemIterator {
 	 *  identify a result row in the record set.
 	 *  Should be data object _data array key, not database column name
 	 */
-	function DAOResultFactory(&$records, &$dao, $functionName, $idFields = array()) {
+	function __construct($records, $dao, $functionName, $idFields = array(), $functionParams = array()) {
+		parent::__construct();
 		$this->functionName = $functionName;
-		$this->dao =& $dao;
+		$this->functionParams = $functionParams;
+		$this->dao = $dao;
 		$this->idFields = $idFields;
 
 		if (!$records || $records->EOF) {
@@ -67,7 +72,7 @@ class DAOResultFactory extends ItemIterator {
 			$this->count = 0;
 			$this->pageCount = 1;
 		} else {
-			$this->records =& $records;
+			$this->records = $records;
 			$this->wasEmpty = false;
 			$this->page = $records->AbsolutePage();
 			$this->isFirst = $records->atFirstPage();
@@ -94,17 +99,17 @@ class DAOResultFactory extends ItemIterator {
 	 * Return the object representing the next row.
 	 * @return object
 	 */
-	function &next() {
+	function next() {
 		if ($this->records == null) return $this->records;
 		if (!$this->records->EOF) {
 			$functionName = $this->functionName;
-			$dao =& $this->dao;
+			$dao = $this->dao;
 			$row = $this->records->getRowAssoc(false);
-			$result = $dao->$functionName($row);
-			if (!$this->records->MoveNext()) $this->_cleanup();
+			$result = $dao->$functionName($row, $this->functionParams);
+			if (!$this->records->MoveNext()) $this->close();
 			return $result;
 		} else {
-			$this->_cleanup();
+			$this->close();
 			$nullVar = null;
 			return $nullVar;
 		}
@@ -115,7 +120,7 @@ class DAOResultFactory extends ItemIterator {
 	 * @return array ($key, $value)
 	 */
 	function nextWithKey($idField = null) {
-		$result =& $this->next();
+		$result = $this->next();
 		if($idField) {
 			assert(is_a($result, 'DataObject'));
 			$key = $result->getData($idField);
@@ -130,8 +135,7 @@ class DAOResultFactory extends ItemIterator {
 				$key .= (string)$result->getData($idField);
 			}
 		}
-		$returner = array($key, &$result);
-		return $returner;
+		return array($key, $result);
 	}
 
 	/**
@@ -181,7 +185,7 @@ class DAOResultFactory extends ItemIterator {
 	function eof() {
 		if ($this->records == null) return true;
 		if ($this->records->EOF) {
-			$this->_cleanup();
+			$this->close();
 			return true;
 		}
 		return false;
@@ -196,20 +200,22 @@ class DAOResultFactory extends ItemIterator {
 	}
 
 	/**
-	 * PRIVATE function used internally to clean up the record set.
+	 * Clean up the record set.
 	 * This is called aggressively because it can free resources.
 	 */
-	function _cleanup() {
-		$this->records->close();
-		unset($this->records);
-		$this->records = null;
+	function close() {
+		if ($this->records) {
+			$this->records->close();
+			unset($this->records);
+			$this->records = null;
+		}
 	}
 
 	/**
 	 * Convert this iterator to an array.
 	 * @return array
 	 */
-	function &toArray() {
+	function toArray() {
 		$returner = array();
 		while (!$this->eof()) {
 			$returner[] = $this->next();
@@ -218,14 +224,22 @@ class DAOResultFactory extends ItemIterator {
 	}
 
 	/**
+	 * Return an Iterator for this DAOResultFactory.
+	 * @return Iterator
+	 */
+	function toIterator() {
+		return new DAOResultIterator($this);
+	}
+
+	/**
 	 * Convert this iterator to an associative array by database ID.
 	 * @return array
 	 */
-	function &toAssociativeArray($idField = 'id') {
+	function toAssociativeArray($idField = 'id') {
 		$returner = array();
 		while (!$this->eof()) {
-			$result =& $this->next();
-			$returner[$result->getData($idField)] =& $result;
+			$result = $this->next();
+			$returner[$result->getData($idField)] = $result;
 			unset($result);
 		}
 		return $returner;
@@ -243,11 +257,9 @@ class DAOResultFactory extends ItemIterator {
 	 * Get the RangeInfo representing the last page in the set.
 	 * @return object
 	 */
-	function &getLastPageRangeInfo() {
+	function getLastPageRangeInfo() {
 		import('lib.pkp.classes.db.DBResultRange');
 		$returner = new DBResultRange($this->count, $this->pageCount);
 		return $returner;
 	}
 }
-
-?>

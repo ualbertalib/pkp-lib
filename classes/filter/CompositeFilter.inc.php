@@ -2,9 +2,9 @@
 /**
  * @file classes/filter/CompositeFilter.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class CompositeFilter
  * @ingroup filter
@@ -27,9 +27,9 @@ class CompositeFilter extends PersistableFilter {
 	 * @param $filterGroup FilterGroup
 	 * @param $displayName string
 	 */
-	function CompositeFilter(&$filterGroup, $displayName = null) {
+	function __construct(&$filterGroup, $displayName = null) {
 		$this->setDisplayName($displayName);
-		parent::PersistableFilter($filterGroup);
+		parent::__construct($filterGroup);
 	}
 
 	//
@@ -51,7 +51,7 @@ class CompositeFilter extends PersistableFilter {
 		assert(is_a($filter, 'Filter'));
 
 		// Identify an appropriate sequence number.
-		$seq = $filter->getSeq();
+		$seq = $filter->getSequence();
 		if (is_numeric($seq) && $seq > 0) {
 			// This filter has a pre-set sequence number
 			if (isset($this->_filters[$seq])) return null;
@@ -60,7 +60,7 @@ class CompositeFilter extends PersistableFilter {
 			// We'll create a sequence number for the filter
 			$this->_maxSeq++;
 			$seq = $this->_maxSeq;
-			$filter->setSeq($seq);
+			$filter->setSequence($seq);
 		}
 
 		// Add the filter to the list.
@@ -365,4 +365,4 @@ class CompositeFilter extends PersistableFilter {
 		return array(&$filter, $settingName);
 	}
 }
-?>
+

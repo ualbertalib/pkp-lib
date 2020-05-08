@@ -1,9 +1,9 @@
 {**
  * fileUploadConfirmationForm.tpl
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * File revision confirmation form.
  *
@@ -13,6 +13,7 @@
  *   $uploadedFile: The SubmissionFile object of the uploaded file.
  *   $revisedFileId: The id of the potential revision.
  *   $revisedFileName: The name of the potential revision.
+ *   $reviewRoundId: The review round ID (if specified)
  *   $submissionFileOptions: A list of submission files that can be
  *    revised.
  *}
@@ -26,15 +27,19 @@
 </script>
 
 <form class="pkp_form pkp_controllers_grid_files" id="uploadForm"
-		action="{url op="confirmRevision" submissionId=$submissionId stageId=$stageId fileStage=$fileStage uploadedFileId=$uploadedFile->getFileId()}"
+		action="{url op="confirmRevision" submissionId=$submissionId stageId=$stageId fileStage=$fileStage uploadedFileId=$uploadedFile->getFileId() reviewRoundId=$reviewRoundId}"
 		method="post">
+	{include file="controllers/notification/inPlaceNotification.tpl" notificationId="uploadFormNotification"}
+	{csrf}
 	{fbvFormArea id="file"}
 		<div id="possibleRevision" class="pkp_controllers_grid_files_possibleRevision" style="display:none;">
-			<div id="revisionWarningIcon" class="pkp_controllers_grid_files_warning"></div>
 			<div id="revisionWarningText">
-				<h5>{translate key="submission.upload.possibleRevision"}</h5>
-				{translate key="submission.upload.possibleRevisionDescription" revisedFileName=$revisedFileName}
-				{fbvElement type="select" name="revisedFileId" id="revisedFileId" from=$submissionFileOptions selected=$revisedFileId translate=false} <br />
+				{fbvFormSection title="submission.upload.possibleRevision"}
+					<div class="description">
+						{translate key="submission.upload.possibleRevisionDescription" revisedFileName=$revisedFileName}
+					</div>
+					{fbvElement type="select" name="revisedFileId" id="revisedFileId" from=$submissionFileOptions selected=$revisedFileId translate=false} <br />
+				{/fbvFormSection}
 			</div>
 		</div>
 	{/fbvFormArea}

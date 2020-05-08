@@ -8,9 +8,9 @@
 /**
  * @file classes/session/Session.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class Session
  * @ingroup session
@@ -24,12 +24,6 @@ class Session extends DataObject {
 	/** The User object associated with this session */
 	var $user;
 
-	/**
-	 * Constructor.
-	 */
-	function Session() {
-		parent::DataObject();
-	}
 
 	/**
 	 * Get a session variable's value.
@@ -83,13 +77,13 @@ class Session extends DataObject {
 			$userId = null;
 
 		} else if ($userId != $this->getData('userId')) {
-			$userDao = DAORegistry::getDAO('UserDAO');
+			$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 			$this->user = $userDao->getById($userId);
 			if (!isset($this->user)) {
 				$userId = null;
 			}
 		}
-		return $this->setData('userId', $userId);
+		$this->setData('userId', $userId);
 	}
 
 	/**
@@ -105,7 +99,7 @@ class Session extends DataObject {
 	 * @param $ipAddress string
 	 */
 	function setIpAddress($ipAddress) {
-		return $this->setData('ipAddress', $ipAddress);
+		$this->setData('ipAddress', $ipAddress);
 	}
 
 	/**
@@ -121,7 +115,7 @@ class Session extends DataObject {
 	 * @param $userAgent string
 	 */
 	function setUserAgent($userAgent) {
-		return $this->setData('userAgent', $userAgent);
+		$this->setData('userAgent', $userAgent);
 	}
 
 	/**
@@ -137,7 +131,7 @@ class Session extends DataObject {
 	 * @param $created int
 	 */
 	function setSecondsCreated($created) {
-		return $this->setData('created', $created);
+		$this->setData('created', $created);
 	}
 
 	/**
@@ -153,7 +147,7 @@ class Session extends DataObject {
 	 * @param $lastUsed int
 	 */
 	function setSecondsLastUsed($lastUsed) {
-		return $this->setData('lastUsed', $lastUsed);
+		$this->setData('lastUsed', $lastUsed);
 	}
 
 	/**
@@ -169,7 +163,7 @@ class Session extends DataObject {
 	 * @param $remember boolean
 	 */
 	function setRemember($remember) {
-		return $this->setData('remember', $remember);
+		$this->setData('remember', $remember);
 	}
 
 	/**
@@ -185,7 +179,7 @@ class Session extends DataObject {
 	 * @param $data array
 	 */
 	function setSessionData($data) {
-		return $this->setData('data', $data);
+		$this->setData('data', $data);
 	}
 
 	/**
@@ -201,7 +195,7 @@ class Session extends DataObject {
 	 * @param $data array
 	 */
 	function setDomain($data) {
-		return $this->setData('domain', $data);
+		$this->setData('domain', $data);
 	}
 
 	/**
@@ -211,6 +205,41 @@ class Session extends DataObject {
 	function &getUser() {
 		return $this->user;
 	}
+
+	/**
+	 * Get a usable CSRF token (generating if necessary).
+	 * @return string
+	 */
+	function getCSRFToken() {
+		$csrf = $this->getSessionVar('csrf');
+		if (!is_array($csrf) || time() > $csrf['timestamp'] + (60*60)) { // 1 hour token expiry
+			// Generate random data
+			if (function_exists('openssl_random_pseudo_bytes')) $data = openssl_random_pseudo_bytes(128);
+			elseif (function_exists('random_bytes')) $data = random_bytes(128);
+			else $data = sha1(mt_rand());
+
+			// Hash the data
+			$token = null;
+			$salt = Config::getVar('security', 'salt');
+			$algos = hash_algos();
+			foreach (array('sha256', 'sha1', 'md5') as $algo) {
+				if (in_array($algo, $algos)) {
+					$token = hash_hmac($algo, $data, $salt);
+				}
+			}
+			if (!$token) $token = md5($data . $salt);
+
+			$csrf = $this->setSessionVar('csrf', array(
+				'timestamp' => time(),
+				'token' => $token,
+			));
+		} else {
+			// Extend timeout of CSRF token
+			$csrf['timestamp'] = time();
+			$this->setSessionVar('csrf', $csrf);
+		}
+		return $csrf['token'];
+	}
 }
 
-?>
+

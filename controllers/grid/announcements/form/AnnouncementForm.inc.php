@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/announcements/form/AnnouncementForm.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class AnnouncementForm
  * @ingroup controllers_grid_announcements
@@ -32,12 +32,12 @@ class AnnouncementForm extends Form {
 	 * @param announcementId int leave as default for new announcement
 	 * @param $readOnly boolean
 	 */
-	function AnnouncementForm($contextId, $announcementId = null, $readOnly = false) {
+	function __construct($contextId, $announcementId = null, $readOnly = false) {
 
 		$this->_readOnly = $readOnly;
 		$this->_contextId = $contextId;
 		$this->announcementId = $announcementId?(int)$announcementId:null;
-		parent::Form('manager/announcement/announcementForm.tpl');
+		parent::__construct('manager/announcement/announcementForm.tpl');
 
 		// Title is provided
 		$this->addCheck(new FormValidatorLocale($this, 'title', 'required', 'manager.announcements.form.titleRequired'));
@@ -49,9 +49,16 @@ class AnnouncementForm extends Form {
 		$this->addCheck(new FormValidatorLocale($this, 'description', 'optional', 'manager.announcements.form.descriptionRequired'));
 
 		// If provided, announcement type is valid
-		$this->addCheck(new FormValidatorCustom($this, 'typeId', 'optional', 'manager.announcements.form.typeIdValid', create_function('$typeId, $contextId', '$announcementTypeDao = DAORegistry::getDAO(\'AnnouncementTypeDAO\'); if((int)$typeId === 0) { return true; } else { return $announcementTypeDao->announcementTypeExistsByTypeId($typeId, Application::getContextAssocType(), $contextId);}'), array($contextId)));
+		$this->addCheck(new FormValidatorCustom($this, 'typeId', 'optional', 'manager.announcements.form.typeIdValid', function($typeId) use ($contextId) {
+			$announcementTypeDao = DAORegistry::getDAO('AnnouncementTypeDAO'); /* @var $announcementTypeDao AnnouncementTypeDAO */
+			if ((int)$typeId === 0) return true;
+			else {
+				return $announcementTypeDao->announcementTypeExistsByTypeId($typeId, Application::getContextAssocType(), $contextId);
+			}
+		}));
 
 		$this->addCheck(new FormValidatorPost($this));
+		$this->addCheck(new FormValidatorCSRF($this));
 	}
 
 
@@ -82,23 +89,23 @@ class AnnouncementForm extends Form {
 	 * @return array
 	 */
 	function getLocaleFieldNames() {
-		$announcementDao = DAORegistry::getDAO('AnnouncementDAO');
+		$announcementDao = DAORegistry::getDAO('AnnouncementDAO'); /* @var $announcementDao AnnouncementDAO */
 		return $announcementDao->getLocaleFieldNames();
 	}
 
 	/**
 	 * @copydoc Form::fetch()
 	 */
-	function fetch($request) {
+	function fetch($request, $template = 'controllers/grid/announcements/form/announcementForm.tpl', $display = false) {
 		$templateMgr = TemplateManager::getManager($request);
 		$templateMgr->assign('readOnly', $this->isReadOnly());
 		$templateMgr->assign('selectedTypeId', $this->getData('typeId'));
 
-		$announcementDao = DAORegistry::getDAO('AnnouncementDAO');
+		$announcementDao = DAORegistry::getDAO('AnnouncementDAO'); /* @var $announcementDao AnnouncementDAO */
 		$announcement = $announcementDao->getById($this->announcementId);
 		$templateMgr->assign('announcement', $announcement);
 
-		$announcementTypeDao = DAORegistry::getDAO('AnnouncementTypeDAO');
+		$announcementTypeDao = DAORegistry::getDAO('AnnouncementTypeDAO'); /* @var $announcementTypeDao AnnouncementTypeDAO */
 		$announcementTypeFactory = $announcementTypeDao->getByAssoc(Application::getContextAssocType(), $this->getContextId());
 
 		$announcementTypeOptions = array();
@@ -110,14 +117,14 @@ class AnnouncementForm extends Form {
 		}
 		$templateMgr->assign('announcementTypes', $announcementTypeOptions);
 
-		return parent::fetch($request, 'controllers/grid/announcements/form/announcementForm.tpl');
+		return parent::fetch($request, $template, $display);
 	}
 
 	/**
 	 * Initialize form data from current announcement.
 	 */
 	function initData() {
-		$announcementDao = DAORegistry::getDAO('AnnouncementDAO');
+		$announcementDao = DAORegistry::getDAO('AnnouncementDAO'); /* @var $announcementDao AnnouncementDAO */
 		$announcement = $announcementDao->getById($this->announcementId);
 
 		if ($announcement) {
@@ -139,15 +146,14 @@ class AnnouncementForm extends Form {
 	 * Assign form data to user-submitted data.
 	 */
 	function readInputData() {
-		$this->readUserVars(array('typeId', 'title', 'descriptionShort', 'description', 'dateExpireYear', 'dateExpireMonth', 'dateExpireDay', 'dateExpire'));
+		$this->readUserVars(array('typeId', 'title', 'descriptionShort', 'description', 'dateExpire', 'sendAnnouncementNotification'));
 	}
 
 	/**
-	 * Save announcement.
-	 * @param $request PKPRequest
+	 * @copydoc Form::execute()
 	 */
-	function execute($request) {
-		$announcementDao = DAORegistry::getDAO('AnnouncementDAO');
+	function execute(...$functionArgs) {
+		$announcementDao = DAORegistry::getDAO('AnnouncementDAO'); /* @var $announcementDao AnnouncementDAO */
 
 		$announcement = $announcementDao->getById($this->announcementId);
 		if (!$announcement) {
@@ -167,15 +173,7 @@ class AnnouncementForm extends Form {
 			$announcement->setTypeId(null);
 		}
 
-		// Give the parent class a chance to set the dateExpire.
-		$dateExpireSetted = $this->setDateExpire($announcement);
-		if (!$dateExpireSetted) {
-			if ($this->getData('dateExpireYear') != null) {
-				$announcement->setDateExpire($this->getData('dateExpire'));
-			} else {
-				$announcement->setDateExpire(null);
-			}
-		}
+		$announcement->setDateExpire($this->getData('dateExpire'));
 
 		// Update or insert announcement
 		if ($announcement->getId()) {
@@ -187,51 +185,26 @@ class AnnouncementForm extends Form {
 
 		$contextId = $this->getContextId();
 
-		// Send a notification to associated users
-		import('classes.notification.NotificationManager');
-		$notificationManager = new NotificationManager();
-		$userGroupDao = DAORegistry::getDAO('UserGroupDAO');
-		$notificationUsers = array();
-		$allUsers = $userGroupDao->getUsersByContextId($contextId);
-		while ($user = $allUsers->next()) {
-			$notificationUsers[] = array('id' => $user->getId());
-		}
-		if (!$this->announcementId) { // Only for new announcements
+		// Send a notification to associated users if selected
+		if ($this->getData('sendAnnouncementNotification')){
+			import('classes.notification.NotificationManager');
+			$notificationManager = new NotificationManager();
+			$userGroupDao = DAORegistry::getDAO('UserGroupDAO'); /* @var $userGroupDao UserGroupDAO */
+			$notificationUsers = array();
+			$allUsers = $userGroupDao->getUsersByContextId($contextId);
+			while ($user = $allUsers->next()) {
+				$notificationUsers[] = array('id' => $user->getId());
+			}
 			foreach ($notificationUsers as $userRole) {
 				$notificationManager->createNotification(
-					$request, $userRole['id'], NOTIFICATION_TYPE_NEW_ANNOUNCEMENT,
+					Application::get()->getRequest(), $userRole['id'], NOTIFICATION_TYPE_NEW_ANNOUNCEMENT,
 					$contextId, ASSOC_TYPE_ANNOUNCEMENT, $announcement->getId()
 				);
 			}
-			$notificationManager->sendToMailingList($request,
-				$notificationManager->createNotification(
-					$request, UNSUBSCRIBED_USER_NOTIFICATION, NOTIFICATION_TYPE_NEW_ANNOUNCEMENT,
-					$contextId, ASSOC_TYPE_ANNOUNCEMENT, $announcement->getId()
-				)
-			);
 		}
+		parent::execute(...$functionArgs);
 		return $announcement->getId();
-	}
-
-
-	//
-	// Protected methods.
-	//
-	/**
-	 * Set the expiry date.
-	 * @param $announcement Announcement
-	 */
-	function setDateExpire($announcement) {
-		$dateExpire = $this->getData('dateExpire');
-		if ($dateExpire) {
-			$announcement->setDateExpire(DAO::formatDateToDB($dateExpire, null, false));
-		} else {
-			// No date passed but null is acceptable for
-			// announcements.
-			$announcement->setDateExpire(null);
-		}
-		return true;
 	}
 }
 
-?>
+

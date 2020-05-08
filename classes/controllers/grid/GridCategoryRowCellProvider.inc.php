@@ -3,9 +3,9 @@
 /**
  * @file classes/controllers/grid/GridCategoryRowCellProvider.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class GridCategoryRowCellProvider
  * @ingroup controllers_grid
@@ -17,12 +17,6 @@
 import('lib.pkp.classes.controllers.grid.GridCellProvider');
 
 class GridCategoryRowCellProvider extends GridCellProvider {
-	/**
-	 * Constructor
-	 */
-	function GridCategoryRowCellProvider() {
-		parent::GridCellProvider();
-	}
 
 	//
 	// Implemented methods from GridCellProvider.
@@ -41,13 +35,10 @@ class GridCategoryRowCellProvider extends GridCellProvider {
 	}
 
 	/**
-	 * @see GridCellProvider::getCellActions()
+	 * @copydoc GridCellProvider::getCellActions()
 	 */
-	function getCellActions($request, $row, $column) {
-		// Get cell actions from the row, that are
-		// positioned with the GRID_ACTION_POSITION_ROW_CLICK
-		// constant.
-		return $row->getActions(GRID_ACTION_POSITION_ROW_CLICK);
+	function getCellActions($request, $row, $column, $position = GRID_ACTION_POSITION_ROW_CLICK) {
+		return $row->getActions($position);
 	}
 
 	/**
@@ -76,4 +67,4 @@ class GridCategoryRowCellProvider extends GridCellProvider {
 	}
 }
 
-?>
+

@@ -1,9 +1,9 @@
 {**
  * templates/submission/form/complete.tpl
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * The submission process has been completed; notify the author.
  *}
@@ -15,10 +15,7 @@
 <p>{translate key="submission.submit.whatNext.forNow"}</p>
 
 <ul class="plain">
-	{if $canExpedite}
-		<li>{include file="linkAction/linkAction.tpl" action=$expediteLinkAction}</li>
-	{/if}
 	<li><a href={$reviewSubmissionUrl}>{translate key="submission.submit.whatNext.review"}</a></li>
 	<li><a href={url page="submission" op="wizard"}>{translate key="submission.submit.whatNext.create"}</a></li>
-	<li><a href={url page="dashboard" anchor="submissions"}>{translate key="submission.submit.whatNext.return"}</a></li>
+	<li><a href={url page="submissions" anchor="submissions"}>{translate key="submission.submit.whatNext.return"}</a></li>
 </ul>

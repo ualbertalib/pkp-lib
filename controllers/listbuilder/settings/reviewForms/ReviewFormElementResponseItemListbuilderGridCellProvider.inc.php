@@ -2,9 +2,9 @@
 /**
  * @file controllers/listbuilder/settings/reviewForms/ReviewFormElementResponseItemListbuilderGridCellProvider.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ReviewFormElementResponseItemListbuilderGridCellProvider
  * @ingroup controllers_listbuilder_settings_reviewForms
@@ -15,12 +15,6 @@
 import('lib.pkp.classes.controllers.grid.GridCellProvider');
 
 class ReviewFormElementResponseItemListbuilderGridCellProvider extends GridCellProvider {
-	/**
-	 * Constructor
-	 */
-	function ReviewFormElementResponseItemListbuilderGridCellProvider () {
-		parent::GridCellProvider();
-	}
 
 	//
 	// Template methods from GridCellProvider
@@ -40,4 +34,4 @@ class ReviewFormElementResponseItemListbuilderGridCellProvider extends GridCellP
 	}
 }
 
-?>
+

@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/settings/user/form/UserEmailForm.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class UserEmailForm
  * @ingroup controllers_grid_settings_user_form
@@ -22,27 +22,17 @@ class UserEmailForm extends Form {
 
 	/**
 	 * Constructor.
+	 * @param $userId int User ID to contact.
 	 */
-	function UserEmailForm($userId) {
-		parent::Form('controllers/grid/settings/user/form/userEmailForm.tpl');
+	function __construct($userId) {
+		parent::__construct('controllers/grid/settings/user/form/userEmailForm.tpl');
 
 		$this->userId = (int) $userId;
 
 		$this->addCheck(new FormValidator($this, 'subject', 'required', 'email.subjectRequired'));
 		$this->addCheck(new FormValidator($this, 'message', 'required', 'email.bodyRequired'));
 		$this->addCheck(new FormValidatorPost($this));
-	}
-
-	/**
-	 * Initialize form data.
-	 */
-	function initData($args, $request) {
-		$fromUser = $request->getUser();
-		$fromSignature = "\n\n\n" . $fromUser->getLocalizedSignature();
-
-		$this->_data = array(
-			'message' => $fromSignature
-		);
+		$this->addCheck(new FormValidatorCSRF($this));
 	}
 
 	/**
@@ -50,38 +40,37 @@ class UserEmailForm extends Form {
 	 * @see Form::readInputData()
 	 */
 	function readInputData() {
-		$this->readUserVars(
-			array(
-				'subject',
-				'message'
-			)
-		);
-
+		$this->readUserVars(array(
+			'subject',
+			'message',
+		));
 	}
 
 	/**
-	 * Display the form.
+	 * @copydoc Form::Fetch
 	 */
-	function display($args, $request) {
-		$userDao = DAORegistry::getDAO('UserDAO');
+	function fetch($request, $template = null, $display = false) {
+		$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 		$user = $userDao->getById($this->userId);
 
 		$templateMgr = TemplateManager::getManager($request);
-		$templateMgr->assign('userId', $this->userId);
-		$templateMgr->assign('userFullName', $user->getFullName());
-		$templateMgr->assign('userEmail', $user->getEmail());
+		$templateMgr->assign(array(
+			'userId' => $this->userId,
+			'userFullName' => $user->getFullName(),
+			'userEmail' => $user->getEmail(),
+		));
 
-		return $this->fetch($request);
+		return parent::fetch($request, $template, $display);
 	}
 
 	/**
 	 * Send the email
-	 * @param $args array
-	 * @param $request PKPRequest
+	 * @copydoc Form::execute()
 	 */
-	function execute($args, $request) {
-		$userDao = DAORegistry::getDAO('UserDAO');
+	function execute(...$functionArgs) {
+		$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 		$toUser = $userDao->getById($this->userId);
+		$request = Application::get()->getRequest();
 		$fromUser = $request->getUser();
 
 		import('lib.pkp.classes.mail.MailTemplate');
@@ -91,8 +80,16 @@ class UserEmailForm extends Form {
 		$email->setReplyTo($fromUser->getEmail(), $fromUser->getFullName());
 		$email->setSubject($this->getData('subject'));
 		$email->setBody($this->getData('message'));
-		$email->send();
+		$email->assignParams();
+
+		parent::execute(...$functionArgs);
+
+		if (!$email->send()) {
+			import('classes.notification.NotificationManager');
+			$notificationMgr = new NotificationManager();
+			$notificationMgr->createTrivialNotification($request->getUser()->getId(), NOTIFICATION_TYPE_ERROR, array('contents' => __('email.compose.error')));
+		}
 	}
 }
 
-?>
+

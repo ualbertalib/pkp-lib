@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/files/dependent/DependentFilesGridDataProvider.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class DependentFilesGridDataProvider
  * @ingroup controllers_grid_files_dependent
@@ -26,24 +26,24 @@ class DependentFilesGridDataProvider extends SubmissionFilesGridDataProvider {
 
 	/**
 	 * Constructor
-	 * @param $fileStage integer One of the SUBMISSION_FILE_* constants.
+	 * @param $assocId int Association ID
 	 */
-	function DependentFilesGridDataProvider($assocId) {
+	function __construct($assocId) {
 		assert(is_numeric($assocId));
 		$this->_assocId = (int) $assocId;
-		parent::SubmissionFilesGridDataProvider(SUBMISSION_FILE_DEPENDENT);
+		parent::__construct(SUBMISSION_FILE_DEPENDENT);
 
 	}
 
 	/**
 	 * @copydoc GridDataProvider::loadData()
 	 */
-	function loadData() {
+	function loadData($filter = array()) {
 		// Retrieve all dependent files for the given file stage and original submission file id (i.e. the main galley/production file)
 		$submission = $this->getSubmission();
 		$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO'); /* @var $submissionFileDao SubmissionFileDAO */
 		$submissionFiles = $submissionFileDao->getLatestRevisionsByAssocId(ASSOC_TYPE_SUBMISSION_FILE, $this->getAssocId(), $submission->getId(), $this->getFileStage());
-		return $this->prepareSubmissionFileData($submissionFiles, $this->_viewableOnly);
+		return $this->prepareSubmissionFileData($submissionFiles, $this->_viewableOnly, $filter);
 	}
 
 	/**
@@ -55,9 +55,9 @@ class DependentFilesGridDataProvider extends SubmissionFilesGridDataProvider {
 		$submission = $this->getSubmission();
 		return new AddFileLinkAction(
 			$request, $submission->getId(), $this->getStageId(),
-			$this->getUploaderRoles(), null, $this->getFileStage(),
+			$this->getUploaderRoles(), $this->getFileStage(),
 			ASSOC_TYPE_SUBMISSION_FILE, $this->getAssocId(), null,
-			$this->isDependent()
+			null, $this->isDependent()
 		);
 	}
 
@@ -78,4 +78,4 @@ class DependentFilesGridDataProvider extends SubmissionFilesGridDataProvider {
 	}
 }
 
-?>
+

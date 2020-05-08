@@ -3,9 +3,9 @@
 /**
  * @file plugins/importexport/native/filter/SubmissionNativeXmlFilter.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubmissionNativeXmlFilter
  * @ingroup plugins_importexport_native
@@ -23,9 +23,9 @@ class SubmissionNativeXmlFilter extends NativeExportFilter {
 	 * Constructor
 	 * @param $filterGroup FilterGroup
 	 */
-	function SubmissionNativeXmlFilter($filterGroup) {
+	function __construct($filterGroup) {
 		$this->setDisplayName('Native XML submission export');
-		parent::NativeExportFilter($filterGroup);
+		parent::__construct($filterGroup);
 	}
 
 
@@ -51,6 +51,8 @@ class SubmissionNativeXmlFilter extends NativeExportFilter {
 	function &process(&$submissions) {
 		// Create the XML document
 		$doc = new DOMDocument('1.0');
+		$doc->preserveWhiteSpace = false;
+		$doc->formatOutput = true;
 		$deployment = $this->getDeployment();
 
 		if (count($submissions)==1 && !$this->getIncludeSubmissionsNode()) {
@@ -84,17 +86,20 @@ class SubmissionNativeXmlFilter extends NativeExportFilter {
 		$deployment = $this->getDeployment();
 		$deployment->setSubmission($submission);
 		$submissionNode = $doc->createElementNS($deployment->getNamespace(), $deployment->getSubmissionNodeName());
-		$submissionNode->setAttribute('locale', $submission->getLocale());
-		if ($datePublished = $submission->getDatePublished()) {
-			$submissionNode->setAttribute('date_published', strftime('%F', strtotime($datePublished)));
-		}
+
+		$submissionNode->setAttribute('date_submitted', strftime('%Y-%m-%d', strtotime($submission->getData('dateSubmitted'))));
+		$submissionNode->setAttribute('status', $submission->getData('status'));
+		$submissionNode->setAttribute('submission_progress', $submission->getData('submissionProgress'));
+		$submissionNode->setAttribute('current_publication_id', $submission->getData('currentPublicationId'));
+
+		$workflowStageDao = DAORegistry::getDAO('WorkflowStageDAO'); /** @var $workflowStageDao WorkflowStageDAO */
+		$submissionNode->setAttribute('stage', WorkflowStageDAO::getPathFromId($submission->getData('stageId')));
+
 		// FIXME: language attribute (from old DTD). Necessary? Data migration needed?
 
 		$this->addIdentifiers($doc, $submissionNode, $submission);
-		$this->addMetadata($doc, $submissionNode, $submission);
-		$this->addAuthors($doc, $submissionNode, $submission);
 		$this->addFiles($doc, $submissionNode, $submission);
-		$this->addRepresentations($doc, $submissionNode, $submission);
+		$this->addPublications($doc, $submissionNode, $submission);
 
 		return $submissionNode;
 	}
@@ -111,98 +116,35 @@ class SubmissionNativeXmlFilter extends NativeExportFilter {
 		// Add internal ID
 		$submissionNode->appendChild($node = $doc->createElementNS($deployment->getNamespace(), 'id', $submission->getId()));
 		$node->setAttribute('type', 'internal');
+		$node->setAttribute('advice', 'ignore');
 
-		// Add public ID
-		if ($pubId = $submission->getPubId('publisher-id')) {
-			$submissionNode->appendChild($node = $doc->createElementNS($deployment->getNamespace(), 'id', $pubId));
-			$node->setAttribute('type', 'public');
-		}
-
-		// Add pub IDs by plugin
-		$pubIdPlugins = PluginRegistry::loadCategory('pubIds', true, $deployment->getContext()->getId());
-		foreach ((array) $pubIdPlugins as $pubIdPlugin) {
-			$this->addPubIdentifier($doc, $submissionNode, $submission, $pubIdPlugin);
-		}
+		// // Add pub IDs by plugin
+		// $pubIdPlugins = PluginRegistry::loadCategory('pubIds', true, $deployment->getContext()->getId());
+		// foreach ($pubIdPlugins as $pubIdPlugin) {
+		// 	$this->addPubIdentifier($doc, $submissionNode, $submission, $pubIdPlugin);
+		// }
 	}
 
 	/**
-	 * Add a single pub ID element for a given plugin to the document.
+	 * Add submission controlled vocabulary to its DOM element.
 	 * @param $doc DOMDocument
 	 * @param $submissionNode DOMElement
-	 * @param $submission Submission
-	 * @param $pubIdPlugin PubIdPlugin
-	 * @return DOMElement|null
+	 * @param $controlledVocabulariesNodeName string Parent node name
+	 * @param $controlledVocabularyNodeName string Item node name
+	 * @param $controlledVocabulary array Associative array (locale => array of items)
 	 */
-	function addPubIdentifier($doc, $submissionNode, $submission, $pubIdPlugin) {
-		$pubId = $pubIdPlugin->getPubId($submission);
-		if ($pubId) {
-			$submissionNode->appendChild($node = $doc->createElementNS($deployment->getNamespace(), 'id', $pubId));
-			$node->setAttribute('type', $pubIdPlugin->getPubIdType());
-			return $node;
-		}
-		return null;
-	}
-
-	/**
-	 * Add the submission metadata for a submission to its DOM element.
-	 * @param $doc DOMDocument
-	 * @param $submissionNode DOMElement
-	 * @param $submission Submission
-	 */
-	function addMetadata($doc, $submissionNode, $submission) {
-		$this->createLocalizedNodes($doc, $submissionNode, 'title', $submission->getTitle(null));
-		$this->createLocalizedNodes($doc, $submissionNode, 'prefix', $submission->getPrefix(null));
-		$this->createLocalizedNodes($doc, $submissionNode, 'subtitle', $submission->getSubtitle(null));
-		$this->createLocalizedNodes($doc, $submissionNode, 'abstract', $submission->getAbstract(null));
-		$this->createLocalizedNodes($doc, $submissionNode, 'subject_class', $submission->getSubjectClass(null));
-		$this->createLocalizedNodes($doc, $submissionNode, 'coverage_geo', $submission->getCoverageGeo(null));
-		$this->createLocalizedNodes($doc, $submissionNode, 'coverage_chron', $submission->getCoverageChron(null));
-		$this->createLocalizedNodes($doc, $submissionNode, 'coverage_sample', $submission->getCoverageSample(null));
-		$this->createLocalizedNodes($doc, $submissionNode, 'type', $submission->getType(null));
-		$this->createLocalizedNodes($doc, $submissionNode, 'source', $submission->getSource(null));
-		$this->createLocalizedNodes($doc, $submissionNode, 'rights', $submission->getRights(null));
-		$this->createOptionalNode($doc, $submissionNode, 'comments_to_editor', $submission->getCommentsToEditor());
-	}
-
-	/**
-	 * Add the author metadata for a submission to its DOM element.
-	 * @param $doc DOMDocument
-	 * @param $submissionNode DOMElement
-	 * @param $submission Submission
-	 */
-	function addAuthors($doc, $submissionNode, $submission) {
-		$filterDao = DAORegistry::getDAO('FilterDAO');
-		$nativeExportFilters = $filterDao->getObjectsByGroup('author=>native-xml');
-		assert(count($nativeExportFilters)==1); // Assert only a single serialization filter
-		$exportFilter = array_shift($nativeExportFilters);
-		$exportFilter->setDeployment($this->getDeployment());
-
-		$authorsDoc = $exportFilter->execute($submission->getAuthors());
-		if ($authorsDoc->documentElement instanceof DOMElement) {
-			$clone = $doc->importNode($authorsDoc->documentElement, true);
-			$submissionNode->appendChild($clone);
-		}
-	}
-
-	/**
-	 * Add the representations of a submission to its DOM element.
-	 * @param $doc DOMDocument
-	 * @param $submissionNode DOMElement
-	 * @param $submission Submission
-	 */
-	function addRepresentations($doc, $submissionNode, $submission) {
-		$filterDao = DAORegistry::getDAO('FilterDAO');
-		$nativeExportFilters = $filterDao->getObjectsByGroup($this->getRepresentationExportFilterGroupName());
-		assert(count($nativeExportFilters)==1); // Assert only a single serialization filter
-		$exportFilter = array_shift($nativeExportFilters);
-		$exportFilter->setDeployment($this->getDeployment());
-
-		$representationDao = Application::getRepresentationDAO();
-		$representations = $representationDao->getBySubmissionId($submission->getId());
-		while ($representation = $representations->next()) {
-			$representationDoc = $exportFilter->execute($representation);
-			$clone = $doc->importNode($representationDoc->documentElement, true);
-			$submissionNode->appendChild($clone);
+	function addControlledVocabulary($doc, $submissionNode, $controlledVocabulariesNodeName, $controlledVocabularyNodeName, $controlledVocabulary) {
+		$deployment = $this->getDeployment();
+		$locales = array_keys($controlledVocabulary);
+		foreach ($locales as $locale) {
+			if (!empty($controlledVocabulary[$locale])) {
+				$controlledVocabulariesNode = $doc->createElementNS($deployment->getNamespace(), $controlledVocabulariesNodeName);
+				$controlledVocabulariesNode->setAttribute('locale', $locale);
+				foreach ($controlledVocabulary[$locale] as $controlledVocabularyItem) {
+					$controlledVocabulariesNode->appendChild($node = $doc->createElementNS($deployment->getNamespace(), $controlledVocabularyNodeName, htmlspecialchars($controlledVocabularyItem, ENT_COMPAT, 'UTF-8')));
+				}
+				$submissionNode->appendChild($controlledVocabulariesNode);
+			}
 		}
 	}
 
@@ -213,8 +155,8 @@ class SubmissionNativeXmlFilter extends NativeExportFilter {
 	 * @param $submission Submission
 	 */
 	function addFiles($doc, $submissionNode, $submission) {
-		$filterDao = DAORegistry::getDAO('FilterDAO');
-		$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO');
+		$filterDao = DAORegistry::getDAO('FilterDAO'); /* @var $filterDao FilterDAO */
+		$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO'); /* @var $submissionFileDao SubmissionFileDAO */
 		$submissionFiles = $submissionFileDao->getBySubmissionId($submission->getId());
 
 		// Submission files will come back from the file export filter
@@ -234,6 +176,7 @@ class SubmissionNativeXmlFilter extends NativeExportFilter {
 			$exportFilter = array_shift($nativeExportFilters);
 			$exportFilter->setDeployment($this->getDeployment());
 
+			$exportFilter->setOpts($this->opts);
 			$submissionFileDoc = $exportFilter->execute($submissionFile);
 			$fileId = $submissionFileDoc->documentElement->getAttribute('id');
 			if (!isset($submissionFileNodesByFileId[$fileId])) {
@@ -250,7 +193,31 @@ class SubmissionNativeXmlFilter extends NativeExportFilter {
 				}
 				assert(is_a($revisionNode, 'DOMElement'));
 				$clone = $doc->importNode($revisionNode, true);
-				$submissionFileNode->appendChild($clone);
+				$firstRevisionChild = $submissionFileNode->firstChild;
+				$submissionFileNode->insertBefore($clone, $firstRevisionChild);
+			}
+		}
+	}
+
+	/**
+	 * Add the submission files to its DOM element.
+	 * @param $doc DOMDocument
+	 * @param $submissionNode DOMElement
+	 * @param $submission Submission
+	 */
+	function addPublications($doc, $submissionNode, $submission) {
+		$filterDao = DAORegistry::getDAO('FilterDAO'); /** @var $filterDao FilterDAO */
+		$nativeExportFilters = $filterDao->getObjectsByGroup('publication=>native-xml');
+		assert(count($nativeExportFilters)==1); // Assert only a single serialization filter
+		$exportFilter = array_shift($nativeExportFilters);
+		$exportFilter->setDeployment($this->getDeployment());
+
+		$publications = (array) $submission->getData('publications');
+		foreach ($publications as $publication) {
+			$publicationDoc = $exportFilter->execute($publication);
+			if ($publicationDoc->documentElement instanceof DOMElement) {
+				$clone = $doc->importNode($publicationDoc->documentElement, true);
+				$submissionNode->appendChild($clone);
 			}
 		}
 	}
@@ -259,13 +226,6 @@ class SubmissionNativeXmlFilter extends NativeExportFilter {
 	//
 	// Abstract methods for subclasses to implement
 	//
-	/**
-	 * Get the representation export filter group name
-	 * @return string
-	 */
-	function getRepresentationExportFilterGroupName() {
-		assert(false); // Must be overridden by subclasses
-	}
 
 	/**
 	 * Sets a flag to always include the <submissions> node, even if there
@@ -286,4 +246,4 @@ class SubmissionNativeXmlFilter extends NativeExportFilter {
 	}
 }
 
-?>
+

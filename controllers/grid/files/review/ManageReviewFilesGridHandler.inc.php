@@ -2,9 +2,9 @@
 /**
  * @file controllers/grid/files/review/ManageReviewFilesGridHandler.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ManageReviewFilesGridHandler
  * @ingroup controllers_grid_files_review
@@ -24,10 +24,10 @@ class ManageReviewFilesGridHandler extends SelectableSubmissionFileListCategoryG
 	/**
 	 * Constructor
 	 */
-	function ManageReviewFilesGridHandler() {
+	function __construct() {
 		import('lib.pkp.controllers.grid.files.review.ReviewCategoryGridDataProvider');
 		// Pass in null stageId to be set in initialize from request var.
-		parent::SelectableSubmissionFileListCategoryGridHandler(
+		parent::__construct(
 			new ReviewCategoryGridDataProvider(SUBMISSION_FILE_REVIEW_FILE),
 			null,
 			FILE_GRID_ADD|FILE_GRID_VIEW_NOTES
@@ -50,7 +50,7 @@ class ManageReviewFilesGridHandler extends SelectableSubmissionFileListCategoryG
 	 * Save 'manage review files' form.
 	 * @param $args array
 	 * @param $request PKPRequest
-	 * @return string Serialized JSON object
+	 * @return JSONMessage JSON object
 	 */
 	function updateReviewFiles($args, $request) {
 		$submission = $this->getSubmission();
@@ -61,7 +61,9 @@ class ManageReviewFilesGridHandler extends SelectableSubmissionFileListCategoryG
 
 		if ($manageReviewFilesForm->validate()) {
 			$dataProvider = $this->getDataProvider();
-			$manageReviewFilesForm->execute($args, $request, $dataProvider->loadCategoryData($request, $this->getStageId()));
+			$manageReviewFilesForm->execute(
+				$this->getGridCategoryDataElements($request, $this->getStageId())
+			);
 
 			$this->setupTemplate($request);
 			$user = $request->getUser();
@@ -70,8 +72,7 @@ class ManageReviewFilesGridHandler extends SelectableSubmissionFileListCategoryG
 			// Let the calling grid reload itself
 			return DAO::getDataChangedEvent();
 		} else {
-			$json = new JSONMessage(false);
-			return $json->getString();
+			return new JSONMessage(false);
 		}
 	}
 
@@ -88,4 +89,4 @@ class ManageReviewFilesGridHandler extends SelectableSubmissionFileListCategoryG
 	}
 }
 
-?>
+

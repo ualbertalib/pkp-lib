@@ -3,9 +3,9 @@
 /**
  * @file classes/user/InterestDAO.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class InterestDAO
  * @ingroup user
@@ -25,7 +25,7 @@ class InterestDAO extends ControlledVocabDAO {
 	 * @return ControlledVocab
 	 */
 	function build() {
-		return parent::build(CONTROLLED_VOCAB_INTEREST);
+		return parent::_build(CONTROLLED_VOCAB_INTEREST);
 	}
 
 	/**
@@ -83,12 +83,14 @@ class InterestDAO extends ControlledVocabDAO {
 	 */
 	function getAllInterests($filter = null) {
 		$controlledVocab = $this->build();
-		$interestEntryDao = DAORegistry::getDAO('InterestEntryDAO');
+		$interestEntryDao = DAORegistry::getDAO('InterestEntryDAO'); /* @var $interestEntryDao InterestEntryDAO */
 		$iterator = $interestEntryDao->getByControlledVocabId($controlledVocab->getId(), null, $filter);
 
 		// Sort by name.
 		$interests = $iterator->toArray();
-		usort($interests, create_function('$s1, $s2', 'return strcmp($s1->getInterest(), $s2->getInterest());'));
+		usort($interests, function($s1, $s2) {
+			return strcmp($s1->getInterest(), $s2->getInterest());
+		});
 
 		// Turn back into an iterator.
 		import('lib.pkp.classes.core.ArrayItemIterator');
@@ -138,4 +140,4 @@ class InterestDAO extends ControlledVocabDAO {
 	}
 }
 
-?>
+

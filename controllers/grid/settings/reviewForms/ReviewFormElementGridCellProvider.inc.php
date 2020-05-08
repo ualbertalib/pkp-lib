@@ -2,9 +2,9 @@
 /**
  * @file controllers/grid/settings/reviewForms/ReviewFormElementGridCellProvider.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ReviewFormElementGridCellProvider
  * @ingroup controllers_grid_settings_reviewForms
@@ -14,12 +14,6 @@
 import('lib.pkp.classes.controllers.grid.GridCellProvider');
 
 class ReviewFormElementGridCellProvider extends GridCellProvider {
-	/**
-	 * Constructor
-	 */
-	function ReviewFormElementridCellProvider() {
-		parent::GridCellProvider();
-	}
 
 	/**
 	 * Extracts variables for a given column from a data element
@@ -43,4 +37,4 @@ class ReviewFormElementGridCellProvider extends GridCellProvider {
 		}
 	}
 }
-?>
+

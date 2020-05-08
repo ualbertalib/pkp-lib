@@ -3,9 +3,9 @@
 /**
  * @file classes/announcement/AnnouncementTypeDAO.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class AnnouncementTypeDAO
  * @ingroup announcement
@@ -18,12 +18,6 @@
 import('lib.pkp.classes.announcement.AnnouncementType');
 
 class AnnouncementTypeDAO extends DAO {
-	/**
-	 * Constructor
-	 */
-	function AnnouncementTypeDAO() {
-		parent::DAO();
-	}
 
 	/**
 	 * Generate a new data object.
@@ -35,13 +29,20 @@ class AnnouncementTypeDAO extends DAO {
 
 	/**
 	 * Retrieve an announcement type by announcement type ID.
-	 * @param $typeId int
+	 * @param $typeId int Announcement type ID
+	 * @param $assocType int Optional assoc type
+	 * @param $assocId int Optional assoc ID
 	 * @return AnnouncementType
 	 */
-	function getById($typeId) {
+	function getById($typeId, $assocType = null, $assocId = null) {
+		$params = array((int) $typeId);
+		if ($assocType !== null) $params[] = (int) $assocType;
+		if ($assocId !== null) $params[] = (int) $assocId;
 		$result = $this->retrieve(
-			'SELECT * FROM announcement_types WHERE type_id = ?',
-			(int) $typeId
+			'SELECT * FROM announcement_types WHERE type_id = ?' .
+			($assocType !== null?' AND assoc_type = ?':'') .
+			($assocId !== null?' AND assoc_id = ?':''),
+			$params
 		);
 
 		$returner = null;
@@ -133,7 +134,7 @@ class AnnouncementTypeDAO extends DAO {
 			'SELECT ats.type_id
 				FROM announcement_type_settings AS ats
 				LEFT JOIN announcement_types at ON ats.type_id = at.type_id
-				WHERE ats.setting_name = "name"
+				WHERE ats.setting_name = \'name\'
 				AND ats.setting_value = ?
 				AND at.assoc_type = ?
 				AND at.assoc_id = ?',
@@ -236,7 +237,7 @@ class AnnouncementTypeDAO extends DAO {
 		$this->update('DELETE FROM announcement_type_settings WHERE type_id = ?', (int) $typeId);
 		$this->update('DELETE FROM announcement_types WHERE type_id = ?', (int) $typeId);
 
-		$announcementDao = DAORegistry::getDAO('AnnouncementDAO');
+		$announcementDao = DAORegistry::getDAO('AnnouncementDAO'); /* @var $announcementDao AnnouncementDAO */
 		$announcementDao->deleteByTypeId($typeId);
 	}
 
@@ -278,4 +279,4 @@ class AnnouncementTypeDAO extends DAO {
 	}
 }
 
-?>
+

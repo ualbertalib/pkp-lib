@@ -6,9 +6,9 @@
 /**
  * @file plugins/metadata/dc11/schema/PKPDc11Schema.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPDc11Schema
  * @ingroup plugins_metadata_dc11_schema
@@ -27,9 +27,9 @@ class PKPDc11Schema extends MetadataSchema {
 	 * Constructor
 	 * @param $appSpecificAssocType integer
 	 */
-	function PKPDc11Schema($appSpecificAssocType, $classname = 'plugins.metadata.dc11.schema.Dc11Schema') {
+	function __construct($appSpecificAssocType, $classname = 'plugins.metadata.dc11.schema.Dc11Schema') {
 		// Configure the meta-data schema.
-		parent::MetadataSchema(
+		parent::__construct(
 			'dc-1.1',
 			'dc',
 			$classname,
@@ -53,4 +53,4 @@ class PKPDc11Schema extends MetadataSchema {
 		$this->addProperty('dc:rights', METADATA_PROPERTY_TYPE_STRING, true, METADATA_PROPERTY_CARDINALITY_MANY);
 	}
 }
-?>
+

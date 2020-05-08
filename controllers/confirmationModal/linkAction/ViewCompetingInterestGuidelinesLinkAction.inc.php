@@ -3,9 +3,9 @@
 /**
  * @file controllers/confirmationModal/linkAction/ViewCompetingInterestGuidelinesLinkAction.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ViewCompetingInterestGuidelinesLinkAction
  * @ingroup controllers_confirmationModal_linkAction
@@ -21,20 +21,20 @@ class ViewCompetingInterestGuidelinesLinkAction extends LinkAction {
 	 * Constructor
 	 * @param $request Request
 	 */
-	function ViewCompetingInterestGuidelinesLinkAction($request) {
+	function __construct($request) {
 		$context = $request->getContext();
 		// Instantiate the view competing interests modal.
 		import('lib.pkp.classes.linkAction.request.ConfirmationModal');
 		$viewCompetingInterestsModal = new ConfirmationModal(
-			$context->getLocalizedSetting('competingInterests'),
+			$context->getLocalizedData('competingInterests'),
 			__('reviewer.submission.competingInterests'),
 			null, null, false,
 			false
 		);
 
 		// Configure the link action.
-		parent::LinkAction('viewCompetingInterestGuidelines', $viewCompetingInterestsModal, __('reviewer.submission.competingInterests'));
+		parent::__construct('viewCompetingInterestGuidelines', $viewCompetingInterestsModal, __('reviewer.submission.competingInterests'));
 	}
 }
 
-?>
+

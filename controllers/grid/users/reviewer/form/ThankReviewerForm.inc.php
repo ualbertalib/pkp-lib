@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/users/reviewer/form/ThankReviewerForm.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ThankReviewerForm
  * @ingroup controllers_grid_users_reviewer_form
@@ -22,12 +22,13 @@ class ThankReviewerForm extends Form {
 	/**
 	 * Constructor.
 	 */
-	function ThankReviewerForm($reviewAssignment) {
-		parent::Form('controllers/grid/users/reviewer/form/thankReviewerForm.tpl');
+	function __construct($reviewAssignment) {
+		parent::__construct('controllers/grid/users/reviewer/form/thankReviewerForm.tpl');
 		$this->_reviewAssignment = $reviewAssignment;
 
 		// Validation checks for this form
 		$this->addCheck(new FormValidatorPost($this));
+		$this->addCheck(new FormValidatorCSRF($this));
 	}
 
 	//
@@ -45,12 +46,11 @@ class ThankReviewerForm extends Form {
 	// Overridden template methods
 	//
 	/**
-	 * Initialize form data from the associated author.
-	 * @param $args array
-	 * @param $request PKPRequest
+	 * @copydoc Form::initData
 	 */
-	function initData($args, $request) {
-		$userDao = DAORegistry::getDAO('UserDAO');
+	function initData() {
+		$request = Application::get()->getRequest();
+		$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 		$user = $request->getUser();
 		$context = $request->getContext();
 
@@ -58,28 +58,27 @@ class ThankReviewerForm extends Form {
 		$reviewerId = $reviewAssignment->getReviewerId();
 		$reviewer = $userDao->getById($reviewerId);
 
-		$submissionDao = Application::getSubmissionDAO();
+		$submissionDao = DAORegistry::getDAO('SubmissionDAO'); /* @var $submissionDao SubmissionDAO */
 		$submission = $submissionDao->getById($reviewAssignment->getSubmissionId());
 
 		import('lib.pkp.classes.mail.SubmissionMailTemplate');
 		$email = new SubmissionMailTemplate($submission, 'REVIEW_ACK');
 
 		$dispatcher = $request->getDispatcher();
-		$paramArray = array(
+		$email->assignParams(array(
 			'reviewerName' => $reviewer->getFullName(),
-			'editorialContactSignature' => $user->getContactSignature(),
 			'reviewerUserName' => $reviewer->getUsername(),
 			'passwordResetUrl' => $dispatcher->url($request, ROUTE_PAGE, null, 'login', 'resetPassword', $reviewer->getUsername(), array('confirm' => Validation::generatePasswordResetHash($reviewer->getId()))),
 			'submissionReviewUrl' => $dispatcher->url($request, ROUTE_PAGE, null, 'reviewer', 'submission', null, array('submissionId' => $reviewAssignment->getSubmissionId()))
-		);
-		$email->assignParams($paramArray);
+		));
+		$email->replaceParams();
 
 		$this->setData('submissionId', $submission->getId());
 		$this->setData('stageId', $reviewAssignment->getStageId());
 		$this->setData('reviewAssignmentId', $reviewAssignment->getId());
 		$this->setData('reviewAssignment', $reviewAssignment);
 		$this->setData('reviewerName', $reviewer->getFullName() . ' <' . $reviewer->getEmail() . '>');
-		$this->setData('message', $email->getBody() . "\n" . $context->getSetting('emailSignature'));
+		$this->setData('message', $email->getBody());
 	}
 
 	/**
@@ -91,13 +90,11 @@ class ThankReviewerForm extends Form {
 	}
 
 	/**
-	 * Save review assignment
-	 * @param $args array
-	 * @param $request PKPRequest
+	 * @copydoc Form::execute()
 	 */
-	function execute($args, $request) {
-		$userDao = DAORegistry::getDAO('UserDAO');
-		$submissionDao = Application::getSubmissionDAO();
+	function execute(...$functionArgs) {
+		$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
+		$submissionDao = DAORegistry::getDAO('SubmissionDAO'); /* @var $submissionDao SubmissionDAO */
 
 		$reviewAssignment = $this->getReviewAssignment();
 		$reviewerId = $reviewAssignment->getReviewerId();
@@ -112,16 +109,32 @@ class ThankReviewerForm extends Form {
 
 		if (!$this->getData('skipEmail')) {
 			HookRegistry::call('ThankReviewerForm::thankReviewer', array(&$submission, &$reviewAssignment, &$email));
-			$email->send($request);
+			$request = Application::get()->getRequest();
+			$dispatcher = $request->getDispatcher();
+			$context = $request->getContext();
+			$user = $request->getUser();
+			$email->assignParams(array(
+				'reviewerName' => $reviewer->getFullName(),
+				'contextUrl' => $dispatcher->url($request, ROUTE_PAGE, $context->getPath()),
+				'editorialContactSignature' => $user->getContactSignature(),
+				'signatureFullName' => $user->getFullname(),
+			));
+			if (!$email->send($request)) {
+				import('classes.notification.NotificationManager');
+				$notificationMgr = new NotificationManager();
+				$notificationMgr->createTrivialNotification($request->getUser()->getId(), NOTIFICATION_TYPE_ERROR, array('contents' => __('email.compose.error')));
+			}
 		}
 
 		// update the ReviewAssignment with the acknowledged date
-		$reviewAssignmentDao = DAORegistry::getDAO('ReviewAssignmentDAO');
+		$reviewAssignmentDao = DAORegistry::getDAO('ReviewAssignmentDAO'); /* @var $reviewAssignmentDao ReviewAssignmentDAO */
 		$reviewAssignment->setDateAcknowledged(Core::getCurrentDate());
 		$reviewAssignment->stampModified();
 		$reviewAssignment->setUnconsidered(REVIEW_ASSIGNMENT_NOT_UNCONSIDERED);
 		$reviewAssignmentDao->updateObject($reviewAssignment);
+
+		parent::execute(...$functionArgs);
 	}
 }
 
-?>
+

@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/announcements/ViewAnnouncementGridHandler.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ViewAnnouncementGridHandler
  * @ingroup controllers_grid_announcements
@@ -16,25 +16,17 @@
 import('lib.pkp.controllers.grid.announcements.AnnouncementGridHandler');
 
 class ViewAnnouncementGridHandler extends AnnouncementGridHandler {
-	/**
-	 * Constructor
-	 */
-	function ViewAnnouncementGridHandler() {
-		parent::AnnouncementGridHandler();
-	}
-
 
 	/**
 	 * @copydoc AnnouncementGridHandler::initialize()
-	 * @param $request PKPRequest
 	 */
-	function initialize($request) {
-		parent::initialize($request);
+	function initialize($request, $args = null) {
+		parent::initialize($request, $args);
 
 		$displayLimit = (boolean) $request->getUserVar('displayLimit');
 		if ($displayLimit) {
 			$context = $request->getContext();
-			$numAnnouncementsHomepage = $context->getSetting('numAnnouncementsHomepage');
+			$numAnnouncementsHomepage = $context->getData('numAnnouncementsHomepage');
 			$gridElements = $this->getGridDataElements($request);
 			if (count($gridElements) > $numAnnouncementsHomepage) {
 				$dispatcher = $request->getDispatcher();
@@ -63,4 +55,4 @@ class ViewAnnouncementGridHandler extends AnnouncementGridHandler {
 	}
 }
 
-?>
+

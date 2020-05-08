@@ -1,9 +1,9 @@
 /**
  * @file js/controllers/modal/RemoteActionConfirmationModalHandler.js
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class RemoteActionConfirmationModalHandler
  * @ingroup js_controllers_modal
@@ -20,8 +20,11 @@
 	 *
 	 * @param {jQueryObject} $handledElement The clickable element
 	 *  the modal will be attached to.
-	 * @param {Object} options Non-default options to configure
-	 *  the modal.
+	 * @param {{
+	 *  remoteAction: string,
+	 *  postData: Object,
+	 *  csrfToken: string
+	 *  }} options Non-default options to configure the modal.
 	 *
 	 *  Options are:
 	 *  - remoteAction string An action to be executed when the confirmation
@@ -39,6 +42,12 @@
 		// Configure the remote action (URL) to be called when
 		// the modal closes.
 		this.remoteAction_ = options.remoteAction;
+
+		// Store the data to send with the post request
+		this.postData_ = options.postData || {};
+
+		// Add the CSRF token to the post data
+		this.postData_.csrfToken = options.csrfToken;
 	};
 	$.pkp.classes.Helper.inherits(
 			$.pkp.controllers.modal.RemoteActionConfirmationModalHandler,
@@ -56,6 +65,15 @@
 	 */
 	$.pkp.controllers.modal.RemoteActionConfirmationModalHandler.prototype.
 			remoteAction_ = null;
+
+
+	/**
+	 * Data params to send with the post request
+	 * @private
+	 * @type {?Object}
+	 */
+	$.pkp.controllers.modal.RemoteActionConfirmationModalHandler.prototype.
+			postData_ = null;
 
 
 	//
@@ -88,11 +106,14 @@
 	 *
 	 * @param {HTMLElement} dialogElement The element the
 	 *  dialog was created on.
+	 * @param {Event} event The click event.
 	 */
 	$.pkp.controllers.modal.RemoteActionConfirmationModalHandler.prototype.
-			modalConfirm = function(dialogElement) {
+			modalConfirm = function(dialogElement, event) {
+		event.preventDefault();
 
 		$.post(this.remoteAction_,
+				this.postData_,
 				this.callbackWrapper(this.remoteResponse), 'json');
 	};
 
@@ -114,5 +135,4 @@
 	};
 
 
-/** @param {jQuery} $ jQuery closure. */
 }(jQuery));

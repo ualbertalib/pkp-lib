@@ -2,9 +2,9 @@
 /**
  * @file controllers/grid/files/submissionDocuments/form/NewLibraryFileForm.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class FileForm
  * @ingroup controllers_grid_files_submissionDocuments_form
@@ -24,8 +24,8 @@ class NewLibraryFileForm extends LibraryFileForm {
 	 * Constructor.
 	 * @param $contextId int
 	 */
-	function NewLibraryFileForm($contextId, $submissionId) {
-		parent::LibraryFileForm('controllers/grid/files/submissionDocuments/form/newFileForm.tpl', $contextId);
+	function __construct($contextId, $submissionId) {
+		parent::__construct('controllers/grid/files/submissionDocuments/form/newFileForm.tpl', $contextId);
 		$this->submissionId = $submissionId;
 		$this->addCheck(new FormValidator($this, 'temporaryFileId', 'required', 'settings.libraryFiles.fileRequired'));
 	}
@@ -42,30 +42,31 @@ class NewLibraryFileForm extends LibraryFileForm {
 	/**
 	 * @copydoc LibraryFileForm::fetch()
 	 */
-	function fetch($request) {
+	function fetch($request, $template = null, $display = false) {
 		$templateMgr = TemplateManager::getManager($request);
 		$templateMgr->assign('submissionId', $this->getSubmissionId());
-		return parent::fetch($request);
+		return parent::fetch($request, $template, $display);
 	}
 
 	/**
-	 * Save the new library file.
-	 * @param $userId int The current user ID (for validation purposes).
+	 * @copydoc Form::execute()
 	 * @return $fileId int The new library file id.
 	 */
-	function execute($userId) {
+	function execute(...$functionArgs) {
+		$userId = Application::get()->getRequest()->getUser()->getId();
+
 		// Fetch the temporary file storing the uploaded library file
-		$temporaryFileDao = DAORegistry::getDAO('TemporaryFileDAO');
-		$temporaryFile =& $temporaryFileDao->getTemporaryFile(
+		$temporaryFileDao = DAORegistry::getDAO('TemporaryFileDAO'); /* @var $temporaryFileDao TemporaryFileDAO */
+		$temporaryFile = $temporaryFileDao->getTemporaryFile(
 			$this->getData('temporaryFileId'),
 			$userId
 		);
-		$libraryFileDao = DAORegistry::getDAO('LibraryFileDAO');
+		$libraryFileDao = DAORegistry::getDAO('LibraryFileDAO'); /* @var $libraryFileDao LibraryFileDAO */
 		$libraryFileManager = new LibraryFileManager($this->contextId);
 
 		// Convert the temporary file to a library file and store
 		$libraryFile =& $libraryFileManager->copyFromTemporaryFile($temporaryFile, $this->getData('fileType'));
-		assert($libraryFile);
+		assert(isset($libraryFile));
 		$libraryFile->setContextId($this->contextId);
 		$libraryFile->setName($this->getData('libraryFileName'), null); // Localized
 		$libraryFile->setType($this->getData('fileType'));
@@ -76,7 +77,9 @@ class NewLibraryFileForm extends LibraryFileForm {
 		// Clean up the temporary file
 		import('lib.pkp.classes.file.TemporaryFileManager');
 		$temporaryFileManager = new TemporaryFileManager();
-		$temporaryFileManager->deleteFile($this->getData('temporaryFileId'), $userId);
+		$temporaryFileManager->deleteById($this->getData('temporaryFileId'), $userId);
+
+		parent::execute(...$functionArgs);
 
 		return $fileId;
 	}
@@ -90,4 +93,4 @@ class NewLibraryFileForm extends LibraryFileForm {
 	}
 }
 
-?>
+

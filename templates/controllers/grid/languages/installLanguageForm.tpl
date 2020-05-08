@@ -1,9 +1,9 @@
 {**
  * controllers/grid/languages/installLanguageForm.tpl
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * Form to install languages.
  *}
@@ -16,9 +16,10 @@
 </script>
 
 <form class="pkp_form" id="installLanguageForm" method="post" action="{url router=$smarty.const.ROUTE_COMPONENT component="grid.admin.languages.AdminLanguageGridHandler" op="saveInstallLocale"}">
+	{csrf}
 	{include file="controllers/notification/inPlaceNotification.tpl" notificationId="installLanguageFormNotification"}
 
-	{fbvFormArea id="availableLocalesFormArea" title="admin.languages.availableLocales" class="border"}
+	{fbvFormArea id="availableLocalesFormArea" title="admin.languages.availableLocales"}
 		{fbvFormSection list="true" description="admin.languages.installNewLocalesInstructions"}
 			{foreach name=locales from=$notInstalledLocales item=locale}
 				{fbvElement type="checkbox" id="locale-$locale" name="localesToInstall[$locale]" value=$locale label=$allLocales.$locale translate=false}
@@ -28,7 +29,7 @@
 		{/fbvFormSection}
 	{/fbvFormArea}
 
-	{fbvFormArea id="downloadLocaleFormArea" title="admin.languages.downloadLocales" class="border"}
+	{fbvFormArea id="downloadLocaleFormArea" title="admin.languages.downloadLocales"}
 		{fbvFormSection list="true"}
 			{if $downloadAvailable}
 				<ul>
@@ -45,6 +46,6 @@
 	{/fbvFormArea}
 
 	{if not empty($notInstalledLocales)}
-		{fbvFormButtons id="mastheadFormSubmit" submitText="common.save"}
+		{fbvFormButtons id="installLanguageFormSubmit" submitText="common.save"}
 	{/if}
 </form>

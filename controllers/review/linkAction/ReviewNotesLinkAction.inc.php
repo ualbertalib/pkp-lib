@@ -3,9 +3,9 @@
 /**
  * @file controllers/review/linkAction/ReviewNotesLinkAction.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ReviewInfoCenterLinkAction
  * @ingroup controllers_review_linkAction
@@ -24,9 +24,10 @@ class ReviewNotesLinkAction extends LinkAction {
 	 * to show information about.
 	 * @param $submission Submission The reviewed submission.
 	 * @param $user User The user.
-	 * @param $icon String the icon to use
+	 * @param $handler string name of the gridhandler.
+	 * @param $isUnread bool Has a review been read
 	 */
-	function ReviewNotesLinkAction($request, $reviewAssignment, $submission, $user, $icon = null) {
+	function __construct($request, $reviewAssignment, $submission, $user, $handler, $isUnread = null) {
 		// Instantiate the information center modal.
 		$router = $request->getRouter();
 		import('lib.pkp.classes.linkAction.request.AjaxModal');
@@ -39,25 +40,21 @@ class ReviewNotesLinkAction extends LinkAction {
 		$ajaxModal = new AjaxModal(
 			$router->url(
 				$request, null,
-				'grid.users.reviewer.ReviewerGridHandler', 'readReview',
+				$handler, 'readReview',
 				null, $actionArgs
 			),
-			__('editor.review') . ': ' . $submission->getLocalizedTitle(),
+			__('editor.review') . ': ' . htmlspecialchars($submission->getLocalizedTitle()),
 			'modal_information'
 		);
 
-		$viewsDao = DAORegistry::getDAO('ViewsDAO');
+		$viewsDao = DAORegistry::getDAO('ViewsDAO'); /* @var $viewsDao ViewsDAO */
 		$lastViewDate = $viewsDao->getLastViewDate(ASSOC_TYPE_REVIEW_RESPONSE, $reviewAssignment->getId(), $user->getId());
 
-		if (!$icon) {
-			$icon = ($lastViewDate) ? 'notes' : 'notes_new';
-		}
+		$icon = !$lastViewDate || $isUnread ? 'read_new_review' : null;
+
 		// Configure the link action.
-		parent::LinkAction(
-			'readReview', $ajaxModal,
-			'', $icon
-		);
+		parent::__construct( 'readReview', $ajaxModal, __('editor.review.readReview'), $icon );
 	}
 }
 
-?>
+

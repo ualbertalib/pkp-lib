@@ -2,9 +2,9 @@
 /**
  * @file classes/security/authorization/HandlerOperationPolicy.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class HandlerOperationPolicy
  * @ingroup security_authorization
@@ -29,8 +29,8 @@ class HandlerOperationPolicy extends AuthorizationPolicy {
 	 *  this policy is targeting.
 	 * @param $message string a message to be displayed if the authorization fails
 	 */
-	function HandlerOperationPolicy($request, $operations, $message = null) {
-		parent::AuthorizationPolicy($message);
+	function __construct($request, $operations, $message = null) {
+		parent::__construct($message);
 		$this->_request =& $request;
 
 		// Make sure a single operation doesn't have to
@@ -80,4 +80,4 @@ class HandlerOperationPolicy extends AuthorizationPolicy {
 	}
 }
 
-?>
+

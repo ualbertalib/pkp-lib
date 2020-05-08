@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/announcements/AnnouncementGridHandler.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class AnnouncementGridHandler
  * @ingroup controllers_grid_announcements
@@ -18,13 +18,6 @@ import('lib.pkp.classes.controllers.grid.DataObjectGridCellProvider');
 import('lib.pkp.classes.controllers.grid.DateGridCellProvider');
 
 class AnnouncementGridHandler extends GridHandler {
-	/**
-	 * Constructor
-	 */
-	function AnnouncementGridHandler() {
-		parent::GridHandler();
-	}
-
 
 	//
 	// Overridden template methods
@@ -42,7 +35,7 @@ class AnnouncementGridHandler extends GridHandler {
 
 		// Ensure announcements are enabled.
 		$context = $request->getContext();
-		if ($requireAnnouncementsEnabled && !$context->getSetting('enableAnnouncements')) {
+		if ($requireAnnouncementsEnabled && !$context->getData('enableAnnouncements')) {
 			return false;
 		}
 
@@ -62,8 +55,8 @@ class AnnouncementGridHandler extends GridHandler {
 	/**
 	 * @copydoc GridHandler::initialize()
 	 */
-	function initialize($request) {
-		parent::initialize($request);
+	function initialize($request, $args = null) {
+		parent::initialize($request, $args);
 
 		// Set the no items row text
 		$this->setEmptyRowText('announcement.noneExist');
@@ -110,13 +103,11 @@ class AnnouncementGridHandler extends GridHandler {
 	/**
 	 * @copydoc GridHandler::loadData()
 	 */
-	function loadData($request, $filter) {
+	protected function loadData($request, $filter) {
 		$context = $request->getContext();
-		$announcementDao = DAORegistry::getDAO('AnnouncementDAO');
+		$announcementDao = DAORegistry::getDAO('AnnouncementDAO'); /* @var $announcementDao AnnouncementDAO */
 		$rangeInfo = $this->getGridRangeInfo($request, $this->getId());
-		$announcements = $announcementDao->getAnnouncementsNotExpiredByAssocId($context->getAssocType(), $context->getId(), $rangeInfo);
-
-		return $announcements;
+		return $announcementDao->getAnnouncementsNotExpiredByAssocId($context->getAssocType(), $context->getId(), $rangeInfo);
 	}
 
 
@@ -127,7 +118,7 @@ class AnnouncementGridHandler extends GridHandler {
 	 * Load and fetch the announcement form in read-only mode.
 	 * @param $args array
 	 * @param $request Request
-	 * @return string
+	 * @return JSONMessage JSON object
 	 */
 	function moreInformation($args, $request) {
 		$announcementId = (int)$request->getUserVar('announcementId');
@@ -137,11 +128,10 @@ class AnnouncementGridHandler extends GridHandler {
 		import('lib.pkp.controllers.grid.announcements.form.AnnouncementForm');
 		$announcementForm = new AnnouncementForm($contextId, $announcementId, true);
 
-		$announcementForm->initData($args, $request);
+		$announcementForm->initData();
 
-		$json = new JSONMessage(true, $announcementForm->fetch($request));
-		return $json->getString();
+		return new JSONMessage(true, $announcementForm->fetch($request));
 	}
 }
 
-?>
+

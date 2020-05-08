@@ -3,9 +3,9 @@
 /**
  * @file classes/metadata/CrosswalkFilter.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class CrosswalkFilter
  * @ingroup metadata
@@ -25,8 +25,8 @@ class CrosswalkFilter extends Filter {
 	 * @param $fromSchema string fully qualified class name of supported input meta-data schema
 	 * @param $toSchema string fully qualified class name of supported output meta-data schema
 	 */
-	function CrosswalkFilter($fromSchema, $toSchema) {
-		parent::Filter('metadata::'.$fromSchema.'(*)', 'metadata::'.$toSchema.'(*)');
+	function __construct($fromSchema, $toSchema) {
+		parent::__construct('metadata::'.$fromSchema.'(*)', 'metadata::'.$toSchema.'(*)');
 	}
 }
-?>
+

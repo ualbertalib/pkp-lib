@@ -1,9 +1,9 @@
 {**
  * templates/controllers/wizard/fileUpload/fileUploadWizard.tpl
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * A wizard to add files or revisions of files.
  *
@@ -13,25 +13,28 @@
  *   $revisedFileId: A pre-selected file to be revised (optional).
  *}
 
+{assign var=uploadWizardId value="fileUploadWizard"|uniqid}
 <script type="text/javascript">
 	// Attach the JS file upload wizard handler.
 	$(function() {ldelim}
-		$('#fileUploadWizard').pkpHandler(
-				'$.pkp.controllers.wizard.fileUpload.FileUploadWizardHandler',
-				{ldelim}
-					cancelButtonText: '{translate|escape:javascript key="common.cancel"}',
-					continueButtonText: '{translate|escape:javascript key="common.continue"}',
-					finishButtonText: '{translate|escape:javascript key="common.complete"}',
-					deleteUrl: '{url|escape:javascript component="api.file.ManageFileApiHandler" op="deleteFile" submissionId=$submissionId stageId=$stageId fileStage=$fileStage suppressNotification=true escape=false}',
-					metadataUrl: '{url|escape:javascript op="editMetadata" submissionId=$submissionId stageId=$stageId reviewRoundId=$reviewRoundId fileStage=$fileStage escape=false}',
-					finishUrl: '{url|escape:javascript op="finishFileSubmission" submissionId=$submissionId stageId=$stageId reviewRoundId=$reviewRoundId fileStage=$fileStage escape=false}'
-				{rdelim});
+		$('#{$uploadWizardId}').pkpHandler(
+			'$.pkp.controllers.wizard.fileUpload.FileUploadWizardHandler',
+			{ldelim}
+				csrfToken: {csrf type=json},
+				cancelButtonText: {translate|json_encode key="common.cancel"},
+				continueButtonText: {translate|json_encode key="common.continue"},
+				finishButtonText: {translate|json_encode key="common.complete"},
+				deleteUrl: {url|json_encode component="api.file.ManageFileApiHandler" op="deleteFile" submissionId=$submissionId stageId=$stageId fileStage=$fileStage suppressNotification=true escape=false},
+				metadataUrl: {url|json_encode op="editMetadata" submissionId=$submissionId stageId=$stageId reviewRoundId=$reviewRoundId fileStage=$fileStage escape=false},
+				finishUrl: {url|json_encode op="finishFileSubmission" submissionId=$submissionId stageId=$stageId reviewRoundId=$reviewRoundId fileStage=$fileStage escape=false}
+			{rdelim}
+		);
 	{rdelim});
 </script>
 
-<div id="fileUploadWizard">
+<div id="{$uploadWizardId}">
 	<ul>
-		<li><a href="{url op="displayFileUploadForm" submissionId=$submissionId stageId=$stageId uploaderRoles=$uploaderRoles uploaderGroupIds=$uploaderGroupIds fileStage=$fileStage revisionOnly=$revisionOnly reviewRoundId=$reviewRoundId revisedFileId=$revisedFileId assocType=$assocType assocId=$assocId dependentFilesOnly=$dependentFilesOnly}">{translate key="submission.submit.uploadStep"}</a></li>
+		<li><a href="{url op="displayFileUploadForm" submissionId=$submissionId stageId=$stageId uploaderRoles=$uploaderRoles fileStage=$fileStage revisionOnly=$revisionOnly reviewRoundId=$reviewRoundId revisedFileId=$revisedFileId assocType=$assocType assocId=$assocId dependentFilesOnly=$dependentFilesOnly}">{translate key="submission.submit.uploadStep"}</a></li>
 		<li><a href="metadata">{translate key="submission.submit.metadataStep"}</a></li>
 		<li><a href="finish">{translate key="submission.submit.finishingUpStep"}</a></li>
 	</ul>

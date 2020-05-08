@@ -3,9 +3,9 @@
 /**
  * @file classes/submission/Representation.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class Representation
  * @ingroup submission
@@ -19,27 +19,27 @@ class Representation extends DataObject {
 	/**
 	 * Constructor.
 	 */
-	function Representation() {
+	function __construct() {
 		// Switch on meta-data adapter support.
 		$this->setHasLoadableAdapters(true);
 
-		parent::DataObject();
+		parent::__construct();
 	}
 
 	/**
 	 * Get sequence of format in format listings for the submission.
 	 * @return float
 	 */
-	function getSeq() {
+	function getSequence() {
 		return $this->getData('seq');
 	}
 
 	/**
 	 * Set sequence of format in format listings for the submission.
-	 * @param $sequence float
+	 * @param $seq float
 	 */
-	function setSeq($seq) {
-		return $this->setData('seq', $seq);
+	function setSequence($seq) {
+		$this->setData('seq', $seq);
 	}
 
 	/**
@@ -65,23 +65,23 @@ class Representation extends DataObject {
 	 * @param $locale
 	 */
 	function setName($name, $locale = null) {
-		return $this->setData('name', $name, $locale);
+		$this->setData('name', $name, $locale);
 	}
 
 	/**
-	 * Set submission ID.
-	 * @param $submissionId int
+	 * Determines if a representation is approved or not.
+	 * @return boolean
 	 */
-	function setSubmissionId($submissionId) {
-		return $this->setData('submissionId', $submissionId);
+	function getIsApproved() {
+		return (boolean) $this->getData('isApproved');
 	}
 
 	/**
-	 * Get submission id
-	 * @return int
+	 * Sets whether a representation is approved or not.
+	 * @param boolean $isApproved
 	 */
-	function getSubmissionId() {
-		return $this->getData('submissionId');
+	function setIsApproved($isApproved) {
+		return $this->setData('isApproved', $isApproved);
 	}
 
 	/**
@@ -103,7 +103,25 @@ class Representation extends DataObject {
 	 * @param $pubId string
 	 */
 	function setStoredPubId($pubIdType, $pubId) {
-		return $this->setData('pub-id::'.$pubIdType, $pubId);
+		$this->setData('pub-id::'.$pubIdType, $pubId);
+	}
+
+	/**
+	 * Get the remote URL at which this representation is retrievable.
+	 * @return string
+	 * @deprecated 3.2.0.0
+	 */
+	function getRemoteURL() {
+		return $this->getData('urlRemote');
+	}
+
+	/**
+	 * Set the remote URL for retrieving this representation.
+	 * @param $remoteURL string
+	 * @deprecated 3.2.0.0
+	 */
+	function setRemoteURL($remoteURL) {
+		return $this->setData('urlRemote', $remoteURL);
 	}
 
 	/**
@@ -111,10 +129,30 @@ class Representation extends DataObject {
 	 * @return int
 	 */
 	function getContextId() {
-		$submissionDao = Application::getSubmissionDAO();
-		$submission = $submissionDao->getById($this->getSubmissionId());
+		$publication = Services::get('publication')->get($this->getData('publicationId'));
+		$submissionDao = DAORegistry::getDAO('SubmissionDAO'); /* @var $submissionDao SubmissionDAO */
+		$submission = $submissionDao->getById($publication->getData('submissionId'));
 		return $submission->getContextId();
+	}
+
+	/**
+	 * @copydoc DataObject::getDAO()
+	 */
+	function getDAO() {
+		return Application::getRepresentationDAO();
+	}
+
+	function getRepresentationFiles($fileStage = null) {
+		$publication = Services::get('publication')->get($this->getData('publicationId'));
+		$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO'); /** @var $submissionFileDao SubmissionFileDAO */
+		return $submissionFileDao->getLatestRevisionsByAssocId(
+			ASSOC_TYPE_REPRESENTATION,
+			$this->getId(),
+			$publication->getData('submissionId'),
+			$fileStage,
+			null
+		);
 	}
 }
 
-?>
+

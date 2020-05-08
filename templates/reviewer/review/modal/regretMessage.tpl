@@ -1,9 +1,9 @@
 {**
  * templates/reviewer/review/modal/regretMessage.tpl
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * Display a field for reviewers to enter regret messages
  *
@@ -17,13 +17,14 @@
 </script>
 
 <form class="pkp_form" id="declineReviewForm" method="post" action="{url op="saveDeclineReview" path=$submissionId|escape}">
+	{csrf}
 	<p>{translate key="reviewer.submission.declineReviewMessage"}</p>
 
 	{fbvFormArea id="declineReview"}
 		{fbvFormSection}
-			{fbvElement type="textarea" id="declineReviewMessage" value=$declineMessageBody}
+			{fbvElement type="textarea" id="declineReviewMessage" value=$declineMessageBody rich=true}
 		{/fbvFormSection}
 
-		{fbvFormButtons submitText="form.submit" hideCancel=true}
+		{fbvFormButtons submitText="reviewer.submission.declineReview" hideCancel=true}
 	{/fbvFormArea}
 </form>

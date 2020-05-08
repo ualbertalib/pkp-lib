@@ -6,9 +6,9 @@
 /**
  * @file controllers/api/user/UserApiHandler.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class UserApiHandler
  * @ingroup controllers_api_user
@@ -23,13 +23,6 @@ import('lib.pkp.classes.handler.PKPHandler');
 import('lib.pkp.classes.core.JSONMessage');
 
 class UserApiHandler extends PKPHandler {
-	/**
-	 * Constructor.
-	 */
-	function UserApiHandler() {
-		parent::PKPHandler();
-	}
-
 
 	//
 	// Implement template methods from PKPHandler
@@ -56,7 +49,7 @@ class UserApiHandler extends PKPHandler {
 	 * displayed or not.
 	 * @param $args array
 	 * @param $request PKPRequest
-	 * @return string a JSON message
+	 * @return JSONMessage JSON object
 	 */
 	function updateUserMessageState($args, $request) {
 		// Exit with a fatal error if request parameters are missing.
@@ -90,13 +83,11 @@ class UserApiHandler extends PKPHandler {
 		}
 
 		// Persist the validated setting.
-		$userSettingsDao = DAORegistry::getDAO('UserSettingsDAO');
+		$userSettingsDao = DAORegistry::getDAO('UserSettingsDAO'); /* @var $userSettingsDao UserSettingsDAO */
 		$userSettingsDao->updateSetting($user->getId(), $settingName, $settingValue, $settingType);
 
 		// Return a success message.
-		$json = new JSONMessage(true);
-		return $json->getString();
-
+		return new JSONMessage(true);
 	}
 
 
@@ -104,15 +95,15 @@ class UserApiHandler extends PKPHandler {
 	 * Get a suggested username, making sure it's not already used.
 	 * @param $args array
 	 * @param $request PKPRequest
+	 * @return JSONMessage JSON object
 	 */
 	function suggestUsername($args, $request) {
 		$suggestion = Validation::suggestUsername(
-			$request->getUserVar('firstName'),
-			$request->getUserVar('lastName')
+			$request->getUserVar('givenName'),
+			$request->getUserVar('familyName')
 		);
 
-		$json = new JSONMessage(true, $suggestion);
-		return $json->getString();
+		return new JSONMessage(true, $suggestion);
 	}
 
 	/**
@@ -139,4 +130,4 @@ class UserApiHandler extends PKPHandler {
 	}
 }
 
-?>
+

@@ -2,9 +2,9 @@
 /**
  * @file classes/security/authorization/PKPSiteAccessPolicy.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPSiteAccessPolicy
  * @ingroup security_authorization
@@ -27,8 +27,8 @@ class PKPSiteAccessPolicy extends PolicySet {
 	 * @param $roleAssignments array|int Either an array of role -> operation assignments or the constant SITE_ACCESS_ALL_ROLES
 	 * @param $message string a message to be displayed if the authorization fails
 	 */
-	function PKPSiteAccessPolicy($request, $operations, $roleAssignments, $message = 'user.authorization.loginRequired') {
-		parent::PolicySet();
+	function __construct($request, $operations, $roleAssignments, $message = 'user.authorization.loginRequired') {
+		parent::__construct();
 		$siteRolePolicy = new PolicySet(COMBINING_PERMIT_OVERRIDES);
 		if(is_array($roleAssignments)) {
 			import('lib.pkp.classes.security.authorization.RoleBasedHandlerOperationPolicy');
@@ -52,7 +52,7 @@ class PKPSiteAccessPolicy extends PolicySet {
 	 */
 	function effect() {
 		// Retrieve the user from the session.
-		$request = $this->getRequest();
+		$request = Application::get()->getRequest();
 		$user = $request->getUser();
 
 		if (!is_a($user, 'User')) {
@@ -64,4 +64,4 @@ class PKPSiteAccessPolicy extends PolicySet {
 	}
 }
 
-?>
+

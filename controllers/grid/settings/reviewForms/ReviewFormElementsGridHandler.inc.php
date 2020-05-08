@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/settings/reviewForms/ReviewFormElementsGridHandler.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ReviewFormElementsGridHandler
  * @ingroup controllers_grid_settings_reviewForms
@@ -24,8 +24,8 @@ class ReviewFormElementsGridHandler extends GridHandler {
 	/**
 	 * Constructor
 	 */
-	function ReviewFormElementsGridHandler() {
-		parent::GridHandler();
+	function __construct() {
+		parent::__construct();
 		$this->addRoleAssignment(array(
 			ROLE_ID_MANAGER),
 			array('fetchGrid', 'fetchRow', 'saveSequence',
@@ -50,17 +50,17 @@ class ReviewFormElementsGridHandler extends GridHandler {
 		$this->addPolicy($rolePolicy);
 
 		$this->reviewFormId = (int) $request->getUserVar('reviewFormId');
-		$reviewFormDao = DAORegistry::getDAO('ReviewFormDAO');
+		$reviewFormDao = DAORegistry::getDAO('ReviewFormDAO'); /* @var $reviewFormDao ReviewFormDAO */
 		if (!$reviewFormDao->reviewFormExists($this->reviewFormId, Application::getContextAssocType(), $request->getContext()->getId())) return false;
 
 		return parent::authorize($request, $args, $roleAssignments);
 	}
 
 	/**
-	 * @see PKPHandler::initialize()
+	 * @copydoc GridHandler::initialize()
 	 */
-	function initialize($request) {
-		parent::initialize($request);
+	function initialize($request, $args = null) {
+		parent::initialize($request, $args);
 
 		// Load user-related translations.
 		AppLocale::requireComponents(
@@ -106,7 +106,7 @@ class ReviewFormElementsGridHandler extends GridHandler {
 				null,
 				null,
 				$reviewFormElementGridCellProvider,
-				array('multiline' => true, 'html' => true, 'maxLength' => 220)
+				array('html' => true, 'maxLength' => 220)
 			)
 		);
 
@@ -129,19 +129,17 @@ class ReviewFormElementsGridHandler extends GridHandler {
 	 * @see GridHandler::getRowInstance()
 	 * @return UserGridRow
 	 */
-	function getRowInstance() {
+	protected function getRowInstance() {
 		return new ReviewFormElementGridRow();
 	}
 
 	/**
-	 * @see GridHandler::loadData()
-	 * @param $request PKPRequest
-	 * @return array Grid data.
+	 * @copydoc GridHandler::loadData()
 	 */
-	function loadData($request) {
+	protected function loadData($request, $filter = null) {
 		// Get review form elements.
 		//$rangeInfo = $this->getRangeInfo('reviewFormElements');
-		$reviewFormElementDao = DAORegistry::getDAO('ReviewFormElementDAO');
+		$reviewFormElementDao = DAORegistry::getDAO('ReviewFormElementDAO'); /* @var $reviewFormElementDao ReviewFormElementDAO */
 		$reviewFormElements = $reviewFormElementDao->getByReviewFormId($this->reviewFormId, null); //FIXME add range info?
 
 		return $reviewFormElements->toAssociativeArray();
@@ -155,12 +153,19 @@ class ReviewFormElementsGridHandler extends GridHandler {
 	}
 
 	/**
-	 * @see lib/pkp/classes/controllers/grid/GridHandler::setDataElementSequence()
+	 * @copydoc GridHandler::getDataElementSequence()
 	 */
-	function setDataElementSequence($request, $rowId, &$reviewForm, $newSequence) {
+	function getDataElementSequence($gridDataElement) {
+		return $gridDataElement->getSequence();
+	}
+
+	/**
+	 * @copydoc GridHandler::setDataElementSequence()
+	 */
+	function setDataElementSequence($request, $rowId, $gridDataElement, $newSequence) {
 		$reviewFormElementDao = DAORegistry::getDAO('ReviewFormElementDAO'); /* @var $reviewFormElementDao ReviewFormElementDAO */
-		$reviewFormElement->setSequence($newSequence);
-		$reviewFormElementDao->updateObject($reviewFormElement);
+		$gridDataElement->setSequence($newSequence);
+		$reviewFormElementDao->updateObject($gridDataElement);
 	}
 
 
@@ -169,22 +174,22 @@ class ReviewFormElementsGridHandler extends GridHandler {
 	//
 	/**
 	 * Add a new review form element.
-	* @param $args array
+	 * @param $args array
 	 * @param $request PKPRequest
+	 * @return JSONMessage JSON object
 	 */
 	function createReviewFormElement($args, $request) {
 		// Form handling
 		$reviewFormElementForm = new ReviewFormElementForm($this->reviewFormId);
-		$reviewFormElementForm->initData($request);
-		$json = new JSONMessage(true, $reviewFormElementForm->fetch($args, $request));
-
-		return $json->getString();
+		$reviewFormElementForm->initData();
+		return new JSONMessage(true, $reviewFormElementForm->fetch($request));
 	}
 
 	/**
 	 * Edit an existing review form element.
-	* @param $args array
+	 * @param $args array
 	 * @param $request PKPRequest
+	 * @return JSONMessage JSON object
 	 */
 	function editReviewFormElement($args, $request) {
 		// Identify the review form element Id
@@ -192,21 +197,22 @@ class ReviewFormElementsGridHandler extends GridHandler {
 
 		// Display form
 		$reviewFormElementForm = new ReviewFormElementForm($this->reviewFormId, $reviewFormElementId);
-		$reviewFormElementForm->initData($request);
-		$json = new JSONMessage(true, $reviewFormElementForm->fetch($args, $request));
-
-		return $json->getString();
+		$reviewFormElementForm->initData();
+		return new JSONMessage(true, $reviewFormElementForm->fetch($request));
 	}
 
 	/**
 	 * Save changes to a review form element.
+	 * @param $args array
+	 * @param $request PKPRequest
+	 * @return JSONMessage JSON object
 	 */
 	function updateReviewFormElement($args, $request) {
 		$reviewFormElementId = (int) $request->getUserVar('reviewFormElementId');
 
 		$context = $request->getContext();
-		$reviewFormDao = DAORegistry::getDAO('ReviewFormDAO');
-		$reviewFormElementDao = DAORegistry::getDAO('ReviewFormElementDAO');
+		$reviewFormDao = DAORegistry::getDAO('ReviewFormDAO'); /* @var $reviewFormDao ReviewFormDAO */
+		$reviewFormElementDao = DAORegistry::getDAO('ReviewFormElementDAO'); /* @var $reviewFormElementDao ReviewFormElementDAO */
 
 		$reviewForm = $reviewFormDao->getById($this->reviewFormId, Application::getContextAssocType(), $context->getId());
 
@@ -219,7 +225,7 @@ class ReviewFormElementsGridHandler extends GridHandler {
 		$reviewFormElementForm->readInputData();
 
 		if ($reviewFormElementForm->validate()) {
-			$reviewFormElementId = $reviewFormElementForm->execute($request);
+			$reviewFormElementId = $reviewFormElementForm->execute();
 
 			// Create the notification.
 			$notificationMgr = new NotificationManager();
@@ -229,29 +235,29 @@ class ReviewFormElementsGridHandler extends GridHandler {
 			return DAO::getDataChangedEvent($reviewFormElementId);
 		}
 
-		$json = new JSONMessage(false);
-		return $json->getString();
+		return new JSONMessage(false);
 	}
 
 	/**
 	 * Delete a review form element.
 	 * @param $args array
+	 * @param $request PKPRequest
+	 * @return JSONMessage JSON object
 	 */
 	function deleteReviewFormElement($args, $request) {
 		$reviewFormElementId = (int) $request->getUserVar('rowId');
 
 		$context = $request->getContext();
-		$reviewFormDao = DAORegistry::getDAO('ReviewFormDAO');
+		$reviewFormDao = DAORegistry::getDAO('ReviewFormDAO'); /* @var $reviewFormDao ReviewFormDAO */
 
-		if ($reviewFormDao->unusedReviewFormExists($this->reviewFormId, Application::getContextAssocType(), $context->getId())) {
-			$reviewFormElementDao = DAORegistry::getDAO('ReviewFormElementDAO');
+		if ($request->checkCSRF() && $reviewFormDao->unusedReviewFormExists($this->reviewFormId, Application::getContextAssocType(), $context->getId())) {
+			$reviewFormElementDao = DAORegistry::getDAO('ReviewFormElementDAO'); /* @var $reviewFormElementDao ReviewFormElementDAO */
 			$reviewFormElementDao->deleteById($reviewFormElementId);
 			return DAO::getDataChangedEvent($reviewFormElementId);
 		}
 
-		$json = new JSONMessage(false);
-		return $json->getString();
+		return new JSONMessage(false);
 	}
 }
 
-?>
+

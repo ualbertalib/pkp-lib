@@ -3,9 +3,9 @@
 /**
  * @file controllers/modals/editorDecision/EditorDecisionHandler.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class EditorDecisionHandler
  * @ingroup controllers_modals_editorDecision
@@ -19,13 +19,6 @@ import('classes.handler.Handler');
 import('lib.pkp.classes.core.JSONMessage');
 
 class PKPEditorDecisionHandler extends Handler {
-	/**
-	 * Constructor.
-	 */
-	function PKPEditorDecisionHandler() {
-		parent::Handler();
-	}
-
 
 	//
 	// Implement template methods from PKPHandler
@@ -39,23 +32,31 @@ class PKPEditorDecisionHandler extends Handler {
 		import('lib.pkp.classes.security.authorization.internal.ReviewRoundRequiredPolicy');
 		$this->addPolicy(new ReviewRoundRequiredPolicy($request, $args, 'reviewRoundId', $reviewRoundOps));
 
-		// Approve proof need submission access policy.
-		$router = $request->getRouter();
-		if ($router->getRequestedOp($request) == 'saveApproveProof') {
-			import('classes.security.authorization.SubmissionFileAccessPolicy');
-			$this->addPolicy(new SubmissionFileAccessPolicy($request, $args, $roleAssignments, SUBMISSION_FILE_ACCESS_MODIFY));
+		if (!parent::authorize($request, $args, $roleAssignments)) return false;
+
+		// Prevent editors who are also assigned as authors from accessing the
+		// review stage operations
+		$operation = $request->getRouter()->getRequestedOp($request);
+		if (in_array($operation, $reviewRoundOps)) {
+			$userAccessibleStages = $this->getAuthorizedContextObject(ASSOC_TYPE_ACCESSIBLE_WORKFLOW_STAGES);
+			foreach ($userAccessibleStages as $stageId => $roles) {
+				if (in_array(ROLE_ID_AUTHOR, $roles)) {
+					return false;
+				}
+			}
 		}
 
-		return parent::authorize($request, $args, $roleAssignments);
+		return true;
 	}
 
 	/**
-	 * @see PKPHandler::initialize()
+	 * @copydoc PKPHandler::initialize()
 	 */
-	function initialize($request, $args) {
+	function initialize($request) {
 		AppLocale::requireComponents(
 			LOCALE_COMPONENT_APP_COMMON,
 			LOCALE_COMPONENT_APP_EDITOR,
+			LOCALE_COMPONENT_APP_SUBMISSION,
 			LOCALE_COMPONENT_PKP_EDITOR,
 			LOCALE_COMPONENT_PKP_SUBMISSION
 		);
@@ -190,7 +191,7 @@ class PKPEditorDecisionHandler extends Handler {
 	 * Import all free-text/review form reviews to paste into message
 	 * @param $args array
 	 * @param $request PKPRequest
-	 * @return string Serialized JSON object
+	 * @return JSONMessage JSON object
 	 */
 	function importPeerReviews($args, $request) {
 		// Retrieve the authorized submission.
@@ -200,10 +201,10 @@ class PKPEditorDecisionHandler extends Handler {
 		$reviewRound = $this->getAuthorizedContextObject(ASSOC_TYPE_REVIEW_ROUND);
 
 		// Retrieve peer reviews.
-		$reviewAssignmentDao = DAORegistry::getDAO('ReviewAssignmentDAO');
-		$submissionCommentDao = DAORegistry::getDAO('SubmissionCommentDAO');
-		$reviewFormResponseDao = DAORegistry::getDAO('ReviewFormResponseDAO');
-		$reviewFormElementDao = DAORegistry::getDAO('ReviewFormElementDAO');
+		$reviewAssignmentDao = DAORegistry::getDAO('ReviewAssignmentDAO'); /* @var $reviewAssignmentDao ReviewAssignmentDAO */
+		$submissionCommentDao = DAORegistry::getDAO('SubmissionCommentDAO'); /* @var $submissionCommentDao SubmissionCommentDAO */
+		$reviewFormResponseDao = DAORegistry::getDAO('ReviewFormResponseDAO'); /* @var $reviewFormResponseDao ReviewFormResponseDAO */
+		$reviewFormElementDao = DAORegistry::getDAO('ReviewFormElementDAO'); /* @var $reviewFormElementDao ReviewFormElementDAO */
 
 		$reviewAssignments = $reviewAssignmentDao->getBySubmissionId($submission->getId(), $reviewRound->getId());
 		$reviewIndexes = $reviewAssignmentDao->getReviewIndexesForRound($submission->getId(), $reviewRound->getId());
@@ -213,25 +214,30 @@ class PKPEditorDecisionHandler extends Handler {
 		$textSeparator = '------------------------------------------------------';
 		foreach ($reviewAssignments as $reviewAssignment) {
 			// If the reviewer has completed the assignment, then import the review.
-			if ($reviewAssignment->getDateCompleted() != null && !$reviewAssignment->getCancelled()) {
+			if ($reviewAssignment->getDateCompleted() != null) {
 				// Get the comments associated with this review assignment
 				$submissionComments = $submissionCommentDao->getSubmissionComments($submission->getId(), COMMENT_TYPE_PEER_REVIEW, $reviewAssignment->getId());
 
-				$body .= "\n\n$textSeparator\n";
-				// If it is not a double blind review, show reviewer's name.
-				if ($reviewAssignment->getReviewMethod() != SUBMISSION_REVIEW_METHOD_DOUBLEBLIND) {
-					$body .= $reviewAssignment->getReviewerFullName() . "\n";
+				$body .= "<br><br>$textSeparator<br>";
+				// If it is an open review, show reviewer's name.
+				if ($reviewAssignment->getReviewMethod() == SUBMISSION_REVIEW_METHOD_OPEN) {
+					$body .= $reviewAssignment->getReviewerFullName() . "<br>\n";
 				} else {
-					$body .= __('submission.comments.importPeerReviews.reviewerLetter', array('reviewerLetter' => String::enumerateAlphabetically($reviewIndexes[$reviewAssignment->getId()]))) . "\n";
+					$body .= __('submission.comments.importPeerReviews.reviewerLetter', array('reviewerLetter' => PKPString::enumerateAlphabetically($reviewIndexes[$reviewAssignment->getId()]))) . "<br>\n";
 				}
 
 				while ($comment = $submissionComments->next()) {
 					// If the comment is viewable by the author, then add the comment.
 					if ($comment->getViewable()) {
-						$body .= String::html2text($comment->getComments()) . "\n\n";
+						$body .= PKPString::stripUnsafeHtml($comment->getComments());
 					}
 				}
-				$body .= "$textSeparator\n\n";
+
+				// Add reviewer recommendation
+				$recommendation = $reviewAssignment->getLocalizedRecommendation();
+				$body .= __('submission.recommendation', array('recommendation' => $recommendation)) . "<br>\n";
+
+				$body .= "<br>$textSeparator<br><br>";
 
 				if ($reviewFormId = $reviewAssignment->getReviewFormId()) {
 					$reviewId = $reviewAssignment->getId();
@@ -239,45 +245,100 @@ class PKPEditorDecisionHandler extends Handler {
 
 					$reviewFormElements = $reviewFormElementDao->getByReviewFormId($reviewFormId);
 					if(!$submissionComments) {
-						$body .= "$textSeparator\n";
+						$body .= "$textSeparator<br>";
 
-						$body .= __('submission.comments.importPeerReviews.reviewerLetter', array('reviewerLetter' => String::enumerateAlphabetically($reviewIndexes[$reviewAssignment->getId()]))) . "\n\n";
+						$body .= __('submission.comments.importPeerReviews.reviewerLetter', array('reviewerLetter' => PKPString::enumerateAlphabetically($reviewIndexes[$reviewAssignment->getId()]))) . '<br><br>';
 					}
 					while ($reviewFormElement = $reviewFormElements->next()) {
-						$body .= String::html2text($reviewFormElement->getLocalizedQuestion()) . ": \n";
+						if (!$reviewFormElement->getIncluded()) continue;
+
+						$body .= PKPString::stripUnsafeHtml($reviewFormElement->getLocalizedQuestion());
 						$reviewFormResponse = $reviewFormResponseDao->getReviewFormResponse($reviewId, $reviewFormElement->getId());
 
 						if ($reviewFormResponse) {
 							$possibleResponses = $reviewFormElement->getLocalizedPossibleResponses();
+							// See issue #2437.
+							if (in_array($reviewFormElement->getElementType(), array(REVIEW_FORM_ELEMENT_TYPE_CHECKBOXES, REVIEW_FORM_ELEMENT_TYPE_RADIO_BUTTONS))) {
+								ksort($possibleResponses);
+								$possibleResponses = array_values($possibleResponses);
+							}
 							if (in_array($reviewFormElement->getElementType(), $reviewFormElement->getMultipleResponsesElementTypes())) {
 								if ($reviewFormElement->getElementType() == REVIEW_FORM_ELEMENT_TYPE_CHECKBOXES) {
+									$body .= '<ul>';
 									foreach ($reviewFormResponse->getValue() as $value) {
-										$body .= "\t" . String::html2text($possibleResponses[$value]) . "\n";
+										$body .= '<li>' . PKPString::stripUnsafeHtml($possibleResponses[$value]) . '</li>';
 									}
+									$body .= '</ul>';
 								} else {
-									$body .= "\t" . String::html2text($possibleResponses[$reviewFormResponse->getValue()]) . "\n";
+									$body .= '<blockquote>' . PKPString::stripUnsafeHtml($possibleResponses[$reviewFormResponse->getValue()]) . '</blockquote>';
 								}
-								$body .= "\n";
+								$body .= '<br>';
 							} else {
-								$body .= "\t" . String::html2text($reviewFormResponse->getValue()) . "\n\n";
+								$body .= '<blockquote>' . nl2br(htmlspecialchars($reviewFormResponse->getValue())) . '</blockquote>';
 							}
 						}
 
 					}
-					$body .= "$textSeparator\n\n";
+					$body .= "$textSeparator<br><br>";
 
 				}
-
-
 			}
 		}
 
-		if(empty($body)) {
-			$json = new JSONMessage(false, __('editor.review.noReviews'));
-		} else {
-			$json = new JSONMessage(true, $body);
+		// Notify the user.
+		$notificationMgr = new NotificationManager();
+		$user = $request->getUser();
+		$notificationMgr->createTrivialNotification($user->getId(), NOTIFICATION_TYPE_SUCCESS, array('contents' => __('editor.review.reviewsAdded')));
+
+		return new JSONMessage(true, empty($body)?__('editor.review.noReviews'):$body);
+	}
+
+	/**
+	 * Show the editor recommendation form
+	 * @param $args array
+	 * @param $request PKPRequest
+	 * @return JSONMessage
+	 */
+	function sendRecommendation($args, $request) {
+		// Retrieve the authorized submission, stage id and review round.
+		$submission = $this->getAuthorizedContextObject(ASSOC_TYPE_SUBMISSION);
+		$stageId = $this->getAuthorizedContextObject(ASSOC_TYPE_WORKFLOW_STAGE);
+		assert(in_array($stageId, $this->_getReviewStages()));
+		$reviewRound = $this->getAuthorizedContextObject(ASSOC_TYPE_REVIEW_ROUND);
+		assert(is_a($reviewRound, 'ReviewRound'));
+
+		// Form handling
+		import('lib.pkp.controllers.modals.editorDecision.form.RecommendationForm');
+		$editorRecommendationForm = new RecommendationForm($submission, $stageId, $reviewRound);
+		$editorRecommendationForm->initData();
+		return new JSONMessage(true, $editorRecommendationForm->fetch($request));
+	}
+
+	/**
+	 * Show the editor recommendation form
+	 * @param $args array
+	 * @param $request PKPRequest
+	 * @return JSONMessage
+	 */
+	function saveRecommendation($args, $request) {
+		// Retrieve the authorized submission, stage id and review round.
+		$submission = $this->getAuthorizedContextObject(ASSOC_TYPE_SUBMISSION);
+		$stageId = $this->getAuthorizedContextObject(ASSOC_TYPE_WORKFLOW_STAGE);
+		assert(in_array($stageId, $this->_getReviewStages()));
+		$reviewRound = $this->getAuthorizedContextObject(ASSOC_TYPE_REVIEW_ROUND);
+		assert(is_a($reviewRound, 'ReviewRound'));
+
+		// Form handling
+		import('lib.pkp.controllers.modals.editorDecision.form.RecommendationForm');
+		$editorRecommendationForm = new RecommendationForm($submission, $stageId, $reviewRound);
+		$editorRecommendationForm->readInputData();
+		if ($editorRecommendationForm->validate()) {
+			$editorRecommendationForm->execute();
+			$json = new JSONMessage(true);
+			$json->setGlobalEvent('decisionActionUpdated');
+			return $json;
 		}
-		return $json->getString();
+		return new JSONMessage(false);
 	}
 
 
@@ -289,7 +350,7 @@ class PKPEditorDecisionHandler extends Handler {
 	 * @return array
 	 */
 	protected function _getReviewRoundOps() {
-		return array('promoteInReview', 'savePromoteInReview', 'newReviewRound', 'saveNewReviewRound', 'sendReviewsInReview', 'saveSendReviewsInReview', 'importPeerReviews');
+		return array('promoteInReview', 'savePromoteInReview', 'newReviewRound', 'saveNewReviewRound', 'sendReviewsInReview', 'saveSendReviewsInReview', 'importPeerReviews', 'sendRecommendation', 'saveRecommendation');
 	}
 
 	/**
@@ -349,7 +410,7 @@ class PKPEditorDecisionHandler extends Handler {
 	 * @param $args array
 	 * @param $request PKPRequest
 	 * @param $formName string Name of form to call
-	 * @return string Serialized JSON object
+	 * @return JSONMessage JSON object
 	 */
 	protected function _initiateEditorDecision($args, $request, $formName) {
 		// Retrieve the decision
@@ -357,10 +418,9 @@ class PKPEditorDecisionHandler extends Handler {
 
 		// Form handling
 		$editorDecisionForm = $this->_getEditorDecisionForm($formName, $decision);
-		$editorDecisionForm->initData($args, $request);
+		$editorDecisionForm->initData();
 
-		$json = new JSONMessage(true, $editorDecisionForm->fetch($request));
-		return $json->getString();
+		return new JSONMessage(true, $editorDecisionForm->fetch($request));
 	}
 
 	/**
@@ -370,7 +430,7 @@ class PKPEditorDecisionHandler extends Handler {
 	 * @param $formName string Name of form to call
 	 * @param $redirectOp string A workflow stage operation to
 	 *  redirect to if successful (if any).
-	 * @return string Serialized JSON object
+	 * @return JSONMessage JSON object
 	 */
 	protected function _saveEditorDecision($args, $request, $formName, $redirectOp = null, $decision = null) {
 		// Retrieve the authorized submission.
@@ -383,37 +443,48 @@ class PKPEditorDecisionHandler extends Handler {
 		$editorDecisionForm = $this->_getEditorDecisionForm($formName, $decision);
 		$editorDecisionForm->readInputData();
 		if ($editorDecisionForm->validate()) {
-			$editorDecisionForm->execute($args, $request);
+			$editorDecisionForm->execute();
+
+			// Get a list of author user IDs
+			$authorUserIds = array();
+			$stageAssignmentDao = DAORegistry::getDAO('StageAssignmentDAO'); /* @var $stageAssignmentDao StageAssignmentDAO */
+			$submitterAssignments = $stageAssignmentDao->getBySubmissionAndRoleId($submission->getId(), ROLE_ID_AUTHOR);
+			while ($assignment = $submitterAssignments->next()) {
+				$authorUserIds[] = $assignment->getUserId();
+			}
+			// De-duplicate assignments
+			$authorUserIds = array_unique($authorUserIds);
 
 			// Update editor decision and pending revisions notifications.
 			$notificationMgr = new NotificationManager();
 			$editorDecisionNotificationType = $this->_getNotificationTypeByEditorDecision($decision);
-			$notificationTypes = $this->_getReviewNotificationTypes();
-			$notificationTypes[] = $editorDecisionNotificationType;
+			$notificationTypes = array_merge(array($editorDecisionNotificationType), $this->_getReviewNotificationTypes());
 			$notificationMgr->updateNotification(
 				$request,
 				$notificationTypes,
-				array($submission->getUserId()),
+				$authorUserIds,
 				ASSOC_TYPE_SUBMISSION,
 				$submission->getId()
 			);
 
-			$reviewRound = $this->getAuthorizedContextObject(ASSOC_TYPE_REVIEW_ROUND);
-			if ($reviewRound) {
+			// Update submission notifications
+			$submissionNotificationsToUpdate = array(
+				SUBMISSION_EDITOR_DECISION_ACCEPT => array(NOTIFICATION_TYPE_ASSIGN_COPYEDITOR,	NOTIFICATION_TYPE_AWAITING_COPYEDITS),
+				SUBMISSION_EDITOR_DECISION_SEND_TO_PRODUCTION => array(
+					NOTIFICATION_TYPE_ASSIGN_COPYEDITOR,
+					NOTIFICATION_TYPE_AWAITING_COPYEDITS,
+					NOTIFICATION_TYPE_ASSIGN_PRODUCTIONUSER,
+					NOTIFICATION_TYPE_AWAITING_REPRESENTATIONS,
+				),
+			);
+			$notificationMgr = new NotificationManager();
+			if (array_key_exists($decision, $submissionNotificationsToUpdate)) {
 				$notificationMgr->updateNotification(
 					$request,
-					array(NOTIFICATION_TYPE_ALL_REVIEWS_IN),
+					$submissionNotificationsToUpdate[$decision],
 					null,
-					ASSOC_TYPE_REVIEW_ROUND,
-					$reviewRound->getId()
-				);
-
-				$notificationMgr->updateNotification(
-					$request,
-					array(NOTIFICATION_TYPE_ALL_REVISIONS_IN),
-					null,
-					ASSOC_TYPE_REVIEW_ROUND,
-					$reviewRound->getId()
+					ASSOC_TYPE_SUBMISSION,
+					$submission->getId()
 				);
 			}
 
@@ -422,13 +493,19 @@ class PKPEditorDecisionHandler extends Handler {
 				$redirectUrl = $dispatcher->url($request, ROUTE_PAGE, null, 'workflow', $redirectOp, array($submission->getId()));
 				return $request->redirectUrlJson($redirectUrl);
 			} else {
-				// Needed to update review round status notifications.
-				return DAO::getDataChangedEvent();
+				if (in_array($decision, [SUBMISSION_EDITOR_DECISION_DECLINE, SUBMISSION_EDITOR_DECISION_INITIAL_DECLINE])) {
+					$dispatcher = $this->getDispatcher();
+					$redirectUrl = $dispatcher->url($request, ROUTE_PAGE, null, 'workflow', 'access', array($submission->getId()));
+					return $request->redirectUrlJson($redirectUrl);
+
+				} else {
+					// Needed to update review round status notifications.
+					return DAO::getDataChangedEvent();
+				}
 			}
 		} else {
-			$json = new JSONMessage(false);
+			return new JSONMessage(false);
 		}
-		return $json->getString();
 	}
 
 	/**
@@ -448,4 +525,4 @@ class PKPEditorDecisionHandler extends Handler {
 	}
 }
 
-?>
+

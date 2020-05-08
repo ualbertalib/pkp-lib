@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/languages/LanguageGridCellProvider.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class LanguageGridCellProvider
  * @ingroup controllers_grid_languages
@@ -16,12 +16,6 @@
 import('lib.pkp.classes.controllers.grid.GridCellProvider');
 
 class LanguageGridCellProvider extends GridCellProvider {
-	/**
-	 * Constructor
-	 */
-	function LanguageGridCellProvider() {
-		parent::GridCellProvider();
-	}
 
 	/**
 	 * @copydoc GridCellProvider::getTemplateVarsFromRowColumn()
@@ -50,11 +44,11 @@ class LanguageGridCellProvider extends GridCellProvider {
 			case 'uiLocale';
 				return array('selected' => $element['supportedLocales'],
 					'disabled' => !$element['supported']);
-			case 'submissionLocale';
-				return array('selected' => $element['supportedSubmissionLocales'],
-					'disabled' => !$element['supported']);
 			case 'formLocale';
 				return array('selected' => $element['supportedFormLocales'],
+					'disabled' => !$element['supported']);
+			case 'submissionLocale';
+				return array('selected' => $element['supportedSubmissionLocales'],
 					'disabled' => !$element['supported']);
 			default:
 				assert(false);
@@ -65,7 +59,7 @@ class LanguageGridCellProvider extends GridCellProvider {
 	/**
 	 * @copydoc GridCellProvider::getCellActions()
 	 */
-	function getCellActions($request, $row, $column) {
+	function getCellActions($request, $row, $column, $position = GRID_ACTION_POSITION_DEFAULT) {
 		import('lib.pkp.classes.linkAction.request.RemoteActionConfirmationModal');
 		import('lib.pkp.classes.linkAction.request.AjaxAction');
 
@@ -82,8 +76,12 @@ class LanguageGridCellProvider extends GridCellProvider {
 				$enabled = $element['supported'];
 				if ($enabled) {
 					$action = 'disable-' . $row->getId();
-					$actionRequest = new RemoteActionConfirmationModal(__('admin.languages.confirmDisable'),
-						__('common.disable'), $router->url($request, null, null, 'disableLocale', null, $actionArgs));
+					$actionRequest = new RemoteActionConfirmationModal(
+						$request->getSession(),
+						__('admin.languages.confirmDisable'),
+						__('common.disable'),
+						$router->url($request, null, null, 'disableLocale', null, $actionArgs)
+					);
 				} else {
 					$action = 'enable-' . $row->getId();
 					$actionRequest = new AjaxAction($router->url($request, null, null, 'enableLocale', null, $actionArgs));
@@ -93,7 +91,12 @@ class LanguageGridCellProvider extends GridCellProvider {
 				$primary = $element['primary'];
 				if (!$primary) {
 					$action = 'setPrimary-' . $row->getId();
-					$actionRequest = new AjaxAction($router->url($request, null, null, 'setPrimaryLocale', null, $actionArgs));
+					$actionRequest = new RemoteActionConfirmationModal(
+						$request->getSession(),
+						__('admin.languages.confirmSitePrimaryLocaleChange'),
+						__('locale.primary'),
+						$router->url($request, null, null, 'setPrimaryLocale', null, $actionArgs)
+					);
 				}
 				break;
 			case 'contextPrimary':
@@ -109,16 +112,16 @@ class LanguageGridCellProvider extends GridCellProvider {
 				$actionArgs['value'] = !$element['supportedLocales'];
 				$actionRequest = new AjaxAction($router->url($request, null, null, 'saveLanguageSetting', null, $actionArgs));
 				break;
-			case 'submissionLocale':
-				$action = 'setSubmissionLocale-' . $row->getId();
-				$actionArgs['setting'] = 'supportedSubmissionLocales';
-				$actionArgs['value'] = !$element['supportedSubmissionLocales'];
-				$actionRequest = new AjaxAction($router->url($request, null, null, 'saveLanguageSetting', null, $actionArgs));
-				break;
 			case 'formLocale':
 				$action = 'setFormLocale-' . $row->getId();
 				$actionArgs['setting'] = 'supportedFormLocales';
 				$actionArgs['value'] = !$element['supportedFormLocales'];
+				$actionRequest = new AjaxAction($router->url($request, null, null, 'saveLanguageSetting', null, $actionArgs));
+				break;
+			case 'submissionLocale':
+				$action = 'setSubmissionLocale-' . $row->getId();
+				$actionArgs['setting'] = 'supportedSubmissionLocales';
+				$actionArgs['value'] = !$element['supportedSubmissionLocales'];
 				$actionRequest = new AjaxAction($router->url($request, null, null, 'saveLanguageSetting', null, $actionArgs));
 				break;
 		}
@@ -132,4 +135,4 @@ class LanguageGridCellProvider extends GridCellProvider {
 	}
 }
 
-?>
+

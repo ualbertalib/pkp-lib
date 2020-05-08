@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/settings/library/LibraryFileAdminGridDataProvider.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class FilesGridDataProvider
  * @ingroup controllers_grid_settings_library
@@ -27,9 +27,9 @@ class LibraryFileAdminGridDataProvider extends CategoryGridDataProvider {
 	/**
 	 * Constructor
 	 */
-	function LibraryFileAdminGridDataProvider($canEdit) {
+	function __construct($canEdit) {
 		$this->_canEdit = $canEdit;
-		parent::CategoryGridDataProvider();
+		parent::__construct();
 	}
 
 
@@ -42,8 +42,8 @@ class LibraryFileAdminGridDataProvider extends CategoryGridDataProvider {
 	 */
 	function getAuthorizationPolicy($request, $args, $roleAssignments) {
 		$this->_context = $request->getContext();
-		import('lib.pkp.classes.security.authorization.PkpContextAccessPolicy');
-		return new PkpContextAccessPolicy($request, $roleAssignments);
+		import('lib.pkp.classes.security.authorization.ContextAccessPolicy');
+		return new ContextAccessPolicy($request, $roleAssignments);
 	}
 
 	/**
@@ -74,10 +74,10 @@ class LibraryFileAdminGridDataProvider extends CategoryGridDataProvider {
 	/**
 	 * @copydoc CategoryGridHandler::loadCategoryData()
 	 */
-	function loadCategoryData($request, &$fileType, $filter = null) {
+	function loadCategoryData($request, $fileType, $filter = null) {
 
 		// Elements to be displayed in the grid
-		$libraryFileDao = DAORegistry::getDAO('LibraryFileDAO');
+		$libraryFileDao = DAORegistry::getDAO('LibraryFileDAO'); /* @var $libraryFileDao LibraryFileDAO */
 		$context = $this->getContext();
 		$libraryFiles = $libraryFileDao->getByContextId($context->getId(), $fileType);
 
@@ -85,4 +85,4 @@ class LibraryFileAdminGridDataProvider extends CategoryGridDataProvider {
 	}
 }
 
-?>
+

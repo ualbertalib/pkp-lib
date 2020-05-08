@@ -3,9 +3,9 @@
 /**
  * @file tests/classes/form/validation/FormValidatorLocaleTest.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class FormValidatorLocaleTest
  * @ingroup tests_classes_form_validation
@@ -22,15 +22,16 @@ import('lib.pkp.classes.form.Form');
 
 class FormValidatorLocaleTest extends PKPTestCase {
 	/**
-	 * @covers FormValidatorAppLocale::getMessage
+	 * @covers FormValidatorLocale::getMessage
 	 */
 	public function testGetMessage() {
+		$form = new Form('some template');
 		$formValidator = new FormValidatorLocale($form, 'testData', FORM_VALIDATOR_REQUIRED_VALUE, 'some.message.key');
 		self::assertSame('##some.message.key## (English)', $formValidator->getMessage());
 	}
 
 	/**
-	 * @covers FormValidatorAppLocale::getFieldValue
+	 * @covers FormValidatorLocale::getFieldValue
 	 */
 	public function testGetFieldValue() {
 		$form = new Form('some template');
@@ -70,4 +71,4 @@ class FormValidatorLocaleTest extends PKPTestCase {
 		self::assertSame(array(' some text '), $formValidator->getFieldValue());
 	}
 }
-?>
+

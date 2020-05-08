@@ -3,9 +3,9 @@
 /**
  * @file classes/tombstone/DataObjectTombstoneSettingsDAO.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class DataObjectTombstoneSettingsDAO
  * @ingroup submission
@@ -34,7 +34,7 @@ class DataObjectTombstoneSettingsDAO extends DAO {
 		while (!$result->EOF) {
 			$row = $result->getRowAssoc(false);
 			$value = $this->convertFromDB($row['setting_value'], $row['setting_type']);
-			if ($row['locale'] == '') $setting[$name] = $value;
+			if (!array_key_exists('locale', $row) || $row['locale'] == '') $setting[$name] = $value;
 			else $setting[$name][$row['locale']] = $value;
 			$result->MoveNext();
 		}
@@ -113,4 +113,4 @@ class DataObjectTombstoneSettingsDAO extends DAO {
 	}
 }
 
-?>
+

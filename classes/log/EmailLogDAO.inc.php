@@ -3,9 +3,9 @@
 /**
  * @file classes/log/EmailLogDAO.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class EmailLogDAO
  * @ingroup log
@@ -18,12 +18,6 @@
 import ('lib.pkp.classes.log.EmailLogEntry');
 
 class EmailLogDAO extends DAO {
-	/**
-	 * Constructor
-	 */
-	function EmailLogDAO() {
-		parent::DAO();
-	}
 
 	/**
 	 * Retrieve a log entry by ID.
@@ -63,7 +57,7 @@ class EmailLogDAO extends DAO {
 	 * @param $rangeInfo object optional
 	 * @return EmailLogEntry
 	 */
-	function getByEventType($assocType, $assocId, $eventType, $userId = null, $rangeInfo = null) {
+	function _getByEventType($assocType, $assocId, $eventType, $userId = null, $rangeInfo = null) {
 		$params = array(
 				(int) $assocType,
 				(int) $assocId,
@@ -118,7 +112,6 @@ class EmailLogDAO extends DAO {
 		$entry->setAssocId($row['assoc_id']);
 		$entry->setSenderId($row['sender_id']);
 		$entry->setDateSent($this->datetimeFromDB($row['date_sent']));
-		$entry->setIPAddress($row['ip_address']);
 		$entry->setEventType($row['event_type']);
 		$entry->setFrom($row['from_address']);
 		$entry->setRecipients($row['recipients']);
@@ -139,13 +132,12 @@ class EmailLogDAO extends DAO {
 	function insertObject(&$entry) {
 		$this->update(
 			sprintf('INSERT INTO email_log
-				(sender_id, date_sent, ip_address, event_type, assoc_type, assoc_id, from_address, recipients, cc_recipients, bcc_recipients, subject, body)
+				(sender_id, date_sent, event_type, assoc_type, assoc_id, from_address, recipients, cc_recipients, bcc_recipients, subject, body)
 				VALUES
-				(?, %s, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+				(?, %s, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
 				$this->datetimeToDB($entry->getDateSent())),
 			array(
 				$entry->getSenderId(),
-				$entry->getIPAddress(),
 				$entry->getEventType(),
 				$entry->getAssocType(),
 				$entry->getAssocId(),
@@ -231,7 +223,7 @@ class EmailLogDAO extends DAO {
 		preg_match_all($pattern, $recipients, $matches);
 		if (!isset($matches[0])) return;
 
-		$userDao = DAORegistry::getDAO('UserDAO');
+		$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 		foreach ($matches[0] as $emailAddress) {
 			$user = $userDao->getUserByEmail($emailAddress);
 			if (is_a($user, 'User')) {
@@ -245,4 +237,4 @@ class EmailLogDAO extends DAO {
 	}
 }
 
-?>
+

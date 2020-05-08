@@ -1,34 +1,36 @@
 {**
- * controllers/grid/settings/user/form/userEmailForm.tpl
+ * templates/controllers/grid/settings/user/form/userEmailForm.tpl
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * Display form to send user an email.
  *}
- <script type="text/javascript">
+<script>
 	$(function() {ldelim}
 		// Attach the form handler.
 		$('#sendEmailForm').pkpHandler('$.pkp.controllers.form.AjaxFormHandler');
 	{rdelim});
 </script>
 <form class="pkp_form" id="sendEmailForm" method="post" action="{url router=$smarty.const.ROUTE_COMPONENT component="grid.settings.user.UserGridHandler" op="sendEmail"}" >
+	{csrf}
 
 	<input type="hidden" name="userId" value="{$userId|escape}" />
 
-	{fbvFormSection title="email.to"}
-		{fbvElement type="text" id="user" value=$userFullName|concat:" <":$userEmail:">" disabled="true" size=$fbvStyles.size.MEDIUM}
+	{fbvFormSection title="email.subject" for="subject" required="true" size=$fbvStyles.size.MEDIUM inline=true}
+		{fbvElement type="text" id="subject" value=$subject required="true"}
 	{/fbvFormSection}
 
-	{fbvFormSection title="email.subject" for="subject" required="true"}
-		{fbvElement type="text" id="subject" value=$subject size=$fbvStyles.size.MEDIUM}
+	{fbvFormSection title="email.to" size=$fbvStyles.size.MEDIUM inline=true}
+		{fbvElement type="text" id="user" value=$userFullName|concat:" <":$userEmail:">" disabled="true"}
 	{/fbvFormSection}
 
 	{fbvFormSection title="email.body" for="message" required="true"}
-		{fbvElement type="textarea" id="message" value=$message size=$fbvStyles.size.LARGE}
+		{fbvElement type="textarea" id="message" value=$message rich=true required="true"}
 	{/fbvFormSection}
 
 	{fbvFormButtons submitText="common.sendEmail"}
+
+	<p><span class="formRequired">{translate key="common.requiredField"}</span></p>
 </form>
-<p><span class="formRequired">{translate key="common.requiredField"}</span></p>

@@ -2,9 +2,9 @@
 /**
  * @file tests/PKPTestHelper.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class TestHelper
  * @ingroup tests
@@ -30,9 +30,14 @@ abstract class PKPTestHelper {
 		foreach ($tables as $table) {
 			switch ($driver) {
 				case 'mysql':
+				case 'mysqli':
 					$createLikeSql = "CREATE TABLE backup_$table LIKE $table";
 					break;
 				case 'postgres':
+				case 'postgres64':
+				case 'postgres7':
+				case 'postgres8':
+				case 'postgres9':
 					$createLikeSql = "CREATE TABLE backup_$table (LIKE $table)";
 					break;
 				default:
@@ -87,6 +92,7 @@ abstract class PKPTestHelper {
 		$output = $status = null; // For PHP scrutinizer
 		switch (Config::getVar('database', 'driver')) {
 			case 'mysql':
+			case 'mysqli':
 				exec($cmd = 'zcat ' .
 					escapeshellarg($filename) .
 					' | /usr/bin/mysql --user=' .
@@ -105,6 +111,10 @@ abstract class PKPTestHelper {
 				}
 				break;
 			case 'postgres':
+			case 'postgres64':
+			case 'postgres7':
+			case 'postgres8':
+			case 'postgres9':
 				// WARNING: Does not send a password.
 				exec($cmd = 'zcat ' .
 					escapeshellarg($filename) .
@@ -150,4 +160,4 @@ abstract class PKPTestHelper {
 		}
 	}
 }
-?>
+

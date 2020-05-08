@@ -1,9 +1,9 @@
 /**
  * @file js/classes/features/PagingFeature.js
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PagingFeature
  * @ingroup js_classes_features
@@ -16,53 +16,15 @@
 	/**
 	 * @constructor
 	 * @inheritDoc
-	 * @extends $.pkp.classes.features.Feature
+	 * @extends $.pkp.classes.features.GeneralPagingFeature
 	 */
 	$.pkp.classes.features.PagingFeature =
 			function(gridHandler, options) {
-		options.defaultItemsPerPage = parseInt(options.defaultItemsPerPage, 10);
-		options.currentItemsPerPage = parseInt(options.currentItemsPerPage, 10);
-		if (!options.itemsTotal) {
-			options.itemsTotal = 0;
-		} else {
-			options.itemsTotal = parseInt(options.itemsTotal, 10);
-		}
-		options.currentPage = parseInt(options.currentPage, 10);
 		this.parent(gridHandler, options);
 	};
 	$.pkp.classes.Helper.inherits(
 			$.pkp.classes.features.PagingFeature,
-			$.pkp.classes.features.Feature);
-
-
-	//
-	// Getters and setters.
-	//
-	/**
-	 * @return {{itemsPerPageParamName: string,
-	 *			defaultItemsPerPage: number,
-	 *			currentItemsPerPage: number,
-	 *			itemsTotal: number,
-	 *			pageParamName: string,
-	 *			currentPage: number,
-				filter: string,
-	 *			pagingMarkup: string }}
-	 * @override
-	 */
-	$.pkp.classes.features.PagingFeature.prototype.getOptions =
-			function() {
-		var castOptions = /** @type {{itemsPerPageParamName: string,
-								defaultItemsPerPage: number,
-								currentItemsPerPage: number,
-								itemsTotal: number,
-								pageParamName: string,
-								currentPage: number,
-								filter: string,
-								pagingMarkup: string }} */
-				this.parent('getOptions');
-
-		return castOptions;
-	};
+			$.pkp.classes.features.GeneralPagingFeature);
 
 
 	/**
@@ -111,8 +73,8 @@
 	 * @inheritDoc
 	 */
 	$.pkp.classes.features.PagingFeature.prototype.refreshGrid =
-			function() {
-		var options = this.getOptions(), params, $firstRow, $lastRow, filter;
+			function(opt_elementId) {
+		var options = this.getOptions(), params, $firstRow, $lastRow;
 
 		params = this.gridHandler.getFetchExtraParams();
 
@@ -134,13 +96,7 @@
 			params.bottomLimitRowId = this.gridHandler.getRowDataId($lastRow);
 		}
 
-		// Add the filter data, if any.
-		if (options.hasOwnProperty('filter')) {
-			filter = $.parseJSON(options.filter);
-			$.extend(true, params, filter);
-		}
-
-		this.gridHandler.setFetchExtraParams(params);
+		this.setGridParams(params);
 
 		return false;
 	};
@@ -157,7 +113,7 @@
 									pagingInfo: string,
 									loadLastPage: boolean,
 									newTopRow: string}} */
-				handledJsonData;
+				(handledJsonData);
 
 		if (castJsonData.deletedRowReplacement != undefined) {
 			rowMarkup = handledJsonData.deletedRowReplacement;
@@ -168,8 +124,8 @@
 			pagingInfo = handledJsonData.pagingInfo;
 			this.setOptions(pagingInfo);
 
-			$('div.gridPaging', this.getGridHtmlElement()).
-					replaceWith(pagingInfo.pagingMarkup);
+			this.gridHandler.replacePartialWith(pagingInfo.pagingMarkup,
+					$('div.gridPaging', this.getGridHtmlElement()));
 			this.init();
 		}
 
@@ -288,5 +244,4 @@
 	};
 
 
-/** @param {jQuery} $ jQuery closure. */
 }(jQuery));

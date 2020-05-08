@@ -3,9 +3,9 @@
 /**
  * @file tests/classes/core/PKPComponentRouterTest.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPComponentRouterTest
  * @ingroup tests_classes_core
@@ -19,8 +19,11 @@ require_mock_env('env1');
 import('lib.pkp.classes.core.PKPComponentRouter');
 import('lib.pkp.tests.classes.core.PKPRouterTestCase');
 
+/**
+ * @backupGlobals enabled
+ */
 class PKPComponentRouterTest extends PKPRouterTestCase {
-	protected function setUp() {
+	protected function setUp() : void {
 		parent::setUp();
 		$this->router = new PKPComponentRouter();
 	}
@@ -28,6 +31,7 @@ class PKPComponentRouterTest extends PKPRouterTestCase {
 	public function testSupports() {
 		// This method only exists to override and neutralize the parent class'
 		// testSupports() which is not relevant for component routers.
+		$this->markTestSkipped();
 	}
 
 	/**
@@ -36,13 +40,13 @@ class PKPComponentRouterTest extends PKPRouterTestCase {
 	 * @covers PKPComponentRouter::_getValidatedServiceEndpointParts
 	 * @covers PKPComponentRouter::_retrieveServiceEndpointParts
 	 * @covers PKPComponentRouter::_validateServiceEndpointParts
-	 * @covers PKPComponentRouter::_camelize
 	 */
 	public function testSupportsWithPathinfoSuccessful() {
 		$mockApplication = $this->_setUpMockEnvironment(self::PATHINFO_ENABLED);
 
 		$_SERVER = array(
-			'PATH_INFO' => '/context1/context2/$$$call$$$/grid/citation/citation-grid/fetch-grid'
+			'SCRIPT_NAME' => '/index.php',
+			'PATH_INFO' => '/context1/context2/$$$call$$$/grid/notifications/task-notifications-grid/fetch-grid'
 		);
 		self::assertTrue($this->router->supports($this->request));
 	}
@@ -53,12 +57,12 @@ class PKPComponentRouterTest extends PKPRouterTestCase {
 	 * @covers PKPComponentRouter::_getValidatedServiceEndpointParts
 	 * @covers PKPComponentRouter::_retrieveServiceEndpointParts
 	 * @covers PKPComponentRouter::_validateServiceEndpointParts
-	 * @covers PKPComponentRouter::_camelize
 	 */
 	public function testSupportsWithPathinfoUnsuccessfulNoComponentNotEnoughPathElements() {
 		$mockApplication = $this->_setUpMockEnvironment(self::PATHINFO_ENABLED);
 
 		$_SERVER = array(
+			'SCRIPT_NAME' => '/index.php',
 			'PATH_INFO' => '/context1/context2/page/operation'
 		);
 		self::assertEquals('', $this->router->getRequestedComponent($this->request));
@@ -71,12 +75,12 @@ class PKPComponentRouterTest extends PKPRouterTestCase {
 	 * @covers PKPComponentRouter::_getValidatedServiceEndpointParts
 	 * @covers PKPComponentRouter::_retrieveServiceEndpointParts
 	 * @covers PKPComponentRouter::_validateServiceEndpointParts
-	 * @covers PKPComponentRouter::_camelize
 	 */
 	public function testSupportsWithPathinfoUnsuccessfulNoComponentNoMarker() {
 		$mockApplication = $this->_setUpMockEnvironment(self::PATHINFO_ENABLED);
 
 		$_SERVER = array(
+			'SCRIPT_NAME' => '/index.php',
 			'PATH_INFO' => '/context1/context2/path/to/handler/operation'
 		);
 		self::assertEquals('', $this->router->getRequestedComponent($this->request));
@@ -89,13 +93,13 @@ class PKPComponentRouterTest extends PKPRouterTestCase {
 	 * @covers PKPComponentRouter::_getValidatedServiceEndpointParts
 	 * @covers PKPComponentRouter::_retrieveServiceEndpointParts
 	 * @covers PKPComponentRouter::_validateServiceEndpointParts
-	 * @covers PKPComponentRouter::_camelize
 	 */
 	public function testSupportsWithPathinfoUnsuccessfulComponentFileDoesNotExist() {
 		$this->markTestSkipped();
 		$mockApplication = $this->_setUpMockEnvironment(self::PATHINFO_ENABLED);
 
 		$_SERVER = array(
+			'SCRIPT_NAME' => '/index.php',
 			'PATH_INFO' => '/context1/context2/$$$call$$$/inexistent/component/fetch-grid'
 		);
 		self::assertEquals('inexistent.ComponentHandler', $this->router->getRequestedComponent($this->request));
@@ -103,62 +107,16 @@ class PKPComponentRouterTest extends PKPRouterTestCase {
 	}
 
 	/**
-	 * @covers PKPComponentRouter::supports
-	 * @covers PKPComponentRouter::getRpcServiceEndpoint
-	 * @covers PKPComponentRouter::_getValidatedServiceEndpointParts
-	 * @covers PKPComponentRouter::_retrieveServiceEndpointParts
-	 * @covers PKPComponentRouter::_validateServiceEndpointParts
-	 * @covers PKPComponentRouter::_camelize
-	 */
-	public function testSupportsWithPathinfoUnsuccessfulOperationDoesNotExist() {
-		$this->markTestSkipped();
-		$mockApplication = $this->_setUpMockEnvironment(self::PATHINFO_ENABLED);
-
-		$_SERVER = array(
-			'PATH_INFO' => '/context1/context2/$$$call$$$/grid/citation/citation-grid/inexistent-operation'
-		);
-		self::assertEquals('grid.citation.CitationGridHandler', $this->router->getRequestedComponent($this->request));
-		self::assertEquals('inexistentOperation', $this->router->getRequestedOp($this->request));
-		self::assertFalse($this->router->supports($this->request));
-		self::assertTrue(class_exists('CitationGridHandler'));
-	}
-
-
-	/**
-	 * @covers PKPComponentRouter::supports
-	 * @covers PKPComponentRouter::getRpcServiceEndpoint
-	 * @covers PKPComponentRouter::_getValidatedServiceEndpointParts
-	 * @covers PKPComponentRouter::_retrieveServiceEndpointParts
-	 * @covers PKPComponentRouter::_validateServiceEndpointParts
-	 * @covers PKPComponentRouter::_camelize
-	 */
-	public function testSupportsWithPathinfoUnsuccessfulComponentIsNotAHandler() {
-		$this->markTestSkipped();
-		$mockApplication = $this->_setUpMockEnvironment(self::PATHINFO_ENABLED);
-
-		$_SERVER = array(
-			'PATH_INFO' => '/context1/context2/$$$call$$$/grid/filter/lookup-filter-grid/fetch-grid'
-		);
-		self::assertEquals('grid.filter.LookupFilterGridHandler', $this->router->getRequestedComponent($this->request));
-		self::assertEquals('fetchGrid', $this->router->getRequestedOp($this->request));
-		self::assertFalse($this->router->supports($this->request));
-		self::assertTrue(class_exists('LookupFilterGridHandler'));
-		$testInstance = new LookupFilterGridHandler();
-		self::assertTrue(in_array('fetchGrid', get_class_methods('LookupFilterGridHandler')));
-		self::assertFalse(is_a($testInstance, 'PKPHandler'));
-	}
-
-	/**
 	 * @covers PKPComponentRouter::getRequestedComponent
 	 * @covers PKPComponentRouter::_getValidatedServiceEndpointParts
 	 * @covers PKPComponentRouter::_retrieveServiceEndpointParts
 	 * @covers PKPComponentRouter::_validateServiceEndpointParts
-	 * @covers PKPComponentRouter::_camelize
 	 */
 	public function testGetRequestedComponentWithPathinfo() {
 		$mockApplication = $this->_setUpMockEnvironment(self::PATHINFO_ENABLED);
 
 		$_SERVER = array(
+			'SCRIPT_NAME' => '/index.php',
 			'PATH_INFO' => '/context1/context2/$$$call$$$/path/to/some-component/operation'
 		);
 		self::assertEquals('path.to.SomeComponentHandler', $this->router->getRequestedComponent($this->request));
@@ -169,12 +127,12 @@ class PKPComponentRouterTest extends PKPRouterTestCase {
 	 * @covers PKPComponentRouter::_getValidatedServiceEndpointParts
 	 * @covers PKPComponentRouter::_retrieveServiceEndpointParts
 	 * @covers PKPComponentRouter::_validateServiceEndpointParts
-	 * @covers PKPComponentRouter::_camelize
 	 */
 	public function testGetRequestedComponentWithPathinfoAndMalformedComponentString() {
 		$mockApplication = $this->_setUpMockEnvironment(self::PATHINFO_ENABLED);
 
 		$_SERVER = array(
+			'SCRIPT_NAME' => '/index.php',
 			'PATH_INFO' => '/context1/context2/$$$call$$$/path/to/some-#component/operation'
 		);
 		self::assertEquals('', $this->router->getRequestedComponent($this->request));
@@ -185,7 +143,6 @@ class PKPComponentRouterTest extends PKPRouterTestCase {
 	 * @covers PKPComponentRouter::_getValidatedServiceEndpointParts
 	 * @covers PKPComponentRouter::_retrieveServiceEndpointParts
 	 * @covers PKPComponentRouter::_validateServiceEndpointParts
-	 * @covers PKPComponentRouter::_camelize
 	 */
 	public function testGetRequestedComponentWithPathinfoDisabled() {
 		$mockApplication = $this->_setUpMockEnvironment(self::PATHINFO_DISABLED);
@@ -202,12 +159,12 @@ class PKPComponentRouterTest extends PKPRouterTestCase {
 	 * @covers PKPComponentRouter::_getValidatedServiceEndpointParts
 	 * @covers PKPComponentRouter::_retrieveServiceEndpointParts
 	 * @covers PKPComponentRouter::_validateServiceEndpointParts
-	 * @covers PKPComponentRouter::_camelize
 	 */
 	public function testGetRequestedOpWithPathinfo() {
 		$mockApplication = $this->_setUpMockEnvironment(self::PATHINFO_ENABLED);
 
 		$_SERVER = array(
+			'SCRIPT_NAME' => '/index.php',
 			'PATH_INFO' => '/context1/context2/$$$call$$$/path/to/some-component/some-op'
 		);
 		self::assertEquals('someOp', $this->router->getRequestedOp($this->request));
@@ -218,7 +175,6 @@ class PKPComponentRouterTest extends PKPRouterTestCase {
 	 * @covers PKPComponentRouter::_getValidatedServiceEndpointParts
 	 * @covers PKPComponentRouter::_retrieveServiceEndpointParts
 	 * @covers PKPComponentRouter::_validateServiceEndpointParts
-	 * @covers PKPComponentRouter::_camelize
 	 */
 	public function testGetRequestedOpWithPathinfoDisabled() {
 		$mockApplication = $this->_setUpMockEnvironment(self::PATHINFO_DISABLED);
@@ -235,7 +191,6 @@ class PKPComponentRouterTest extends PKPRouterTestCase {
 	 * @covers PKPComponentRouter::_getValidatedServiceEndpointParts
 	 * @covers PKPComponentRouter::_retrieveServiceEndpointParts
 	 * @covers PKPComponentRouter::_validateServiceEndpointParts
-	 * @covers PKPComponentRouter::_camelize
 	 */
 	public function testGetRequestedOpWithPathinfoDisabledAndMissingComponent() {
 		$mockApplication = $this->_setUpMockEnvironment(self::PATHINFO_DISABLED);
@@ -251,12 +206,12 @@ class PKPComponentRouterTest extends PKPRouterTestCase {
 	 * @covers PKPComponentRouter::_getValidatedServiceEndpointParts
 	 * @covers PKPComponentRouter::_retrieveServiceEndpointParts
 	 * @covers PKPComponentRouter::_validateServiceEndpointParts
-	 * @covers PKPComponentRouter::_camelize
 	 */
 	public function testGetRequestedOpWithPathinfoAndMalformedOpString() {
 		$mockApplication = $this->_setUpMockEnvironment(self::PATHINFO_ENABLED);
 
 		$_SERVER = array(
+			'SCRIPT_NAME' => '/index.php',
 			'PATH_INFO' => '/context1/context2/$$$call$$$/path/to/some-component/so#me-op'
 		);
 		self::assertEquals('', $this->router->getRequestedOp($this->request));
@@ -268,13 +223,15 @@ class PKPComponentRouterTest extends PKPRouterTestCase {
 	 * @covers PKPComponentRouter::_getValidatedServiceEndpointParts
 	 * @covers PKPComponentRouter::_retrieveServiceEndpointParts
 	 * @covers PKPComponentRouter::_validateServiceEndpointParts
-	 * @covers PKPComponentRouter::_camelize
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
 	 */
 	public function testRoute() {
 		$mockApplication = $this->_setUpMockEnvironment(self::PATHINFO_ENABLED);
 
 		$_SERVER = array(
-			'PATH_INFO' => '/context1/context2/$$$call$$$/grid/citation/citation-grid/fetch-grid'
+			'SCRIPT_NAME' => '/index.php',
+			'PATH_INFO' => '/context1/context2/$$$call$$$/grid/notifications/task-notifications-grid/fetch-grid'
 		);
 		$_GET = array(
 			'arg1' => 'val1',
@@ -284,28 +241,20 @@ class PKPComponentRouterTest extends PKPRouterTestCase {
 		// Simulate context DAOs
 		$this->_setUpMockDAOs('context1', 'context2');
 
-		// Route the request. This should call CitationGridHandler::fetchGrid()
+		// Route the request. This should call NotificationsGridHandler::fetchGrid()
 		// with a reference to the request object as the first argument.
 		$this->router->route($this->request);
 
 		self::assertNotNull($serviceEndpoint =& $this->router->getRpcServiceEndpoint($this->request));
-		self::assertInstanceOf('CitationGridHandler', $handler =& $serviceEndpoint[0]);
-		$fetchArgs =& $handler->getFetchArgs();
-		$expectedArgs = array(
-			array('arg1' => 'val1', 'arg2' => 'val2'),
-			$this->request
-		);
-		self::assertEquals($expectedArgs, $fetchArgs);
-		self::assertSame($expectedArgs[1], $fetchArgs[1]);
+		self::assertInstanceOf('NotificationsGridHandler', $handler =& $serviceEndpoint[0]);
 		$firstContextDao = DAORegistry::getDAO('FirstContextDAO');
-		self::assertInstanceOf('FirstContext', $firstContextDao->getByPath('context1'));
+		self::assertInstanceOf('Context', $firstContextDao->getByPath('context1'));
 		$secondContextDao = DAORegistry::getDAO('SecondContextDAO');
-		self::assertInstanceOf('SecondContext', $secondContextDao->getByPath('context2'));
+		self::assertInstanceOf('Context', $secondContextDao->getByPath('context2'));
 	}
 
 	/**
 	 * @covers PKPComponentRouter::url
-	 * @covers PKPComponentRouter::_uncamelize
 	 * @covers PKPComponentRouter::_urlCanonicalizeNewContext
 	 * @covers PKPComponentRouter::_urlGetBaseAndContext
 	 * @covers PKPComponentRouter::_urlGetAdditionalParameters
@@ -315,7 +264,7 @@ class PKPComponentRouterTest extends PKPRouterTestCase {
 		$this->setTestConfiguration('request1', 'classes/core/config'); // restful URLs
 		$mockApplication = $this->_setUpMockEnvironment(self::PATHINFO_ENABLED);
 		$_SERVER = array(
-			'HOSTNAME' => 'mydomain.org',
+			'SERVER_NAME' => 'mydomain.org',
 			'SCRIPT_NAME' => '/index.php',
 			'PATH_INFO' => '/current-context1/current-context2/$$$call$$$/current/component-class/current-op'
 		);
@@ -372,7 +321,6 @@ class PKPComponentRouterTest extends PKPRouterTestCase {
 
 	/**
 	 * @covers PKPComponentRouter::url
-	 * @covers PKPComponentRouter::_uncamelize
 	 * @covers PKPComponentRouter::_urlCanonicalizeNewContext
 	 * @covers PKPComponentRouter::_urlGetBaseAndContext
 	 * @covers PKPComponentRouter::_urlGetAdditionalParameters
@@ -382,7 +330,7 @@ class PKPComponentRouterTest extends PKPRouterTestCase {
 		$this->setTestConfiguration('request1', 'classes/core/config'); // contains overridden context
 		$mockApplication = $this->_setUpMockEnvironment(self::PATHINFO_ENABLED);
 		$_SERVER = array(
-			'HOSTNAME' => 'mydomain.org',
+			'SERVER_NAME' => 'mydomain.org',
 			'SCRIPT_NAME' => '/index.php',
 			'PATH_INFO' => '/overridden-context/current-context2/$$$call$$$/current/component-class/current-op'
 		);
@@ -396,7 +344,6 @@ class PKPComponentRouterTest extends PKPRouterTestCase {
 
 	/**
 	 * @covers PKPComponentRouter::url
-	 * @covers PKPComponentRouter::_uncamelize
 	 * @covers PKPComponentRouter::_urlCanonicalizeNewContext
 	 * @covers PKPComponentRouter::_urlGetBaseAndContext
 	 * @covers PKPComponentRouter::_urlGetAdditionalParameters
@@ -405,7 +352,7 @@ class PKPComponentRouterTest extends PKPRouterTestCase {
 	public function testUrlWithPathinfoAndSecondContextObjectIsNull() {
 		$mockApplication = $this->_setUpMockEnvironment(self::PATHINFO_ENABLED);
 		$_SERVER = array(
-			'HOSTNAME' => 'mydomain.org',
+			'SERVER_NAME' => 'mydomain.org',
 			'SCRIPT_NAME' => '/index.php',
 			'PATH_INFO' => '/current-context1/current-context2/$$$call$$$/current/component-class/current-op'
 		);
@@ -419,7 +366,6 @@ class PKPComponentRouterTest extends PKPRouterTestCase {
 
 	/**
 	 * @covers PKPComponentRouter::url
-	 * @covers PKPComponentRouter::_uncamelize
 	 * @covers PKPComponentRouter::_urlCanonicalizeNewContext
 	 * @covers PKPComponentRouter::_urlGetBaseAndContext
 	 * @covers PKPComponentRouter::_urlGetAdditionalParameters
@@ -428,7 +374,7 @@ class PKPComponentRouterTest extends PKPRouterTestCase {
 	public function testUrlWithoutPathinfo() {
 		$mockApplication = $this->_setUpMockEnvironment(self::PATHINFO_DISABLED);
 		$_SERVER = array(
-			'HOSTNAME' => 'mydomain.org',
+			'SERVER_NAME' => 'mydomain.org',
 			'SCRIPT_NAME' => '/index.php',
 		);
 		$_GET = array(
@@ -487,7 +433,6 @@ class PKPComponentRouterTest extends PKPRouterTestCase {
 
 	/**
 	 * @covers PKPComponentRouter::url
-	 * @covers PKPComponentRouter::_uncamelize
 	 * @covers PKPComponentRouter::_urlCanonicalizeNewContext
 	 * @covers PKPComponentRouter::_urlGetBaseAndContext
 	 * @covers PKPComponentRouter::_urlGetAdditionalParameters
@@ -497,7 +442,7 @@ class PKPComponentRouterTest extends PKPRouterTestCase {
 		$this->setTestConfiguration('request2', 'classes/core/config'); // contains overridden context
 		$mockApplication = $this->_setUpMockEnvironment(self::PATHINFO_DISABLED);
 		$_SERVER = array(
-			'HOSTNAME' => 'mydomain.org',
+			'SERVER_NAME' => 'mydomain.org',
 			'SCRIPT_NAME' => '/index.php',
 		);
 		$_GET = array(
@@ -518,7 +463,6 @@ class PKPComponentRouterTest extends PKPRouterTestCase {
 
 	/**
 	 * @covers PKPComponentRouter::url
-	 * @covers PKPComponentRouter::_uncamelize
 	 * @covers PKPComponentRouter::_urlCanonicalizeNewContext
 	 * @covers PKPComponentRouter::_urlGetBaseAndContext
 	 * @covers PKPComponentRouter::_urlGetAdditionalParameters
@@ -528,7 +472,7 @@ class PKPComponentRouterTest extends PKPRouterTestCase {
 		$this->setTestConfiguration('request2', 'classes/core/config'); // restful URLs enabled
 		$mockApplication = $this->_setUpMockEnvironment(self::PATHINFO_DISABLED);
 		$_SERVER = array(
-			'HOSTNAME' => 'mydomain.org',
+			'SERVER_NAME' => 'mydomain.org',
 			'SCRIPT_NAME' => '/index.php',
 		);
 		$_GET = array(
@@ -546,4 +490,4 @@ class PKPComponentRouterTest extends PKPRouterTestCase {
 		self::assertEquals('http://mydomain.org/?firstContext=current-context1&secondContext=index&component=current.component-class&op=current-op', $result);
 	}
 }
-?>
+

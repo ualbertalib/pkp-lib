@@ -1,12 +1,16 @@
 {**
  * templates/workflow/review.tpl
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * Review workflow stage.
  *}
+
+{* Help tab *}
+{help file="editorial-workflow/review" class="pkp_help_tab"}
+
 <script type="text/javascript">
 	// Attach the JS file tab handler.
 	$(function() {ldelim}
@@ -14,12 +18,12 @@
 			'$.pkp.controllers.TabHandler',
 			{ldelim}
 				{assign var=roundIndex value=$lastReviewRoundNumber-1}
-				selected: {$roundIndex}
+				selected: {$roundIndex},
+				disabled: [{$lastReviewRoundNumber}]
 			{rdelim}
 		);
 	{rdelim});
 </script>
-{include file="controllers/tab/workflow/stageParticipants.tpl"}
 
 {if $reviewRounds}
 	<div id="reviewTabs" class="pkp_controllers_tab">
@@ -31,13 +35,14 @@
 			{/foreach}
 			{if $newRoundAction}
 				<li>
-					{* FIXME: this <a> tag is here just to get the CSS to work *}
-					<a id="newRoundTabContainer" href="/" style="padding-left: 0px; padding-right: 0px;"></a>
 					{include file="linkAction/linkAction.tpl" image="add_item" action=$newRoundAction contextId="newRoundTabContainer"}
 				</li>
 			{/if}
 		</ul>
 	</div>
+
+	{capture assign=queriesGridUrl}{url router=$smarty.const.ROUTE_COMPONENT component="grid.queries.QueriesGridHandler" op="fetchGrid" submissionId=$submission->getId() stageId=$stageId escape=false}{/capture}
+	{load_url_in_div id="queriesGrid" url=$queriesGridUrl}
 {else}
 	<p>{translate key="editor.review.notInitiated"}</p>
 {/if}

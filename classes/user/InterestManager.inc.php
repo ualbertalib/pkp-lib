@@ -3,9 +3,9 @@
 /**
  * @file classes/user/InterestManager.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class InterestManager
  * @ingroup user
@@ -17,7 +17,7 @@ class InterestManager {
 	/**
 	 * Constructor.
 	 */
-	function InterestManager() {
+	function __construct() {
 	}
 
 	/**
@@ -39,15 +39,15 @@ class InterestManager {
 
 	/**
 	 * Get user reviewing interests. (Cached in memory for batch fetches.)
-	 * @param $user PKPUser
+	 * @param $user User
 	 * @return array
 	 */
 	function getInterestsForUser($user) {
 		static $interestsCache = array();
 		$interests = array();
 
-		$interestDao = DAORegistry::getDAO('InterestDAO');
-		$interestEntryDao = DAORegistry::getDAO('InterestEntryDAO');
+		$interestDao = DAORegistry::getDAO('InterestDAO'); /* @var $interestDao InterestDAO */
+		$interestEntryDao = DAORegistry::getDAO('InterestEntryDAO'); /* @var $interestEntryDao InterestEntryDAO */
 		$controlledVocab = $interestDao->build();
 		foreach($interestDao->getUserInterestIds($user->getId()) as $interestEntryId) {
 			if (!isset($interestsCache[$interestEntryId])) {
@@ -66,7 +66,7 @@ class InterestManager {
 
 	/**
 	 * Returns a comma separated string of a user's interests
-	 * @param $user PKPUser
+	 * @param $user User
 	 * @return string
 	 */
 	function getInterestsString($user) {
@@ -77,14 +77,14 @@ class InterestManager {
 
 	/**
 	 * Set a user's interests
-	 * @param $user PKPUser
+	 * @param $user User
 	 * @param $interests mixed
 	 */
 	function setInterestsForUser($user, $interests) {
-		$interestDao = DAORegistry::getDAO('InterestDAO');
+		$interestDao = DAORegistry::getDAO('InterestDAO'); /* @var $interestDao InterestDAO */
 		$interests = is_array($interests) ? $interests : (empty($interests) ? null : explode(",", $interests));
 		$interestDao->setUserInterests($interests, $user->getId());
 	}
 }
 
-?>
+

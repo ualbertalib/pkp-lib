@@ -3,9 +3,9 @@
 /**
  * @file classes/metadata/MetadataDescriptionDummyAdapter.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class MetadataDescriptionDummyAdapter
  * @ingroup metadata
@@ -23,12 +23,12 @@ class MetadataDescriptionDummyAdapter extends MetadataDataObjectAdapter {
 	 *
 	 * @param $metadataDescription MetadataDescription
 	 */
-	function MetadataDescriptionDummyAdapter(&$metadataDescription, $mode = null) {
+	function __construct(&$metadataDescription, $mode = null) {
 		$this->setDisplayName('Inject/Extract Metadata into/from a MetadataDescription');
 
 		// Configure the adapter
 		$inputType = $outputType = 'metadata::'.$metadataDescription->getMetadataSchemaName().'(*)';
-		parent::MetadataDataObjectAdapter(PersistableFilter::tempGroup($inputType, $outputType), $mode);
+		parent::__construct(PersistableFilter::tempGroup($inputType, $outputType), $mode);
 		$this->_assocType = $metadataDescription->getAssocType();
 	}
 
@@ -65,7 +65,7 @@ class MetadataDescriptionDummyAdapter extends MetadataDataObjectAdapter {
 	 * @param $sourceMetadataDescription MetadataDescription
 	 * @return MetadataDescription
 	 */
-	function extractMetadataFromDataObject($sourceMetadataDescription) {
+	function extractMetadataFromDataObject(&$sourceMetadataDescription) {
 		// Create a copy of the meta-data description to decouple
 		// it from the original.
 		return clone($sourceMetadataDescription);
@@ -106,4 +106,4 @@ class MetadataDescriptionDummyAdapter extends MetadataDataObjectAdapter {
 		return $this->_metadataFieldNames[$translated];
 	}
 }
-?>
+

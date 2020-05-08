@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/announcements/AnnouncementGridRow.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class AnnouncementGridRow
  * @ingroup controllers_grid_announcements
@@ -17,13 +17,6 @@ import('lib.pkp.classes.controllers.grid.GridRow');
 import('lib.pkp.classes.linkAction.request.RemoteActionConfirmationModal');
 
 class AnnouncementGridRow extends GridRow {
-	/**
-	 * Constructor
-	 */
-	function AnnouncementGridRow() {
-		parent::GridRow();
-	}
-
 
 	//
 	// Overridden methods from GridRow
@@ -31,8 +24,8 @@ class AnnouncementGridRow extends GridRow {
 	/**
 	 * @copydoc GridRow::initialize()
 	 */
-	function initialize($request) {
-		parent::initialize($request);
+	function initialize($request, $template = null) {
+		parent::initialize($request, $template);
 
 		// Is this a new row or an existing row?
 		$element =& $this->getData();
@@ -62,6 +55,7 @@ class AnnouncementGridRow extends GridRow {
 				new LinkAction(
 					'remove',
 					new RemoteActionConfirmationModal(
+						$request->getSession(),
 						__('common.confirmDelete'),
 						__('common.remove'),
 						$router->url($request, null, null, 'deleteAnnouncement', null, $actionArgs),
@@ -74,4 +68,4 @@ class AnnouncementGridRow extends GridRow {
 	}
 }
 
-?>
+

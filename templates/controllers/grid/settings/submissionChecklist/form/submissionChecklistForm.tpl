@@ -1,10 +1,9 @@
-
 {**
  * templates/controllers/grid/settings/submissionChecklist/form/submissionChecklists.tpl
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * SubmissionChecklists grid form
  *}
@@ -17,13 +16,14 @@
 </script>
 
 <form class="pkp_form" id="editSubmissionChecklistForm" method="post" action="{url router=$smarty.const.ROUTE_COMPONENT component="grid.settings.submissionChecklist.SubmissionChecklistGridHandler" op="updateItem"}">
+{csrf}
 
 {include file="controllers/notification/inPlaceNotification.tpl" notificationId="submissionChecklistFormNotification"}
 
 
 {fbvFormArea id="checklist"}
 	{fbvFormSection title="grid.submissionChecklist.column.checklistItem" required="true" for="checklistItem"}
-		{fbvElement type="textarea" multilingual="true" name="checklistItem" id="checklistItem" value=$checklistItem}
+		{fbvElement type="textarea" multilingual="true" name="checklistItem" id="checklistItem" value=$checklistItem required="true"}
 	{/fbvFormSection}
 {/fbvFormArea}
 {if $gridId != null}
@@ -37,4 +37,3 @@
 {/if}
 {fbvFormButtons submitText="common.save"}
 </form>
-<p><span class="formRequired">{translate key="common.requiredField"}</span></p>

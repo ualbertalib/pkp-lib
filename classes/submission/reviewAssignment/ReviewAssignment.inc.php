@@ -3,9 +3,9 @@
 /**
  * @file classes/submission/reviewAssignment/ReviewAssignment.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ReviewAssignment
  * @ingroup submission
@@ -31,18 +31,23 @@ define('SUBMISSION_REVIEW_METHOD_BLIND', 1);
 define('SUBMISSION_REVIEW_METHOD_DOUBLEBLIND', 2);
 define('SUBMISSION_REVIEW_METHOD_OPEN', 3);
 
-define('REVIEW_ASSIGNMENT_NOT_UNCONSIDERED', 0);
-define('REVIEW_ASSIGNMENT_UNCONSIDERED', 1);
-define('REVIEW_ASSIGNMENT_UNCONSIDERED_READ', 2);
+// A review is "unconsidered" when it is confirmed by an editor and then that
+// confirmation is later revoked.
+define('REVIEW_ASSIGNMENT_NOT_UNCONSIDERED', 0); // Has never been unconsidered
+define('REVIEW_ASSIGNMENT_UNCONSIDERED', 1); // Has been unconsindered and is awaiting re-confirmation by an editor
+define('REVIEW_ASSIGNMENT_UNCONSIDERED_READ', 2); // Has been reconfirmed by an editor
+
+define('REVIEW_ASSIGNMENT_STATUS_AWAITING_RESPONSE', 0); // request has been sent but reviewer has not responded
+define('REVIEW_ASSIGNMENT_STATUS_DECLINED', 1); // reviewer declined review request
+define('REVIEW_ASSIGNMENT_STATUS_RESPONSE_OVERDUE', 4); // review not responded within due date
+define('REVIEW_ASSIGNMENT_STATUS_ACCEPTED', 5); // reviewer has agreed to the review
+define('REVIEW_ASSIGNMENT_STATUS_REVIEW_OVERDUE', 6); // review not submitted within due date
+define('REVIEW_ASSIGNMENT_STATUS_RECEIVED', 7); // review has been submitted
+define('REVIEW_ASSIGNMENT_STATUS_COMPLETE', 8); // review has been confirmed by an editor
+define('REVIEW_ASSIGNMENT_STATUS_THANKED', 9); // reviewer has been thanked
+define('REVIEW_ASSIGNMENT_STATUS_CANCELLED', 10); // reviewer cancelled review request
 
 class ReviewAssignment extends DataObject {
-
-	/**
-	 * Constructor.
-	 */
-	function ReviewAssignment() {
-		parent::DataObject();
-	}
 
 	//
 	// Get/set methods
@@ -61,7 +66,7 @@ class ReviewAssignment extends DataObject {
 	 * @param $submissionId int
 	 */
 	function setSubmissionId($submissionId) {
-		return $this->setData('submissionId', $submissionId);
+		$this->setData('submissionId', $submissionId);
 	}
 
 	/**
@@ -77,7 +82,7 @@ class ReviewAssignment extends DataObject {
 	 * @param $reviewerId int
 	 */
 	function setReviewerId($reviewerId) {
-		return $this->setData('reviewerId', $reviewerId);
+		$this->setData('reviewerId', $reviewerId);
 	}
 
 	/**
@@ -93,7 +98,7 @@ class ReviewAssignment extends DataObject {
 	 * @param $reviewerFullName string
 	 */
 	function setReviewerFullName($reviewerFullName) {
-		return $this->setData('reviewerFullName', $reviewerFullName);
+		$this->setData('reviewerFullName', $reviewerFullName);
 	}
 
 	/**
@@ -109,7 +114,7 @@ class ReviewAssignment extends DataObject {
 	 * @param $comments string
 	 */
 	function setComments($comments) {
-		return $this->setData('comments', $comments);
+		$this->setData('comments', $comments);
 	}
 
 	/**
@@ -125,7 +130,7 @@ class ReviewAssignment extends DataObject {
 	 * @param $competingInterests string
 	 */
 	function setCompetingInterests($competingInterests) {
-		return $this->setData('competingInterests', $competingInterests);
+		$this->setData('competingInterests', $competingInterests);
 	}
 
 	/**
@@ -141,7 +146,7 @@ class ReviewAssignment extends DataObject {
 	 * @param $stageId int
 	 */
 	function setStageId($stageId) {
-		return $this->setData('stageId', $stageId);
+		$this->setData('stageId', $stageId);
 	}
 
 	/**
@@ -157,7 +162,7 @@ class ReviewAssignment extends DataObject {
 	 * @param $method int
 	 */
 	function setReviewMethod($method) {
-		return $this->setData('reviewMethod', $method);
+		$this->setData('reviewMethod', $method);
 	}
 
 	/**
@@ -189,7 +194,7 @@ class ReviewAssignment extends DataObject {
 	 * @param $recommendation string
 	 */
 	function setRecommendation($recommendation) {
-		return $this->setData('recommendation', $recommendation);
+		$this->setData('recommendation', $recommendation);
 	}
 
 	/**
@@ -205,7 +210,7 @@ class ReviewAssignment extends DataObject {
 	 * @param $unconsidered int
 	 */
 	function setUnconsidered($unconsidered) {
-		return $this->setData('unconsidered', $unconsidered);
+		$this->setData('unconsidered', $unconsidered);
 	}
 
 	/**
@@ -221,7 +226,7 @@ class ReviewAssignment extends DataObject {
 	 * @param $dateRated string
 	 */
 	function setDateRated($dateRated) {
-		return $this->setData('dateRated', $dateRated);
+		$this->setData('dateRated', $dateRated);
 	}
 
 	/**
@@ -237,7 +242,7 @@ class ReviewAssignment extends DataObject {
 	 * @param $dateModified date
 	 */
 	function setLastModified($dateModified) {
-		return $this->setData('lastModified', $dateModified);
+		$this->setData('lastModified', $dateModified);
 	}
 
 	/**
@@ -260,7 +265,7 @@ class ReviewAssignment extends DataObject {
 	 * @param $dateAssigned string
 	 */
 	function setDateAssigned($dateAssigned) {
-		return $this->setData('dateAssigned', $dateAssigned);
+		$this->setData('dateAssigned', $dateAssigned);
 	}
 
 	/**
@@ -276,7 +281,7 @@ class ReviewAssignment extends DataObject {
 	 * @param $dateNotified string
 	 */
 	function setDateNotified($dateNotified) {
-		return $this->setData('dateNotified', $dateNotified);
+		$this->setData('dateNotified', $dateNotified);
 	}
 
 	/**
@@ -292,7 +297,7 @@ class ReviewAssignment extends DataObject {
 	 * @param $dateConfirmed string
 	 */
 	function setDateConfirmed($dateConfirmed) {
-		return $this->setData('dateConfirmed', $dateConfirmed);
+		$this->setData('dateConfirmed', $dateConfirmed);
 	}
 
 	/**
@@ -308,7 +313,7 @@ class ReviewAssignment extends DataObject {
 	 * @param $dateCompleted string
 	 */
 	function setDateCompleted($dateCompleted) {
-		return $this->setData('dateCompleted', $dateCompleted);
+		$this->setData('dateCompleted', $dateCompleted);
 	}
 
 	/**
@@ -324,7 +329,7 @@ class ReviewAssignment extends DataObject {
 	 * @param $dateAcknowledged string
 	 */
 	function setDateAcknowledged($dateAcknowledged) {
-		return $this->setData('dateAcknowledged', $dateAcknowledged);
+		$this->setData('dateAcknowledged', $dateAcknowledged);
 	}
 
 	/**
@@ -340,7 +345,7 @@ class ReviewAssignment extends DataObject {
 	 * @param $dateReminded string
 	 */
 	function setDateReminded($dateReminded) {
-		return $this->setData('dateReminded', $dateReminded);
+		$this->setData('dateReminded', $dateReminded);
 	}
 
 	/**
@@ -356,7 +361,7 @@ class ReviewAssignment extends DataObject {
 	 * @param $dateDue string
 	 */
 	function setDateDue($dateDue) {
-		return $this->setData('dateDue', $dateDue);
+		$this->setData('dateDue', $dateDue);
 	}
 
 	/**
@@ -372,7 +377,7 @@ class ReviewAssignment extends DataObject {
 	 * @param $dateResponseDue string
 	 */
 	function setDateResponseDue($dateResponseDue) {
-		return $this->setData('dateResponseDue', $dateResponseDue);
+		$this->setData('dateResponseDue', $dateResponseDue);
 	}
 
 	/**
@@ -388,39 +393,7 @@ class ReviewAssignment extends DataObject {
 	 * @param $declined boolean
 	 */
 	function setDeclined($declined) {
-		return $this->setData('declined', $declined);
-	}
-
-	/**
-	 * Get the replaced value.
-	 * @return boolean
-	 */
-	function getReplaced() {
-		return $this->getData('replaced');
-	}
-
-	/**
-	 * Set the reviewer's replaced value.
-	 * @param $replaced boolean
-	 */
-	function setReplaced($replaced) {
-		return $this->setData('replaced', $replaced);
-	}
-
-	/**
-	 * Get a boolean indicating whether or not the last reminder was automatic.
-	 * @return boolean
-	 */
-	function getReminderWasAutomatic() {
-		return $this->getData('reminderWasAutomatic')==1?1:0;
-	}
-
-	/**
-	 * Set the boolean indicating whether or not the last reminder was automatic.
-	 * @param $wasAutomatic boolean
-	 */
-	function setReminderWasAutomatic($wasAutomatic) {
-		return $this->setData('reminderWasAutomatic', $wasAutomatic);
+		$this->setData('declined', $declined);
 	}
 
 	/**
@@ -436,12 +409,28 @@ class ReviewAssignment extends DataObject {
 	 * @param $cancelled boolean
 	 */
 	function setCancelled($cancelled) {
-		return $this->setData('cancelled', $cancelled);
+		$this->setData('cancelled', $cancelled);
+	}
+
+	/**
+	 * Get a boolean indicating whether or not the last reminder was automatic.
+	 * @return boolean
+	 */
+	function getReminderWasAutomatic() {
+		return $this->getData('reminderWasAutomatic')==1?1:0;
+	}
+
+	/**
+	 * Set the boolean indicating whether or not the last reminder was automatic.
+	 * @param $wasAutomatic boolean
+	 */
+	function setReminderWasAutomatic($wasAutomatic) {
+		$this->setData('reminderWasAutomatic', $wasAutomatic);
 	}
 
 	/**
 	 * Get quality.
-	 * @return int
+	 * @return int|null
 	 */
 	function getQuality() {
 		return $this->getData('quality');
@@ -449,10 +438,10 @@ class ReviewAssignment extends DataObject {
 
 	/**
 	 * Set quality.
-	 * @param $quality int
+	 * @param $quality int|null
 	 */
 	function setQuality($quality) {
-		return $this->setData('quality', $quality);
+		$this->setData('quality', $quality);
 	}
 
 	/**
@@ -468,7 +457,7 @@ class ReviewAssignment extends DataObject {
 	 * @param $round int
 	 */
 	function setRound($round) {
-		return $this->setData('round', $round);
+		$this->setData('round', $round);
 	}
 
 	/**
@@ -484,7 +473,165 @@ class ReviewAssignment extends DataObject {
 	 * @param $reviewFormId int
 	 */
 	function setReviewFormId($reviewFormId) {
-		return $this->setData('reviewFormId', $reviewFormId);
+		$this->setData('reviewFormId', $reviewFormId);
+	}
+
+	/**
+	 * Get the current status of this review assignment
+	 * @return int REVIEW_ASSIGNMENT_STATUS_...
+	 */
+	function getStatus() {
+		if ($this->getDeclined()) return REVIEW_ASSIGNMENT_STATUS_DECLINED;
+		if ($this->getCancelled()) return REVIEW_ASSIGNMENT_STATUS_CANCELLED;
+
+		if (!$this->getDateCompleted()) {
+			$dueTimes = array_map(function($dateTime) {
+					// If no due time, set it to the end of the day
+					if (substr($dateTime, 11) === '00:00:00') {
+						$dateTime = substr($dateTime, 0, 11) . '23:59:59';
+					}
+					return strtotime($dateTime);
+				}, array($this->getDateResponseDue(), $this->getDateDue()));
+			$responseDueTime = $dueTimes[0];
+			$reviewDueTime = $dueTimes[1];
+			if (!$this->getDateConfirmed()){ // no response
+				if($responseDueTime < time()) { // response overdue
+					return REVIEW_ASSIGNMENT_STATUS_RESPONSE_OVERDUE;
+				} elseif ($reviewDueTime < strtotime('tomorrow')) { // review overdue but not response
+					return REVIEW_ASSIGNMENT_STATUS_REVIEW_OVERDUE;
+				} else { // response not due yet
+					return REVIEW_ASSIGNMENT_STATUS_AWAITING_RESPONSE;
+				}
+			} else { // response given
+				if ($reviewDueTime < strtotime('tomorrow')) { // review due
+					return REVIEW_ASSIGNMENT_STATUS_REVIEW_OVERDUE;
+				} else {
+					return REVIEW_ASSIGNMENT_STATUS_ACCEPTED;
+				}
+			}
+		} elseif ($this->getDateAcknowledged()) { // reviewer thanked...
+			if ($this->getUnconsidered() == REVIEW_ASSIGNMENT_UNCONSIDERED) { // ...but review later unconsidered
+				return REVIEW_ASSIGNMENT_STATUS_RECEIVED;
+			}
+			return REVIEW_ASSIGNMENT_STATUS_THANKED;
+		} elseif ($this->getDateCompleted()) { // review submitted...
+			if ($this->getUnconsidered() != REVIEW_ASSIGNMENT_UNCONSIDERED && $this->isRead()) { // ...and confirmed by an editor
+				return REVIEW_ASSIGNMENT_STATUS_COMPLETE;
+			}
+			return REVIEW_ASSIGNMENT_STATUS_RECEIVED;
+		}
+
+		return REVIEW_ASSIGNMENT_STATUS_AWAITING_RESPONSE;
+	}
+
+	/**
+	 * Determine whether an editorial user has read this review
+	 *
+	 * @return bool
+	 */
+	function isRead() {
+		$submissionDao = DAORegistry::getDAO('SubmissionDAO'); /* @var $submissionDao SubmissionDAO */
+		$userGroupDao = DAORegistry::getDAO('UserGroupDAO'); /* @var $userGroupDao UserGroupDAO */
+		$userStageAssignmentDao = DAORegistry::getDAO('UserStageAssignmentDAO'); /* @var $userStageAssignmentDao UserStageAssignmentDAO */
+		$viewsDao = DAORegistry::getDAO('ViewsDAO'); /* @var $viewsDao ViewsDAO */
+
+		$submission = $submissionDao->getById($this->getSubmissionId());
+
+		// Get the user groups for this stage
+		$userGroups = $userGroupDao->getUserGroupsByStage(
+			$submission->getContextId(),
+			$this->getStageId()
+		);
+		while ($userGroup = $userGroups->next()) {
+			$roleId = $userGroup->getRoleId();
+			if ($roleId != ROLE_ID_MANAGER && $roleId != ROLE_ID_SUB_EDITOR) {
+				continue;
+			}
+
+			// Get the users assigned to this stage and user group
+			$stageUsers = $userStageAssignmentDao->getUsersBySubmissionAndStageId(
+				$this->getSubmissionId(),
+				$this->getStageId(),
+				$userGroup->getId()
+			);
+
+			// Check if any of these users have viewed it
+			while ($user = $stageUsers->next()) {
+				if ($viewsDao->getLastViewDate(
+					ASSOC_TYPE_REVIEW_RESPONSE,
+					$this->getId(),
+					$user->getId()
+				)) {
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Get the translation key for the current status
+	 *
+	 * @param int $status Optionally pass a status to retrieve a specific key.
+	 *  Default will return the key for the current status.
+	 * @return string
+	 */
+	public function getStatusKey($status = null) {
+
+		if (is_null($status)) {
+			$status = $this->getStatus();
+		}
+
+		switch ($status) {
+			case REVIEW_ASSIGNMENT_STATUS_AWAITING_RESPONSE:
+				return 'submission.review.status.awaitingResponse';
+			case REVIEW_ASSIGNMENT_STATUS_DECLINED:
+				return 'submission.review.status.declined';
+			case REVIEW_ASSIGNMENT_STATUS_RESPONSE_OVERDUE:
+				return 'submission.review.status.responseOverdue';
+			case REVIEW_ASSIGNMENT_STATUS_REVIEW_OVERDUE:
+				return 'submission.review.status.reviewOverdue';
+			case REVIEW_ASSIGNMENT_STATUS_ACCEPTED:
+				return 'submission.review.status.accepted';
+			case REVIEW_ASSIGNMENT_STATUS_RECEIVED:
+				return 'submission.review.status.received';
+			case REVIEW_ASSIGNMENT_STATUS_COMPLETE:
+				return 'submission.review.status.complete';
+			case REVIEW_ASSIGNMENT_STATUS_THANKED:
+				return 'submission.review.status.thanked';
+		}
+
+		assert(false, 'No status key could be found for ' . get_class($this) . ' on ' . __LINE__);
+
+		return '';
+	}
+
+	/**
+	 * Get the translation key for the review method
+	 *
+	 * @param $method int|null Optionally pass a method to retrieve a specific key.
+	 *  Default will return the key for the current review method
+	 * @return string
+	 */
+	public function getReviewMethodKey($method = null) {
+
+		if (is_null($method)) {
+			$method = $this->getReviewMethod();
+		}
+
+		switch ($method) {
+			case SUBMISSION_REVIEW_METHOD_OPEN:
+				return 'editor.submissionReview.open';
+			case SUBMISSION_REVIEW_METHOD_BLIND:
+				return 'editor.submissionReview.blind';
+			case SUBMISSION_REVIEW_METHOD_DOUBLEBLIND:
+				return 'editor.submissionReview.doubleBlind';
+		}
+
+		assert(false, 'No review method key could be found for ' . get_class($this) . ' on ' . __LINE__);
+
+		return '';
 	}
 
 	//
@@ -506,7 +653,7 @@ class ReviewAssignment extends DataObject {
 	 * (Includes default '' => "Choose One" string.)
 	 * @return array recommendation => localeString
 	 */
-	function getReviewerRecommendationOptions() {
+	static function getReviewerRecommendationOptions() {
 
 		static $reviewerRecommendationOptions = array(
 				'' => 'common.chooseOne',
@@ -533,5 +680,3 @@ class ReviewAssignment extends DataObject {
 		}
 	}
 }
-
-?>

@@ -4,9 +4,9 @@
 /**
  * @file js/controllers/wizard/fileUpload/FileUploadWizardHandler.js
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class FileUploadWizardHandler
  * @ingroup controllers_wizard_fileUpload
@@ -35,15 +35,17 @@
 		this.parent($wizard, options);
 
 		// Save action urls.
+		this.csrfToken_ = options.csrfToken;
 		this.deleteUrl_ = options.deleteUrl;
 		this.metadataUrl_ = options.metadataUrl;
 		this.finishUrl_ = options.finishUrl;
 
 		// Bind events of the nested upload forms.
 		this.bind('fileUploaded', this.handleFileUploaded);
+		this.bind('filesRemoved', this.handleRemovedFiles);
 
 		// Initially disable the continue button.
-		this.getContinueButton().button('disable');
+		this.disableContinueButton();
 	};
 	$.pkp.classes.Helper.inherits(
 			$.pkp.controllers.wizard.fileUpload.FileUploadWizardHandler,
@@ -53,6 +55,15 @@
 	//
 	// Private properties
 	//
+	/**
+	 * The CSRF token to use with a cancel event.
+	 * @private
+	 * @type {string}
+	 */
+	$.pkp.controllers.wizard.fileUpload.FileUploadWizardHandler.
+			prototype.csrfToken_ = '';
+
+
 	/**
 	 * The URL to be called when a cancel event occurs.
 	 * @private
@@ -169,9 +180,9 @@
 		// continue button to finish.
 		if (targetStep === lastStep) {
 			$continueButton = this.getContinueButton();
-			$continueButton.button('option', 'label',
+			$continueButton.text(
 					/** @type {string} */ (this.getFinishButtonText()));
-			$continueButton.button('enable');
+			this.enableContinueButton();
 		}
 	};
 
@@ -190,11 +201,11 @@
 		// the upload process.
 		if (ui.tab.index() === 2) {
 			$newFileButton = $('#newFile', $wizard);
-			if ($newFileButton.length !== 1) {
-				throw new Error('Did not find "new file" button!');
+			// In some cases only a single file can be uploaded and no new
+			// file button appears
+			if ($newFileButton.length) {
+				$newFileButton.bind('click', this.callbackWrapper(this.startWizard));
 			}
-			$newFileButton.button();
-			$newFileButton.bind('click', this.callbackWrapper(this.startWizard));
 		}
 
 		$progressIndicator.hide();
@@ -226,10 +237,10 @@
 	 */
 	$.pkp.controllers.wizard.fileUpload.FileUploadWizardHandler.
 			prototype.wizardCancelRequested = function(wizardElement, event) {
-
 		if (this.parent('wizardCancelRequested', wizardElement, event)) {
 			// If the user presses cancel after uploading a file then delete the file.
 			if (this.uploadedFile_) {
+				this.uploadedFile_.csrfToken = this.csrfToken_;
 				$.post(this.deleteUrl_, this.uploadedFile_,
 						$.pkp.classes.Helper.curry(this.wizardCancelSuccess, this,
 								wizardElement, event), 'json');
@@ -290,6 +301,42 @@
 	};
 
 
+	/**
+	 * Handle the filesRemoved event triggered by the associated form. The
+	 * original event is triggered by plupload and passed via
+	 * FileUploadFormHandler.
+	 *
+	 * See the TODO note under FileUPloadFormHandler::handleFilesRemoved
+	 *
+	 * @param {$.pkp.controllers.form.AjaxFormHandler} callingForm The form
+	 *  that triggered the event.
+	 * @param {Event} event The upload event.
+	 * @param {Object} pluploader plupload component that fired the original
+	 *  event.
+	 * @param {Array} file Array of files removed
+	 */
+	$.pkp.controllers.wizard.fileUpload.FileUploadWizardHandler.
+			prototype.handleRemovedFiles =
+			function(callingForm, event, pluploader, file) {
+
+		var i;
+
+		if (typeof file === 'undefined' || !file.length) {
+			return;
+		}
+
+		// There's no error handling done for the response because we don't
+		// really have an elegant way to handle or display a failed deletion
+		for (i in file) {
+			if (typeof file[i].storedData === 'undefined') {
+				return;
+			}
+			file[i].storedData.csrfToken = this.csrfToken_;
+			$.post(this.deleteUrl_, file[i].storedData);
+		}
+	};
+
+
 	//
 	// Protected methods
 	//
@@ -306,5 +353,4 @@
 	};
 
 
-/** @param {jQuery} $ jQuery closure. */
 }(jQuery));

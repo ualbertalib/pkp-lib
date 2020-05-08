@@ -3,9 +3,9 @@
 /**
  * @file classes/log/SubmissionFileEventLogDAO.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubmissionFileEventLogDAO
  * @ingroup log
@@ -18,12 +18,6 @@ import('lib.pkp.classes.log.EventLogDAO');
 import('lib.pkp.classes.log.SubmissionFileEventLogEntry');
 
 class SubmissionFileEventLogDAO extends EventLogDAO {
-	/**
-	 * Constructor
-	 */
-	function SubmissionFileEventLogDAO() {
-		parent::EventLogDAO();
-	}
 
 	/**
 	 * Instantiate a submission file event log entry.
@@ -45,4 +39,4 @@ class SubmissionFileEventLogDAO extends EventLogDAO {
 	}
 }
 
-?>
+

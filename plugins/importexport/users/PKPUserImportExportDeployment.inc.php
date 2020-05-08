@@ -3,9 +3,9 @@
 /**
  * @file plugins/importexport/users/PKPUserImportExportDeployment.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPUserImportExportDeployment
  * @ingroup plugins_importexport_user
@@ -17,13 +17,34 @@
 import('lib.pkp.classes.plugins.importexport.PKPImportExportDeployment');
 
 class PKPUserImportExportDeployment extends PKPImportExportDeployment {
+	/** @var Site */
+	var $_site;
+
 	/**
 	 * Constructor
 	 * @param $context Context
 	 * @param $user User
 	 */
-	function PKPUserImportExportDeployment($context, $user) {
-		parent::PKPImportExportDeployment($context, $user);
+	function __construct($context, $user) {
+		parent::__construct($context, $user);
+		$site = Application::get()->getRequest()->getSite();
+		$this->setSite($site);
+	}
+
+	/**
+	 * Set the site.
+	 * @param $site Site
+	 */
+	function setSite($site) {
+		$this->_site = $site;
+	}
+
+	/**
+	 * Get the site.
+	 * @return Site
+	 */
+	function getSite() {
+		return $this->_site;
 	}
 
 	/**
@@ -43,4 +64,4 @@ class PKPUserImportExportDeployment extends PKPImportExportDeployment {
 	}
 }
 
-?>
+

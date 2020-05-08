@@ -3,9 +3,9 @@
 /**
  * @file classes/submission/action/EditorAction.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class EditorAction
  * @ingroup submission_action
@@ -13,17 +13,14 @@
  * @brief Editor actions.
  */
 
-import('lib.pkp.classes.submission.action.PKPAction');
-
 // Access decision actions constants.
 import('classes.workflow.EditorDecisionActionsManager');
 
-class EditorAction extends PKPAction {
+class EditorAction {
 	/**
 	 * Constructor.
 	 */
-	function EditorAction() {
-		parent::PKPAction();
+	function __construct() {
 	}
 
 	//
@@ -34,12 +31,13 @@ class EditorAction extends PKPAction {
 	 * @param $request PKPRequest
 	 * @param $submission Submission
 	 * @param $decision integer
-	 * @param $decisionLabels array(DECISION_CONSTANT => decision.locale.key, ...)
-	 * @param $reviewRound ReviewRound Current review round that user is taking the decision, if any.
-	 * @param $stageId int
+	 * @param $decisionLabels array(SUBMISSION_EDITOR_DECISION_... or SUBMISSION_EDITOR_RECOMMEND_... => editor.submission.decision....)
+	 * @param $reviewRound ReviewRound optional Current review round that user is taking the decision, if any.
+	 * @param $stageId integer optional
+	 * @param $recommendation boolean optional
 	 */
-	function recordDecision($request, $submission, $decision, $decisionLabels, $reviewRound = null, $stageId = null) {
-		$stageAssignmentDao = DAORegistry::getDAO('StageAssignmentDAO');
+	function recordDecision($request, $submission, $decision, $decisionLabels, $reviewRound = null, $stageId = null, $recommendation = false) {
+		$stageAssignmentDao = DAORegistry::getDAO('StageAssignmentDAO'); /* @var $stageAssignmentDao StageAssignmentDAO */
 
 		// Define the stage and round data.
 		if (!is_null($reviewRound)) {
@@ -69,84 +67,32 @@ class EditorAction extends PKPAction {
 		);
 
 		$result = $editorDecision;
-		if (!HookRegistry::call('EditorAction::recordDecision', array(&$submission, &$editorDecision, &$result))) {
+		if (!HookRegistry::call('EditorAction::recordDecision', array(&$submission, &$editorDecision, &$result, &$recommendation))) {
 			// Record the new decision
-			$editDecisionDao = DAORegistry::getDAO('EditDecisionDAO');
+			$editDecisionDao = DAORegistry::getDAO('EditDecisionDAO'); /* @var $editDecisionDao EditDecisionDAO */
 			$editDecisionDao->updateEditorDecision($submission->getId(), $editorDecision, $stageId, $reviewRound);
 
-			// Stamp the submission modified
-			$submission->setStatus(STATUS_QUEUED);
-			$submission->stampStatusModified();
-			$submissionDao = Application::getSubmissionDAO();
-			$submissionDao->updateObject($submission);
+			// Set a new submission status if necessary
+			$submissionDao = DAORegistry::getDAO('SubmissionDAO'); /* @var $submissionDao SubmissionDAO */
+			if ($decision == SUBMISSION_EDITOR_DECISION_DECLINE || $decision == SUBMISSION_EDITOR_DECISION_INITIAL_DECLINE) {
+				$submission->setStatus(STATUS_DECLINED);
+				$submissionDao->updateObject($submission);
+			} elseif ($submission->getStatus() == STATUS_DECLINED) {
+				$submission->setStatus(STATUS_QUEUED);
+				$submissionDao->updateObject($submission);
+			}
 
 			// Add log entry
 			import('lib.pkp.classes.log.SubmissionLog');
 			import('lib.pkp.classes.log.PKPSubmissionEventLogEntry');
 			AppLocale::requireComponents(LOCALE_COMPONENT_APP_COMMON, LOCALE_COMPONENT_APP_EDITOR);
-			SubmissionLog::logEvent($request, $submission, SUBMISSION_LOG_EDITOR_DECISION, 'log.editor.decision', array('editorName' => $user->getFullName(), 'submissionId' => $submission->getId(), 'decision' => __($decisionLabels[$decision])));
+			$eventType = $recommendation ? SUBMISSION_LOG_EDITOR_RECOMMENDATION : SUBMISSION_LOG_EDITOR_DECISION;
+			$logKey = $recommendation ? 'log.editor.recommendation' : 'log.editor.decision';
+			SubmissionLog::logEvent($request, $submission, $eventType, $logKey, array('editorName' => $user->getFullName(), 'submissionId' => $submission->getId(), 'decision' => __($decisionLabels[$decision])));
 		}
 		return $result;
 	}
 
-	/**
-	 * Clears a review assignment from a submission.
-	 * @param $request PKPRequest
-	 * @param $submission object
-	 * @param $reviewId int
-	 */
-	function clearReview($request, $submissionId, $reviewId) {
-		$submissionDao = Application::getSubmissionDAO();
-		$submission = $submissionDao->getById($submissionId);
-		$reviewAssignmentDao = DAORegistry::getDAO('ReviewAssignmentDAO');
-		$userDao = DAORegistry::getDAO('UserDAO');
-
-		$reviewAssignment = $reviewAssignmentDao->getById($reviewId);
-
-		if (isset($reviewAssignment) && $reviewAssignment->getSubmissionId() == $submission->getId() && !HookRegistry::call('EditorAction::clearReview', array(&$submission, $reviewAssignment))) {
-			$reviewer = $userDao->getById($reviewAssignment->getReviewerId());
-			if (!isset($reviewer)) return false;
-			$reviewAssignmentDao->deleteById($reviewId);
-
-			// Stamp the modification date
-			$submission->stampModified();
-			$submissionDao->updateObject($submission);
-
-			$notificationDao = DAORegistry::getDAO('NotificationDAO');
-			$notificationDao->deleteByAssoc(
-				ASSOC_TYPE_REVIEW_ASSIGNMENT,
-				$reviewAssignment->getId(),
-				$reviewAssignment->getReviewerId(),
-				NOTIFICATION_TYPE_REVIEW_ASSIGNMENT
-			);
-
-			// Insert a trivial notification to indicate the reviewer was removed successfully.
-			$currentUser = $request->getUser();
-			$notificationMgr = new NotificationManager();
-			$notificationMgr->createTrivialNotification($currentUser->getId(), NOTIFICATION_TYPE_SUCCESS, array('contents' => __('notification.removedReviewer')));
-
-			// Update the review round status, if needed.
-			$reviewRoundDao = DAORegistry::getDAO('ReviewRoundDAO');
-			$reviewRound = $reviewRoundDao->getById($reviewAssignment->getReviewRoundId());
-			$reviewAssignments = $reviewAssignmentDao->getBySubmissionId($reviewRound->getSubmissionId(), $reviewRound->getId(), $reviewRound->getStageId());
-			$reviewRoundDao->updateStatus($reviewRound, $reviewAssignments);
-
-			$notificationMgr->updateNotification(
-				$request,
-				array(NOTIFICATION_TYPE_ALL_REVIEWS_IN),
-				null,
-				ASSOC_TYPE_REVIEW_ROUND,
-				$reviewRound->getId()
-			);
-
-			// Add log
-			import('lib.pkp.classes.log.SubmissionLog');
-			import('classes.log.SubmissionEventLogEntry');
-			SubmissionLog::logEvent($request, $submission, SUBMISSION_LOG_REVIEW_CLEAR, 'log.review.reviewCleared', array('reviewerName' => $reviewer->getFullName(), 'submissionId' => $submission->getId(), 'stageId' => $reviewAssignment->getStageId(), 'round' => $reviewAssignment->getRound()));
-
-			return true;
-		} else return false;
-	}
 
 	/**
 	 * Assigns a reviewer to a submission.
@@ -154,12 +100,12 @@ class EditorAction extends PKPAction {
 	 * @param $submission object
 	 * @param $reviewerId int
 	 * @param $reviewRound ReviewRound
-	 * @param $reviewDueDate datetime optional
-	 * @param $responseDueDate datetime optional
+	 * @param $reviewDueDate datetime
+	 * @param $responseDueDate datetime
 	 */
-	function addReviewer($request, $submission, $reviewerId, &$reviewRound, $reviewDueDate = null, $responseDueDate = null, $reviewMethod = null) {
-		$reviewAssignmentDao = DAORegistry::getDAO('ReviewAssignmentDAO');
-		$userDao = DAORegistry::getDAO('UserDAO');
+	function addReviewer($request, $submission, $reviewerId, &$reviewRound, $reviewDueDate, $responseDueDate, $reviewMethod = null) {
+		$reviewAssignmentDao = DAORegistry::getDAO('ReviewAssignmentDAO'); /* @var $reviewAssignmentDao ReviewAssignmentDAO */
+		$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 
 		$reviewer = $userDao->getById($reviewerId);
 
@@ -173,7 +119,7 @@ class EditorAction extends PKPAction {
 		$stageId = $reviewRound->getStageId();
 		$round = $reviewRound->getRound();
 		if (!$assigned && isset($reviewer) && !HookRegistry::call('EditorAction::addReviewer', array(&$submission, $reviewerId))) {
-			$reviewAssignment = new ReviewAssignment();
+			$reviewAssignment = $reviewAssignmentDao->newDataObject();
 			$reviewAssignment->setSubmissionId($submission->getId());
 			$reviewAssignment->setReviewerId($reviewerId);
 			$reviewAssignment->setDateAssigned(Core::getCurrentDate());
@@ -185,13 +131,7 @@ class EditorAction extends PKPAction {
 			}
 			$reviewAssignmentDao->insertObject($reviewAssignment);
 
-			// Stamp modification date
-			$submission->stampStatusModified();
-			$submissionDao = Application::getSubmissionDAO();
-			$submissionDao->updateObject($submission);
-
 			$this->setDueDates($request, $submission, $reviewAssignment, $reviewDueDate, $responseDueDate);
-
 			// Add notification
 			$notificationMgr = new NotificationManager();
 			$notificationMgr->createNotification(
@@ -201,31 +141,15 @@ class EditorAction extends PKPAction {
 				$submission->getContextId(),
 				ASSOC_TYPE_REVIEW_ASSIGNMENT,
 				$reviewAssignment->getId(),
-				NOTIFICATION_LEVEL_TASK
-			);
-
-			// Insert a trivial notification to indicate the reviewer was added successfully.
-			$currentUser = $request->getUser();
-			$notificationMgr = new NotificationManager();
-			$notificationMgr->createTrivialNotification($currentUser->getId(), NOTIFICATION_TYPE_SUCCESS, array('contents' => __('notification.addedReviewer')));
-
-			// Update the review round status.
-			$reviewRoundDao = DAORegistry::getDAO('ReviewRoundDAO'); /* @var $reviewRoundDao ReviewRoundDAO */
-			$reviewAssignments = $reviewAssignmentDao->getBySubmissionId($submission->getId(), $reviewRound->getId(), $stageId);
-			$reviewRoundDao->updateStatus($reviewRound, $reviewAssignments);
-
-			$notificationMgr->updateNotification(
-				$request,
-				array(NOTIFICATION_TYPE_ALL_REVIEWS_IN),
+				NOTIFICATION_LEVEL_TASK,
 				null,
-				ASSOC_TYPE_REVIEW_ROUND,
-				$reviewRound->getId()
+				true
 			);
 
 			// Add log
 			import('lib.pkp.classes.log.SubmissionLog');
 			import('lib.pkp.classes.log.PKPSubmissionEventLogEntry');
-			SubmissionLog::logEvent($request, $submission, SUBMISSION_LOG_REVIEW_ASSIGN, 'log.review.reviewerAssigned', array('reviewerName' => $reviewer->getFullName(), 'submissionId' => $submission->getId(), 'stageId' => $stageId, 'round' => $round));
+			SubmissionLog::logEvent($request, $submission, SUBMISSION_LOG_REVIEW_ASSIGN, 'log.review.reviewerAssigned', array('reviewAssignmentId' => $reviewAssignment->getId(), 'reviewerName' => $reviewer->getFullName(), 'submissionId' => $submission->getId(), 'stageId' => $stageId, 'round' => $round));
 		}
 	}
 
@@ -233,13 +157,13 @@ class EditorAction extends PKPAction {
 	 * Sets the due date for a review assignment.
 	 * @param $request PKPRequest
 	 * @param $submission Submission
-	 * @param $reviewId int
-	 * @param $dueDate string
-	 * @param $numWeeks int
+	 * @param $reviewAssignment ReviewAssignment
+	 * @param $reviewDueDate string
+	 * @param $responseDueDate string
 	 * @param $logEntry boolean
 	 */
-	function setDueDates($request, $submission, $reviewAssignment, $reviewDueDate = null, $responseDueDate = null, $logEntry = false) {
-		$userDao = DAORegistry::getDAO('UserDAO');
+	function setDueDates($request, $submission, $reviewAssignment, $reviewDueDate, $responseDueDate, $logEntry = false) {
+		$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 		$context = $request->getContext();
 
 		$reviewer = $userDao->getById($reviewAssignment->getReviewerId());
@@ -248,12 +172,12 @@ class EditorAction extends PKPAction {
 		if ($reviewAssignment->getSubmissionId() == $submission->getId() && !HookRegistry::call('EditorAction::setDueDates', array(&$reviewAssignment, &$reviewer, &$reviewDueDate, &$responseDueDate))) {
 
 			// Set the review due date
-			$defaultNumWeeks = $context->getSetting('numWeeksPerReview');
-			$reviewAssignment->setDateDue(DAO::formatDateToDB($reviewDueDate, $defaultNumWeeks, false));
+			$defaultNumWeeks = $context->getData('numWeeksPerReview');
+			$reviewAssignment->setDateDue($reviewDueDate);
 
 			// Set the response due date
-			$defaultNumWeeks = $context->getSetting('numWeeksPerReponse');
-			$reviewAssignment->setDateResponseDue(DAO::formatDateToDB($responseDueDate, $defaultNumWeeks, false));
+			$defaultNumWeeks = $context->getData('numWeeksPerReponse');
+			$reviewAssignment->setDateResponseDue($responseDueDate);
 
 			// update the assignment (with both the new dates)
 			$reviewAssignment->stampModified();
@@ -271,6 +195,7 @@ class EditorAction extends PKPAction {
 					SUBMISSION_LOG_REVIEW_SET_DUE_DATE,
 					'log.review.reviewDueDateSet',
 					array(
+						'reviewAssignmentId' => $reviewAssignment->getId(),
 						'reviewerName' => $reviewer->getFullName(),
 						'dueDate' => strftime(
 							Config::getVar('general', 'date_format_short'),
@@ -294,9 +219,9 @@ class EditorAction extends PKPAction {
 	function incrementWorkflowStage($submission, $newStage, $request) {
 		// Change the submission's workflow stage.
 		$submission->setStageId($newStage);
-		$submissionDao = Application::getSubmissionDAO();
+		$submissionDao = DAORegistry::getDAO('SubmissionDAO'); /* @var $submissionDao SubmissionDAO */
 		$submissionDao->updateObject($submission);
 	}
 }
 
-?>
+

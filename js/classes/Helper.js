@@ -5,9 +5,9 @@
 /**
  * @file js/classes/Helper.js
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class Helper
  * @ingroup js_controllers
@@ -45,6 +45,10 @@
 	$.pkp.plugins.pubIds = $.pkp.plugins.pubIds || {};
 
 
+	/** @type {Object} */
+	$.pkp.plugins.importexport = $.pkp.plugins.importexport || {};
+
+
 
 	/**
 	 * Helper singleton
@@ -80,8 +84,8 @@
 	 * http://www.broofa.com, adapted by PKP.
 	 *
 	 * Copyright (c) 2010 Robert Kieffer
-	 * Copyright (c) 2014 Simon Fraser University Library
-	 * Copyright (c) 2010-2014 John Willinsky
+	 * Copyright (c) 2014-2020 Simon Fraser University
+	 * Copyright (c) 2010-2020 John Willinsky
 	 * Distributed under the GNU GPL v2 and MIT licenses. For full
 	 * terms see the file docs/COPYING.
 	 *
@@ -347,5 +351,17 @@
 	};
 
 
-/** @param {jQuery} $ jQuery closure. */
+	/**
+	 * A function that takes care of escaping @ character which could be interpreted
+	 * as CSS notation. This is due to the fact that jQuery uses CSS syntax for
+	 * selecting elements. These characters must be escaped by placing two
+	 * backslashes in front of them.
+	 * @param {string} elementId jQuery element selector
+	 * @return {string}
+	 */
+	$.pkp.classes.Helper.escapeJQuerySelector = function(elementId) {
+		return elementId.replace('@', '\\@');
+	};
+
+
 }(jQuery));

@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/admin/systemInfo/SystemInfoGridCategoryRow.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SystemInfoGridCategoryRow
  * @ingroup controllers_grid_admin_systemInfo
@@ -19,12 +19,6 @@ class SystemInfoGridCategoryRow extends GridCategoryRow {
 
 	var $_configSection;
 
-	/**
-	 * Constructor
-	 */
-	function SystemInfoGridCategoryRow() {
-		parent::GridCategoryRow();
-	}
 
 	//
 	// Overridden methods from GridCategoryRow
@@ -33,9 +27,9 @@ class SystemInfoGridCategoryRow extends GridCategoryRow {
 	 * @see GridCategoryRow::initialize()
 	 * @param $request PKPRequest
 	 */
-	function initialize($request) {
+	function initialize($request, $template = null) {
 		// Do the default initialization
-		parent::initialize($request);
+		parent::initialize($request, $template);
 		$this->_configSection = $this->getData();
 	}
 
@@ -47,4 +41,4 @@ class SystemInfoGridCategoryRow extends GridCategoryRow {
 		return $this->_configSection;
 	}
 }
-?>
+

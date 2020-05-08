@@ -3,9 +3,9 @@
 /**
  * @file classes/reviewForm/ReviewFormElement.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ReviewFormElement
  * @ingroup reviewForm
@@ -23,12 +23,6 @@ define('REVIEW_FORM_ELEMENT_TYPE_RADIO_BUTTONS',	0x000005);
 define('REVIEW_FORM_ELEMENT_TYPE_DROP_DOWN_BOX',	0x000006);
 
 class ReviewFormElement extends DataObject {
-	/**
-	 * Constructor.
-	 */
-	function ReviewFormElement() {
-		parent::DataObject();
-	}
 
 	/**
 	 * Get localized question.
@@ -36,6 +30,14 @@ class ReviewFormElement extends DataObject {
 	 */
 	function getLocalizedQuestion() {
 		return $this->getLocalizedData('question');
+	}
+
+	/**
+	 * Get localized description.
+	 * @return string
+	 */
+	function getLocalizedDescription() {
+		return $this->getLocalizedData('description');
 	}
 
 	/**
@@ -63,7 +65,7 @@ class ReviewFormElement extends DataObject {
 	 * @param $reviewFormId int
 	 */
 	function setReviewFormId($reviewFormId) {
-		return $this->setData('reviewFormId', $reviewFormId);
+		$this->setData('reviewFormId', $reviewFormId);
 	}
 
 	/**
@@ -79,7 +81,7 @@ class ReviewFormElement extends DataObject {
 	 * @param $sequence float
 	 */
 	function setSequence($sequence) {
-		return $this->setData('sequence', $sequence);
+		$this->setData('sequence', $sequence);
 	}
 
 	/**
@@ -95,7 +97,7 @@ class ReviewFormElement extends DataObject {
 	 * @param $reviewFormElementType string
 	 */
 	function setElementType($reviewFormElementType) {
-		return $this->setData('reviewFormElementType', $reviewFormElementType);
+		$this->setData('reviewFormElementType', $reviewFormElementType);
 	}
 
 	/**
@@ -111,7 +113,7 @@ class ReviewFormElement extends DataObject {
 	 * @param $viewable boolean
 	 */
 	function setRequired($required) {
-		return $this->setData('required', $required);
+		$this->setData('required', $required);
 	}
 
 	/**
@@ -127,7 +129,7 @@ class ReviewFormElement extends DataObject {
 	 * @param $included boolean
 	 */
 	function setIncluded($included) {
-		return $this->setData('included', $included);
+		$this->setData('included', $included);
 	}
 
 	/**
@@ -145,7 +147,25 @@ class ReviewFormElement extends DataObject {
 	 * @param $locale string
 	 */
 	function setQuestion($question, $locale) {
-		return $this->setData('question', $question, $locale);
+		$this->setData('question', $question, $locale);
+	}
+
+	/**
+	 * Get description.
+	 * @param $locale string
+	 * @return string
+	 */
+	function getDescription($locale) {
+		return $this->getData('description', $locale);
+	}
+
+	/**
+	 * Set description.
+	 * @param $description string
+	 * @param $locale string
+	 */
+	function setDescription($description, $locale) {
+		$this->setData('description', $description, $locale);
 	}
 
 	/**
@@ -163,7 +183,7 @@ class ReviewFormElement extends DataObject {
 	 * @param $locale string
 	 */
 	function setPossibleResponses($possibleResponses, $locale) {
-		return $this->setData('possibleResponses', $possibleResponses, $locale);
+		$this->setData('possibleResponses', $possibleResponses, $locale);
 	}
 
 	/**
@@ -194,4 +214,4 @@ class ReviewFormElement extends DataObject {
 	}
 }
 
-?>
+

@@ -2,9 +2,9 @@
 /**
  * @file classes/linkAction/request/RedirectConfirmationModal.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class RedirectConfirmationModal
  * @ingroup linkAction_request
@@ -35,8 +35,8 @@ class RedirectConfirmationModal extends ConfirmationModal {
 	 * @param $canClose boolean (optional) Whether the modal will
 	 *  have a close button.
 	 */
-	function RedirectConfirmationModal($dialogText, $title = null, $remoteUrl = null, $titleIcon = null, $okButton = null, $cancelButton = null, $canClose = true) {
-		parent::ConfirmationModal($dialogText, $title, $titleIcon, $okButton, $cancelButton, $canClose);
+	function __construct($dialogText, $title = null, $remoteUrl = null, $titleIcon = null, $okButton = null, $cancelButton = null, $canClose = true) {
+		parent::__construct($dialogText, $title, $titleIcon, $okButton, $cancelButton, $canClose);
 
 		$this->_remoteUrl = $remoteUrl;
 	}
@@ -68,4 +68,4 @@ class RedirectConfirmationModal extends ConfirmationModal {
 	}
 }
 
-?>
+

@@ -3,9 +3,9 @@
 /**
  * @file classes/submission/SubmissionComment.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubmissionComment
  * @ingroup submission
@@ -22,12 +22,6 @@ define('COMMENT_TYPE_LAYOUT', 0x04);
 define('COMMENT_TYPE_PROOFREAD', 0x05);
 
 class SubmissionComment extends DataObject {
-	/**
-	 * Constructor.
-	 */
-	function SubmissionComment() {
-		parent::DataObject();
-	}
 
 	/**
 	 * get comment type
@@ -42,7 +36,7 @@ class SubmissionComment extends DataObject {
 	 * @param $commentType int COMMENT_TYPE_...
 	 */
 	function setCommentType($commentType) {
-		return $this->setData('commentType', $commentType);
+		$this->setData('commentType', $commentType);
 	}
 
 	/**
@@ -58,7 +52,7 @@ class SubmissionComment extends DataObject {
 	 * @param $roleId int
 	 */
 	function setRoleId($roleId) {
-		return $this->setData('roleId', $roleId);
+		$this->setData('roleId', $roleId);
 	}
 
 	/**
@@ -74,7 +68,7 @@ class SubmissionComment extends DataObject {
 	 * @param $submissionId int
 	 */
 	function setSubmissionId($submissionId) {
-		return $this->setData('submissionId', $submissionId);
+		$this->setData('submissionId', $submissionId);
 	}
 
 	/**
@@ -90,7 +84,7 @@ class SubmissionComment extends DataObject {
 	 * @param $assocId int
 	 */
 	function setAssocId($assocId) {
-		return $this->setData('assocId', $assocId);
+		$this->setData('assocId', $assocId);
 	}
 
 	/**
@@ -106,7 +100,7 @@ class SubmissionComment extends DataObject {
 	 * @param $authorId int
 	 */
 	function setAuthorId($authorId) {
-		return $this->setData('authorId', $authorId);
+		$this->setData('authorId', $authorId);
 	}
 
 	/**
@@ -118,7 +112,7 @@ class SubmissionComment extends DataObject {
 		$authorFullName =& $this->getData('authorFullName');
 
 		if(!isset($authorFullName)) {
-			$userDao = DAORegistry::getDAO('UserDAO');
+			$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 			$authorFullName = $userDao->getUserFullName($this->getAuthorId(), true);
 		}
 
@@ -134,7 +128,7 @@ class SubmissionComment extends DataObject {
 		$authorEmail =& $this->getData('authorEmail');
 
 		if(!isset($authorEmail)) {
-			$userDao = DAORegistry::getDAO('UserDAO');
+			$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 			$authorEmail = $userDao->getUserEmail($this->getAuthorId(), true);
 		}
 
@@ -154,7 +148,7 @@ class SubmissionComment extends DataObject {
 	 * @param $commentTitle string
 	 */
 	function setCommentTitle($commentTitle) {
-		return $this->setData('commentTitle', $commentTitle);
+		$this->setData('commentTitle', $commentTitle);
 	}
 
 	/**
@@ -170,7 +164,7 @@ class SubmissionComment extends DataObject {
 	 * @param $comments string
 	 */
 	function setComments($comments) {
-		return $this->setData('comments', $comments);
+		$this->setData('comments', $comments);
 	}
 
 	/**
@@ -186,7 +180,7 @@ class SubmissionComment extends DataObject {
 	 * @param $datePosted date
 	 */
 	function setDatePosted($datePosted) {
-		return $this->setData('datePosted', $datePosted);
+		$this->setData('datePosted', $datePosted);
 	}
 
 	/**
@@ -202,7 +196,7 @@ class SubmissionComment extends DataObject {
 	 * @param $dateModified date
 	 */
 	function setDateModified($dateModified) {
-		return $this->setData('dateModified', $dateModified);
+		$this->setData('dateModified', $dateModified);
 	}
 
 	/**
@@ -218,8 +212,8 @@ class SubmissionComment extends DataObject {
 	 * @param $viewable boolean
 	 */
 	function setViewable($viewable) {
-		return $this->setData('viewable', $viewable);
+		$this->setData('viewable', $viewable);
 	}
 }
 
-?>
+

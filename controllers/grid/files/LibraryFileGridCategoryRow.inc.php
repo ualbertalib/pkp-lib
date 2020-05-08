@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/files/LibraryFileGridCategoryRow.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class LibraryFileGridCategoryRow
  * @ingroup controllers_grid_settings_library
@@ -23,9 +23,9 @@ class LibraryFileGridCategoryRow extends GridCategoryRow {
 	/**
 	 * Constructor
 	 */
-	function LibraryFileGridCategoryRow($context) {
+	function __construct($context) {
 		$this->_context =& $context;
-		parent::GridCategoryRow();
+		parent::__construct();
 	}
 
 	//
@@ -52,9 +52,9 @@ class LibraryFileGridCategoryRow extends GridCategoryRow {
 	/**
 	 * @copydoc GridCategoryRow::initialize()
 	 */
-	function initialize($request) {
-		parent::initialize($request);
+	function initialize($request, $template = null) {
+		parent::initialize($request, $template);
 		$this->setId($this->getData());
 	}
 }
-?>
+

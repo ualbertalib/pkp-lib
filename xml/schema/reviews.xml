@@ -4,9 +4,9 @@
 <!--
   * xml/schema/reviews.xml
   *
-  * Copyright (c) 2014 Simon Fraser University Library
-  * Copyright (c) 2000-2014 John Willinsky
-  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+  * Copyright (c) 2014-2020 Simon Fraser University
+  * Copyright (c) 2000-2020 John Willinsky
+  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
   *
   * Review assignment schema in XML.
   -->
@@ -43,10 +43,6 @@
 			<DEFAULT VALUE="0"/>
 		</field>
 		<field name="declined" type="I1">
-			<NOTNULL/>
-			<DEFAULT VALUE="0"/>
-		</field>
-		<field name="replaced" type="I1">
 			<NOTNULL/>
 			<DEFAULT VALUE="0"/>
 		</field>
@@ -88,6 +84,10 @@
 		</index>
 		<index name="review_assignments_form_id">
 			<col>review_form_id</col>
+		</index>
+		<index name="review_assignments_reviewer_review">
+			<col>reviewer_id</col>
+			<col>review_id</col>
 		</index>
 	</table>
 

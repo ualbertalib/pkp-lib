@@ -3,9 +3,9 @@
 /**
  * @file controllers/statistics/form/PKPReportGeneratorForm.inc.php
  *
- * Copyright (c) 2013 Simon Fraser University Library
- * Copyright (c) 2003-2013 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2013-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPReportGeneratorForm
  * @ingroup controllers_statistics_form
@@ -16,7 +16,7 @@
 
 import('lib.pkp.classes.form.Form');
 
-define('TIME_FILTER_OPTION_CURRENT_DAY', 0);
+define('TIME_FILTER_OPTION_YESTERDAY', 0);
 define('TIME_FILTER_OPTION_CURRENT_MONTH', 1);
 define('TIME_FILTER_OPTION_RANGE_DAY', 2);
 define('TIME_FILTER_OPTION_RANGE_MONTH', 3);
@@ -24,26 +24,30 @@ define('TIME_FILTER_OPTION_RANGE_MONTH', 3);
 abstract class PKPReportGeneratorForm extends Form {
 
 	/* @var $_columns array */
-	var $_columns;
+	private $_columns;
+
+	/* @var $_columns array */
+	private $_optionalColumns;
 
 	/* @var $_objects array */
-	var $_objects;
+	private $_objects;
 
 	/* @var $_fileTypes array */
-	var $_fileTypes;
+	private $_fileTypes;
 
 	/* @var $_metricType string */
-	var $_metricType;
+	private $_metricType;
 
 	/* @var $_defaultReportTemplates array */
-	var $_defaultReportTemplates;
+	private $_defaultReportTemplates;
 
 	/* @var $_reportTemplateIndex int */
-	var $_reportTemplateIndex;
+	private $_reportTemplateIndex;
 
 	/**
 	 * Constructor.
 	 * @param $columns array Report column names.
+	 * @param $optionalColumns array Report column names that are optional.
 	 * @param $objects array Object types.
 	 * @param $fileTypes array File types.
 	 * @param $metricType string The default report metric type.
@@ -54,10 +58,11 @@ abstract class PKPReportGeneratorForm extends Form {
 	 * @param $reportTemplateIndex int (optional) Current report template index
 	 * from the passed default report templates array.
 	 */
-	function PKPReportGeneratorForm($columns, $objects, $fileTypes, $metricType, $defaultReportTemplates, $reportTemplateIndex = null) {
-		parent::Form('controllers/statistics/form/reportGeneratorForm.tpl');
+	function __construct($columns, $optionalColumns, $objects, $fileTypes, $metricType, $defaultReportTemplates, $reportTemplateIndex = null) {
+		parent::__construct('controllers/statistics/form/reportGeneratorForm.tpl');
 
 		$this->_columns = $columns;
+		$this->_optionalColumns = $optionalColumns;
 		$this->_objects = $objects;
 		$this->_fileTypes = $fileTypes;
 		$this->_metricType = $metricType;
@@ -66,12 +71,13 @@ abstract class PKPReportGeneratorForm extends Form {
 
 		$this->addCheck(new FormValidatorArray($this, 'columns', 'required', 'manager.statistics.reports.form.columnsRequired'));
 		$this->addCheck(new FormValidatorPost($this));
+		$this->addCheck(new FormValidatorCSRF($this));
 	}
 
 	/**
-	 * Initialize the form from the current settings.
+	 * @copydoc Form::fetch()
 	 */
-	function fetch($request) {
+	function fetch($request, $template = null, $display = false) {
 		$router = $request->getRouter();
 		$context = $router->getContext($request);
 		$columns = $this->_columns;
@@ -94,30 +100,32 @@ abstract class PKPReportGeneratorForm extends Form {
 		if (!is_null($reportTemplateIndex) && isset($reportTemplates[$reportTemplateIndex])) {
 			$reportTemplate = $reportTemplates[$reportTemplateIndex];
 			$reportColumns = $reportTemplate['columns'];
-			if (!is_array($reportColumns)) continue;
+			if (is_array($reportColumns)) {
 
-			$this->setData('columns', $reportColumns);
-			$this->setData('reportTemplate', $reportTemplateIndex);
-			if (isset($reportTemplate['aggregationColumns'])) {
-				$aggreationColumns = $reportTemplate['aggregationColumns'];
-				if (!is_array($aggreationColumns)) continue;
+				$this->setData('columns', $reportColumns);
+				$this->setData('reportTemplate', $reportTemplateIndex);
+				if (isset($reportTemplate['aggregationColumns'])) {
+					$aggreationColumns = $reportTemplate['aggregationColumns'];
+					if (is_array($aggreationColumns)) {
 
-				$aggreationOptions = $selectedAggregationOptions = array();
-				foreach ($aggreationColumns as $column) {
-					$columnName = $statsHelper->getColumnNames($column);
-					if (!$columnName) continue;
-					$aggreationOptions[$column] = $columnName;
+						$aggreationOptions = $selectedAggregationOptions = array();
+						foreach ($aggreationColumns as $column) {
+							$columnName = $statsHelper->getColumnNames($column);
+							if (!$columnName) continue;
+							$aggreationOptions[$column] = $columnName;
+						}
+						$this->setData('aggregationOptions', $aggreationOptions);
+						$this->setData('selectedAggregationOptions', array_intersect($aggreationColumns, $reportColumns));
+					}
 				}
-				$this->setData('aggregationOptions', $aggreationOptions);
-				$this->setData('selectedAggregationOptions', array_intersect($aggreationColumns, $reportColumns));
-			}
 
-			if (isset($reportTemplate['filter']) && is_array($reportTemplate['filter'])) {
-				foreach ($reportTemplate['filter'] as $dimension => $filter) {
-					switch ($dimension) {
-						case STATISTICS_DIMENSION_ASSOC_TYPE:
-							$this->setData('objectTypes', $filter);
-							break;
+				if (isset($reportTemplate['filter']) && is_array($reportTemplate['filter'])) {
+					foreach ($reportTemplate['filter'] as $dimension => $filter) {
+						switch ($dimension) {
+							case STATISTICS_DIMENSION_ASSOC_TYPE:
+								$this->setData('objectTypes', $filter);
+								break;
+						}
 					}
 				}
 			}
@@ -128,8 +136,8 @@ abstract class PKPReportGeneratorForm extends Form {
 			$timeFilterSelectedOption = TIME_FILTER_OPTION_CURRENT_MONTH;
 		}
 		switch ($timeFilterSelectedOption) {
-			case TIME_FILTER_OPTION_CURRENT_DAY:
-				$this->setData('today', true);
+			case TIME_FILTER_OPTION_YESTERDAY:
+				$this->setData('yesterday', true);
 				break;
 			case TIME_FILTER_OPTION_CURRENT_MONTH:
 			default:
@@ -195,8 +203,9 @@ abstract class PKPReportGeneratorForm extends Form {
 		// Reports will always include this column.
 		unset($columnsOptions[STATISTICS_METRIC]);
 		$this->setData('columnsOptions', $columnsOptions);
+		$this->setData('optionalColumns', $this->_optionalColumns);
 
-		return parent::fetch($request);
+		return parent::fetch($request, $template, $display);
 	}
 
 	/**
@@ -210,10 +219,11 @@ abstract class PKPReportGeneratorForm extends Form {
 	}
 
 	/**
-	 * @see Form::execute()
+	 * @copydoc Form::execute()
 	 */
-	function execute($request) {
-		parent::execute();
+	function execute(...$functionArgs) {
+		parent::execute(...$functionArgs);
+		$request = Application::get()->getRequest();
 		$router = $request->getRouter(); /* @var $router PageRouter */
 		$context = $router->getContext($request);
 		$statsHelper = new StatisticsHelper();
@@ -257,8 +267,8 @@ abstract class PKPReportGeneratorForm extends Form {
 
 		$timeFilterOption = $this->getData('timeFilterOption');
 		switch($timeFilterOption) {
-			case TIME_FILTER_OPTION_CURRENT_DAY:
-				$filter[STATISTICS_DIMENSION_MONTH] = STATISTICS_CURRENT_DAY;
+			case TIME_FILTER_OPTION_YESTERDAY:
+				$filter[STATISTICS_DIMENSION_DAY] = STATISTICS_YESTERDAY;
 				break;
 			case TIME_FILTER_OPTION_CURRENT_MONTH:
 				$filter[STATISTICS_DIMENSION_MONTH] = STATISTICS_CURRENT_MONTH;
@@ -278,8 +288,8 @@ abstract class PKPReportGeneratorForm extends Form {
 					// only one specific date. Use the start time.
 					$filter[STATISTICS_DIMENSION_MONTH] = $startDate;
 				} else {
-					$filter[STATISTICS_DIMENSION_MONTH]['from'] = $startDate;
-					$filter[STATISTICS_DIMENSION_MONTH]['to'] = $endDate;
+					$filter[STATISTICS_DIMENSION_DAY]['from'] = $startDate;
+					$filter[STATISTICS_DIMENSION_DAY]['to'] = $endDate;
 				}
 				break;
 			default:
@@ -332,4 +342,4 @@ abstract class PKPReportGeneratorForm extends Form {
 	abstract function getFileAssocTypes();
 }
 
-?>
+

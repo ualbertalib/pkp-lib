@@ -2,9 +2,9 @@
 /**
  * @file classes/filter/Filter.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class Filter
  * @ingroup filter
@@ -106,9 +106,9 @@ class Filter extends DataObject {
 	 * @param $inputType string a string representation of a TypeDescription
 	 * @param $outputType string a string representation of a TypeDescription
 	 */
-	function Filter($inputType, $outputType) {
+	function __construct($inputType, $outputType) {
 		// Initialize the filter.
-		parent::DataObject();
+		parent::__construct();
 		$this->setTransformationType($inputType, $outputType);
 	}
 
@@ -146,7 +146,7 @@ class Filter extends DataObject {
 	 * Set the sequence id
 	 * @param $seq integer
 	 */
-	function setSeq($seq) {
+	function setSequence($seq) {
 		$this->setData('seq', $seq);
 	}
 
@@ -154,7 +154,7 @@ class Filter extends DataObject {
 	 * Get the sequence id
 	 * @return integer
 	 */
-	function getSeq() {
+	function getSequence() {
 		return $this->getData('seq');
 	}
 
@@ -283,7 +283,7 @@ class Filter extends DataObject {
 		// for persistence.
 		$runtimeSettings = $this->supportedRuntimeEnvironmentSettings();
 		foreach($runtimeSettings as $runtimeSetting => $defaultValue) {
-			$methodName = 'get'.String::ucfirst($runtimeSetting);
+			$methodName = 'get'.PKPString::ucfirst($runtimeSetting);
 			$this->setData($runtimeSetting, $runtimeEnvironment->$methodName());
 		}
 	}
@@ -416,12 +416,14 @@ class Filter extends DataObject {
 	 * NB: sub-classes will not normally override
 	 * this method.
 	 *
-	 * @param mixed an input value that is supported
+	 * @param $input mixed an input value that is supported
 	 *  by this filter
+	 * @param $returnErrors boolean whether the value
+	 *  should be returned also if an error occurred
 	 * @return mixed a valid return value or null
 	 *  if an error occurred during processing
 	 */
-	function &execute(&$input) {
+	function &execute(&$input, $returnErrors = false) {
 		// Make sure that we don't destroy referenced
 		// data somewhere out there.
 		unset($this->_input, $this->_output);
@@ -446,8 +448,10 @@ class Filter extends DataObject {
 		// Process the filter
 		$preliminaryOutput =& $this->process($input);
 
+		HookRegistry::call(strtolower_codesafe(get_class($this) . '::execute'), array(&$preliminaryOutput));
+
 		// Validate the filter output
-		if (!is_null($preliminaryOutput) && $this->supports($input, $preliminaryOutput)) {
+		if ((!is_null($preliminaryOutput) && $this->supports($input, $preliminaryOutput)) || $returnErrors) {
 			$this->_output =& $preliminaryOutput;
 		}
 
@@ -476,4 +480,4 @@ class Filter extends DataObject {
 	}
 }
 
-?>
+

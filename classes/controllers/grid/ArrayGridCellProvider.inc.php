@@ -3,9 +3,9 @@
 /**
  * @file classes/controllers/grid/ArrayGridCellProvider.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ArrayGridCellProvider
  * @ingroup controllers_grid
@@ -16,12 +16,6 @@
 import('lib.pkp.classes.controllers.grid.GridCellProvider');
 
 class ArrayGridCellProvider extends GridCellProvider {
-	/**
-	 * Constructor
-	 */
-	function ArrayGridCellProvider() {
-		parent::GridCellProvider();
-	}
 
 	//
 	// Template methods from GridCellProvider
@@ -47,4 +41,4 @@ class ArrayGridCellProvider extends GridCellProvider {
 	}
 }
 
-?>
+

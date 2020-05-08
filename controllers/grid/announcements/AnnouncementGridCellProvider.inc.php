@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/announcements/AnnouncementGridCellProvider.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class AnnouncementGridCellProvider
  * @ingroup controllers_grid_announcements
@@ -18,39 +18,28 @@ import('lib.pkp.classes.controllers.grid.GridCellProvider');
 class AnnouncementGridCellProvider extends GridCellProvider {
 
 	/**
-	 * Constructor
-	 */
-	function AnnouncementGridCellProvider() {
-		parent::GridCellProvider();
-	}
-
-	/**
 	 * @copydoc GridCellProvider::getCellActions()
 	 */
 	function getCellActions($request, $row, $column, $position = GRID_ACTION_POSITION_DEFAULT) {
-		if ($column->getId() == 'title') {
-			$announcement = $row->getData();
-			$label = $announcement->getLocalizedTitle();
+		switch ($column->getId()) {
+			case 'title':
+				$announcement = $row->getData();
+				$router = $request->getRouter();
+				$actionArgs = array('announcementId' => $row->getId());
 
-			$router = $request->getRouter();
-			$actionArgs = array('announcementId' => $row->getId());
-
-			import('lib.pkp.classes.linkAction.request.AjaxModal');
-			$moreInformationAction = new LinkAction(
-				'moreInformation',
-				new AjaxModal(
-					$router->url($request, null, null, 'moreInformation', null, $actionArgs),
-					$label,
-					null,
-					true
-				),
-				$label,
-				'moreInformation'
-			);
-
-			return array($moreInformationAction);
+				import('lib.pkp.classes.linkAction.request.AjaxModal');
+				return array(new LinkAction(
+					'moreInformation',
+					new AjaxModal(
+						$router->url($request, null, null, 'moreInformation', null, $actionArgs),
+						htmlspecialchars($announcement->getLocalizedTitle()),
+						null,
+						true
+					),
+					htmlspecialchars($announcement->getLocalizedTitle()),
+					'moreInformation'
+				));
 		}
-
 		return parent::getCellActions($request, $row, $column, $position);
 	}
 
@@ -73,7 +62,7 @@ class AnnouncementGridCellProvider extends GridCellProvider {
 			case 'type':
 				$typeId = $announcement->getTypeId();
 				if ($typeId) {
-					$announcementTypeDao = DAORegistry::getDAO('AnnouncementTypeDAO');
+					$announcementTypeDao = DAORegistry::getDAO('AnnouncementTypeDAO'); /* @var $announcementTypeDao AnnouncementTypeDAO */
 					$announcementType = $announcementTypeDao->getById($typeId);
 					return array('label' => $announcementType->getLocalizedTypeName());
 				} else {
@@ -88,4 +77,4 @@ class AnnouncementGridCellProvider extends GridCellProvider {
 	}
 }
 
-?>
+

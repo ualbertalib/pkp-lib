@@ -3,9 +3,9 @@
 /**
  * @file classes/file/ContextFileManager.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ContextFileManager
  * @ingroup file
@@ -25,8 +25,8 @@ class ContextFileManager extends PrivateFileManager {
 	 * Create a manager for handling context file uploads.
 	 * @param $context Context
 	 */
-	function ContextFileManager($contextId) {
-		parent::PrivateFileManager();
+	function __construct($contextId) {
+		parent::__construct();
 		$this->contextId = (int) $contextId;
 	}
 
@@ -40,4 +40,4 @@ class ContextFileManager extends PrivateFileManager {
 	}
 }
 
-?>
+

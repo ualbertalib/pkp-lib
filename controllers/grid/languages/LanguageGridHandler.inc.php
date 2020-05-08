@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/languages/LanguageGridHandler.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class LanguageGridHandler
  * @ingroup classes_controllers_grid_languages
@@ -21,8 +21,8 @@ class LanguageGridHandler extends GridHandler {
 	/**
 	 * Constructor
 	 */
-	function LanguageGridHandler() {
-		parent::GridHandler();
+	function __construct() {
+		parent::__construct();
 		$this->addRoleAssignment(
 			ROLE_ID_MANAGER,
 			array('saveLanguageSetting', 'setContextPrimaryLocale')
@@ -34,10 +34,10 @@ class LanguageGridHandler extends GridHandler {
 	// Implement template methods from PKPHandler.
 	//
 	/**
-	 * @copydoc PKPHandler::initialize()
+	 * @copydoc GridHandler::initialize()
 	 */
-	function initialize($request) {
-		parent::initialize($request);
+	function initialize($request, $args = null) {
+		parent::initialize($request, $args);
 
 		// Load user-related translations.
 		AppLocale::requireComponents(
@@ -49,6 +49,13 @@ class LanguageGridHandler extends GridHandler {
 		$this->setTitle('common.languages');
 	}
 
+	/**
+	 * @copydoc GridHandler::getRowInstance()
+	 */
+	protected function getRowInstance() {
+		return new LanguageGridRow();
+	}
+
 	//
 	// Public handler methods.
 	//
@@ -56,6 +63,7 @@ class LanguageGridHandler extends GridHandler {
 	 * Save language management settings.
 	 * @param $args array
 	 * @param $request Request
+	 * @return JSONObject JSON message
 	 */
 	function saveLanguageSetting($args, $request) {
 		$locale = (string) $request->getUserVar('rowId');
@@ -64,33 +72,65 @@ class LanguageGridHandler extends GridHandler {
 		$availableLocales = $this->getGridDataElements($request);
 		$context = $request->getContext();
 
+		import('classes.core.Services');
+		$contextService = Services::get('context');
+
 		$permittedSettings = array('supportedFormLocales', 'supportedSubmissionLocales', 'supportedLocales');
 		if (in_array($settingName, $permittedSettings) && $locale) {
-			$currentSettingValue = (array) $context->getSetting($settingName);
+			$currentSettingValue = (array) $context->getData($settingName);
 			if (AppLocale::isLocaleValid($locale) && array_key_exists($locale, $availableLocales)) {
 				if ($settingValue) {
 					array_push($currentSettingValue, $locale);
+					if ($settingName == 'supportedFormLocales') {
+						// reload localized default context settings
+						$contextService->restoreLocaleDefaults($context, $request, $locale);
+					} elseif ($settingName == 'supportedSubmissionLocales') {
+						// if a submission locale is enabled, and this locale is not in the form locales, add it
+						$supportedFormLocales = (array) $context->getData('supportedFormLocales');
+						if (!in_array($locale, $supportedFormLocales)) {
+							array_push($supportedFormLocales, $locale);
+							$context = $contextService->edit($context, ['supportedFormLocales' => $supportedFormLocales], $request);
+							// reload localized default context settings
+							$contextService->restoreLocaleDefaults($context, $request, $locale);
+						}
+					}
 				} else {
 					$key = array_search($locale, $currentSettingValue);
 					if ($key !== false) unset($currentSettingValue[$key]);
+					if ($settingName == 'supportedFormLocales') {
+						// if a form locale is disabled, disable it form submission locales as well
+						$supportedSubmissionLocales = (array) $context->getData('supportedSubmissionLocales');
+						$key = array_search($locale, $supportedSubmissionLocales);
+						if ($key !== false) unset($supportedSubmissionLocales[$key]);
+						$supportedSubmissionLocales = array_values($supportedSubmissionLocales);
+						$context = $contextService->edit($context, ['supportedSubmissionLocales' => $supportedSubmissionLocales], $request);
+					}
 				}
 			}
 		}
 
-		$context->updateSetting($settingName, $currentSettingValue);
+		$context = $contextService->edit($context, [$settingName => $currentSettingValue], $request);
 
 		$notificationManager = new NotificationManager();
 		$user = $request->getUser();
 		$notificationManager->createTrivialNotification(
 			$user->getId(), NOTIFICATION_TYPE_SUCCESS, array('contents' => __('notification.localeSettingsSaved')));
 
-		return DAO::getDataChangedEvent($locale);
+		$localeNames = AppLocale::getAllLocales();
+		$newFormLocales = array_map(function($localeKey) use ($localeNames) {
+			return ['key' => $localeKey, 'label' => $localeNames[$localeKey]];
+		}, $context->getData('supportedFormLocales'));
+
+		$json = DAO::getDataChangedEvent($locale);
+		$json->setGlobalEvent('set-form-languages', $newFormLocales);
+		return $json;
 	}
 
 	/**
 	 * Set context primary locale.
 	 * @param $args array
 	 * @param $request Request
+	 * @return JSONMessage JSON object
 	 */
 	function setContextPrimaryLocale($args, $request) {
 		$locale = (string) $request->getUserVar('rowId');
@@ -100,7 +140,7 @@ class LanguageGridHandler extends GridHandler {
 		if (AppLocale::isLocaleValid($locale) && array_key_exists($locale, $availableLocales)) {
 			// Make sure at least the primary locale is chosen as available
 			foreach (array('supportedLocales', 'supportedSubmissionLocales', 'supportedFormLocales') as $name) {
-				$$name = $context->getSetting($name);
+				$$name = $context->getData($name);
 				if (!in_array($locale, $$name)) {
 					array_push($$name, $locale);
 					$context->updateSetting($name, $$name);
@@ -108,7 +148,7 @@ class LanguageGridHandler extends GridHandler {
 			}
 
 			$context->setPrimaryLocale($locale);
-			$contextDao = $context->getDAO();
+			$contextDao = Application::getContextDAO();
 			$contextDao->updateObject($context);
 
 			$notificationManager = new NotificationManager();
@@ -185,8 +225,8 @@ class LanguageGridHandler extends GridHandler {
 
 		$this->addColumn(
 			new GridColumn(
-				'submissionLocale',
-				'manager.language.submissions',
+				'formLocale',
+				'manager.language.forms',
 				null,
 				'controllers/grid/common/cell/selectStatusCell.tpl',
 				$cellProvider
@@ -195,8 +235,8 @@ class LanguageGridHandler extends GridHandler {
 
 		$this->addColumn(
 			new GridColumn(
-				'formLocale',
-				'manager.language.forms',
+				'submissionLocale',
+				'manager.language.submissions',
 				null,
 				'controllers/grid/common/cell/selectStatusCell.tpl',
 				$cellProvider
@@ -217,7 +257,8 @@ class LanguageGridHandler extends GridHandler {
 		if (is_array($data)) {
 			foreach ($data as $locale => $localeData) {
 				foreach (array('supportedFormLocales', 'supportedSubmissionLocales', 'supportedLocales') as $name) {
-					$data[$locale][$name] = in_array($locale, (array) $context->getSetting($name));
+					$data[$locale][$name] = in_array($locale, $context->getData($name));
+					// $data[$locale][$name] = in_array($locale, (array) $context->getData($name));
 				}
 			}
 		} else {
@@ -227,5 +268,3 @@ class LanguageGridHandler extends GridHandler {
 		return $data;
 	}
 }
-
-?>

@@ -1,9 +1,9 @@
 /**
  * @file js/controllers/form/FileUploadFormHandler.js
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class FileUploadFormHandler
  * @ingroup js_controllers_form
@@ -20,8 +20,10 @@
 	 *
 	 * @param {jQueryObject} $form The wrapped HTML form element.
 	 * @param {{
+	 *  readOnly: boolean,
 	 *  resetUploader: boolean,
 	 *  $uploader: jQueryObject,
+	 *  $preview: jQueryObject,
 	 *  uploaderOptions: Object
 	 *  }} options Form validation options.
 	 */
@@ -30,14 +32,25 @@
 
 		this.parent($form, options);
 
-		if (options.resetUploader !== undefined) {
-			this.resetUploader_ = options.resetUploader;
+		if (options.readOnly === undefined || options.readOnly === null) {
+			if (options.resetUploader !== undefined) {
+				this.resetUploader_ = options.resetUploader;
+			}
+
+			// An optional preview container for the file. If this option is passed
+			// the preview container will be hidden when a new file is uploaded and
+			// when the `fileDeleted` event is fired.
+			if (options.$preview !== undefined && options.$preview.length) {
+				this.$preview = options.$preview;
+				this.bind('fileDeleted', this.callbackWrapper(this.fileDeleted));
+			}
+
+			// Attach the uploader handler to the uploader HTML element.
+			this.attachUploader_(options.$uploader, options.uploaderOptions);
+
+			this.uploaderSetup(options.$uploader);
 		}
 
-		// Attach the uploader handler to the uploader HTML element.
-		this.attachUploader_(options.$uploader, options.uploaderOptions);
-
-		this.uploaderSetup(options.$uploader);
 	};
 	$.pkp.classes.Helper.inherits(
 			$.pkp.controllers.form.FileUploadFormHandler,
@@ -51,6 +64,15 @@
 	 */
 	$.pkp.controllers.form.FileUploadFormHandler.prototype.
 			resetUploader_ = false;
+
+
+	/**
+	 * The file preview DOM element. A jQuery object when available
+	 * @protected
+	 * @type {boolean|jQueryObject}
+	 */
+	$.pkp.controllers.form.FileUploadFormHandler.prototype.
+			$preview = false;
 
 
 	//
@@ -89,10 +111,9 @@
 	$.pkp.controllers.form.FileUploadFormHandler.prototype.
 			uploaderSetup = function($uploader) {
 
-		var pluploader = $uploader.plupload('getUploader');
-
+		var uploadHandler = $.pkp.classes.Handler.getHandler($uploader);
 		// Subscribe to uploader events.
-		pluploader.bind('FileUploaded',
+		uploadHandler.pluploader.bind('FileUploaded',
 				this.callbackWrapper(this.handleUploadResponse));
 	};
 
@@ -116,6 +137,11 @@
 			// Trigger the file uploaded event.
 			this.trigger('fileUploaded', [jsonData.uploadedFile]);
 
+			// Hide preview if one exists
+			if (this.$preview) {
+				this.$preview.hide();
+			}
+
 			if (jsonData.content === '') {
 				// Successful upload to temporary file; save to main form.
 				$uploadForm = this.getHtmlElement();
@@ -123,8 +149,20 @@
 				$temporaryFileId.val(jsonData.temporaryFileId);
 			} else {
 				// Display the revision confirmation form.
-				this.getHtmlElement().replaceWith(jsonData.content);
+				this.replaceWith(jsonData.content);
 			}
+		}
+	};
+
+
+	/**
+	 * Fires when the file has been removed
+	 */
+	$.pkp.controllers.form.FileUploadFormHandler.prototype.
+			fileDeleted = function() {
+
+		if (this.$preview) {
+			this.$preview.hide();
 		}
 	};
 
@@ -146,5 +184,4 @@
 	};
 
 
-/** @param {jQuery} $ jQuery closure. */
 }(jQuery));

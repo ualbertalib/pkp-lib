@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/settings/user/form/UserRoleForm.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class UserRoleForm
  * @ingroup controllers_grid_settings_user_form
@@ -25,39 +25,36 @@ class UserRoleForm extends UserForm {
 	 * @param int $userId
 	 * @param string $userFullName
 	 */
-	function UserRoleForm($userId, $userFullName) {
-		parent::UserForm('controllers/grid/settings/user/form/userRoleForm.tpl', $userId);
+	function __construct($userId, $userFullName) {
+		parent::__construct('controllers/grid/settings/user/form/userRoleForm.tpl', $userId);
 
 		$this->_userFullName = $userFullName;
 		$this->addCheck(new FormValidatorPost($this));
+		$this->addCheck(new FormValidatorCSRF($this));
 	}
 
 	/**
-	 * Display the form.
-	 * @param $args array
-	 * @param $request PKPRequest
+	 * @copydoc UserForm::display
 	 */
-	function display($args, $request) {
+	function display($request = null, $template = null) {
 		$templateMgr = TemplateManager::getManager($request);
-
-		$templateMgr->assign('userId', $this->userId);
-		$templateMgr->assign('userFullName', $this->_userFullName);
-
-		return $this->fetch($request);
+		$templateMgr->assign(array(
+			'userId' => $this->userId,
+			'userFullName' => $this->_userFullName,
+		));
+		return parent::display($request, $template);
 	}
 
 	/**
 	 * Update user's roles.
-	 * @param $args array
-	 * @param $request PKPRequest
 	 */
-	function execute($args, $request) {
-		parent::execute($request);
+	function execute(...$functionParams) {
+		parent::execute(...$functionParams);
 
 		// Role management handled by parent form, just return user.
-		$userDao = DAORegistry::getDAO('UserDAO');
+		$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 		return $userDao->getById($this->userId);
 	}
 }
 
-?>
+

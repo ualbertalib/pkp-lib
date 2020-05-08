@@ -3,9 +3,9 @@
 /**
  * @file classes/db/DBConnection.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class DBConnection
  * @ingroup db
@@ -14,6 +14,7 @@
  * Currently integrated with ADOdb (from http://adodb.sourceforge.net).
  */
 
+define('ADODB_OUTP', array('DBConnection', 'logAdodbMessage'));
 
 class DBConnection {
 
@@ -45,7 +46,7 @@ class DBConnection {
 	 * otherwise calls initCustomDBConnection with custom connection
 	 * parameters.
 	 */
-	function DBConnection() {
+	function __construct() {
 		$this->connected = false;
 
 		if (func_num_args() == 0) {
@@ -57,6 +58,16 @@ class DBConnection {
 	}
 
 	/**
+	 * Log message handler for ADODB.
+	 * @param $msg string
+	 * @param $newline boolean
+	 * @see ADOConnection::outp
+	 */
+	static function logAdodbMessage($msg, $newline=true) {
+		error_log('PKP-Database-Logger ' . Registry::get('system.debug.startTime') . ': ' . PKPString::html2text($msg));
+	}
+
+	/**
 	 * Create new database connection with the connection parameters from
 	 * the system configuration.
 	 * @return boolean
@@ -64,6 +75,13 @@ class DBConnection {
 	function initDefaultDBConnection() {
 		$this->driver = Config::getVar('database', 'driver');
 		$this->host = Config::getVar('database', 'host');
+		$socket = Config::getVar('database', 'unix_socket');
+		$port = Config::getVar('database', 'port');
+		if ($socket) {
+			$this->host .= ':' . $socket;
+		} elseif ($port) {
+			$this->host .= ':' . $port;
+		}
 		$this->username = Config::getVar('database', 'username');
 		$this->password = Config::getVar('database', 'password');
 		$this->databaseName = Config::getVar('database', 'name');
@@ -80,7 +98,7 @@ class DBConnection {
 	 * Create new database connection with the specified connection
 	 * parameters.
 	 * @param $driver string
-	 * @param $host string
+	 * @param $host string (Use host:socket and host:port for non-standard port and socket)
 	 * @param $username string
 	 * @param $password string
 	 * @param $databaseName string
@@ -111,7 +129,7 @@ class DBConnection {
 	 * @return boolean
 	 */
 	function initConn() {
-		require_once('lib/pkp/lib/adodb/adodb.inc.php');
+		require_once('lib/pkp/lib/vendor/adodb/adodb-php/adodb.inc.php');
 
 		$this->dbconn = ADONewConnection($this->driver);
 
@@ -241,4 +259,4 @@ class DBConnection {
 	}
 }
 
-?>
+

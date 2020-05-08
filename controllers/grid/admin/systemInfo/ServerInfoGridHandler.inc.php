@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/admin/systemInfo/ServerInfoGridHandler.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ServerInfoGridHandler
  * @ingroup controllers_grid_admin_systemInfo
@@ -21,8 +21,8 @@ class ServerInfoGridHandler extends GridHandler {
 	/**
 	 * Constructor
 	 */
-	function ServerInfoGridHandler() {
-		parent::GridHandler();
+	function __construct() {
+		parent::__construct();
 		$this->addRoleAssignment(array(
 			ROLE_ID_SITE_ADMIN),
 			array('fetchGrid', 'fetchRow')
@@ -50,23 +50,21 @@ class ServerInfoGridHandler extends GridHandler {
 	}
 
 	/**
-	 * @copydoc PKPHandler::initialize()
+	 * @copydoc GridHandler::initialize()
 	 */
-	function initialize($request) {
-		parent::initialize($request);
+	function initialize($request, $args = null) {
+		parent::initialize($request, $args);
 
 		// Load user-related translations.
 		AppLocale::requireComponents(
 			LOCALE_COMPONENT_PKP_USER,
 			LOCALE_COMPONENT_PKP_ADMIN,
 			LOCALE_COMPONENT_APP_ADMIN,
-			LOCALE_COMPONENT_APP_MANAGER,
-			LOCALE_COMPONENT_APP_COMMON
+			LOCALE_COMPONENT_APP_MANAGER
 		);
 
 		// Basic grid configuration.
 		$this->setTitle('admin.serverInformation');
-		$this->setInstructions('admin.serverInformationDescription');
 
 		//
 		// Grid columns.
@@ -105,15 +103,15 @@ class ServerInfoGridHandler extends GridHandler {
 	/**
 	 * @copydoc GridHandler::loadData()
 	 */
-	function loadData($request, $filter) {
+	protected function loadData($request, $filter) {
 
 		$dbconn = DBConnection::getConn();
 		$dbServerInfo = $dbconn->ServerInfo();
 
 		$serverInfo = array(
-			'admin.server.platform' => Core::serverPHPOS(),
-			'admin.server.phpVersion' => Core::serverPHPVersion(),
-			'admin.server.apacheVersion' => (function_exists('apache_get_version') ? apache_get_version() : __('common.notAvailable')),
+			'admin.server.platform' => PHP_OS,
+			'admin.server.phpVersion' => phpversion(),
+			'admin.server.apacheVersion' => $_SERVER['SERVER_SOFTWARE'],
 			'admin.server.dbDriver' => Config::getVar('database', 'driver'),
 			'admin.server.dbVersion' => (empty($dbServerInfo['description']) ? $dbServerInfo['version'] : $dbServerInfo['description'])
 		);
@@ -121,4 +119,4 @@ class ServerInfoGridHandler extends GridHandler {
 		return $serverInfo;
 	}
 }
-?>
+

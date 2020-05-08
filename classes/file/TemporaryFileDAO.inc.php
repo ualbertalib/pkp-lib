@@ -3,9 +3,9 @@
 /**
  * @file classes/file/TemporaryFileDAO.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class TemporaryFileDAO
  * @ingroup file
@@ -18,12 +18,6 @@
 import('lib.pkp.classes.file.TemporaryFile');
 
 class TemporaryFileDAO extends DAO {
-	/**
-	 * Constructor
-	 */
-	function TemporaryFileDAO() {
-		parent::DAO();
-	}
 
 	/**
 	 * Retrieve a temporary file by ID.
@@ -31,7 +25,7 @@ class TemporaryFileDAO extends DAO {
 	 * @param $userId int
 	 * @return TemporaryFile
 	 */
-	function &getTemporaryFile($fileId, $userId) {
+	function getTemporaryFile($fileId, $userId) {
 		$result = $this->retrieveLimit(
 			'SELECT t.* FROM temporary_files t WHERE t.file_id = ? and t.user_id = ?',
 			array((int) $fileId, (int) $userId),
@@ -40,7 +34,7 @@ class TemporaryFileDAO extends DAO {
 
 		$returner = null;
 		if (isset($result) && $result->RecordCount() != 0) {
-			$returner =& $this->_returnTemporaryFileFromRow($result->GetRowAssoc(false));
+			$returner = $this->_returnTemporaryFileFromRow($result->GetRowAssoc(false));
 		}
 
 		$result->Close();
@@ -163,7 +157,7 @@ class TemporaryFileDAO extends DAO {
 		);
 
 		while (!$result->EOF) {
-			$temporaryFiles[] =& $this->_returnTemporaryFileFromRow($result->GetRowAssoc(false));
+			$temporaryFiles[] = $this->_returnTemporaryFileFromRow($result->GetRowAssoc(false));
 			$result->MoveNext();
 		}
 
@@ -180,4 +174,4 @@ class TemporaryFileDAO extends DAO {
 	}
 }
 
-?>
+

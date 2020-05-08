@@ -3,9 +3,9 @@
 /**
  * @file classes/controlledVocab/ControlledVocabDAO.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ControlledVocabDAO
  * @ingroup controlled_vocab
@@ -17,20 +17,13 @@
 import('lib.pkp.classes.controlledVocab.ControlledVocab');
 
 class ControlledVocabDAO extends DAO {
-	/**
-	 * Constructor
-	 */
-	function ControlledVocabDAO() {
-		parent::DAO();
-	}
 
 	/**
 	 * Return the Controlled Vocab Entry DAO for this Controlled Vocab.
 	 * Can be subclassed to provide extended DAOs.
 	 */
-	function &getEntryDAO() {
-		$entryDao = DAORegistry::getDAO('ControlledVocabEntryDAO');
-		return $entryDao;
+	function getEntryDAO() {
+		return DAORegistry::getDAO('ControlledVocabEntryDAO');
 	}
 
 	/**
@@ -58,7 +51,7 @@ class ControlledVocabDAO extends DAO {
 	 * @param $assocId int
 	 * @return $controlledVocab
 	 */
-	function build($symbolic, $assocType = 0, $assocId = 0) {
+	function _build($symbolic, $assocType = 0, $assocId = 0) {
 		// Attempt to build a new controlled vocabulary.
 		$controlledVocab = $this->newDataObject();
 		$controlledVocab->setSymbolic($symbolic);
@@ -160,8 +153,8 @@ class ControlledVocabDAO extends DAO {
 	 */
 	function deleteObjectById($controlledVocabId) {
 		$params = array((int) $controlledVocabId);
-		$controlledVocabEntryDao = DAORegistry::getDAO('ControlledVocabEntryDAO');
-		$controlledVocabEntries =& $this->enumerate($controlledVocabId);
+		$controlledVocabEntryDao = DAORegistry::getDAO('ControlledVocabEntryDAO'); /* @var $controlledVocabEntryDao ControlledVocabEntryDAO */
+		$controlledVocabEntries = $this->enumerate($controlledVocabId);
 		foreach ($controlledVocabEntries as $controlledVocabEntryId => $controlledVocabEntryName) {
 			$controlledVocabEntryDao->deleteObjectById($controlledVocabEntryId);
 		}
@@ -175,7 +168,7 @@ class ControlledVocabDAO extends DAO {
 	 * @param $assocType int
 	 * @param $assocId int
 	 */
-	function getBySymbolic($symbolic, $assocType, $assocId) {
+	function getBySymbolic($symbolic, $assocType = 0, $assocId = 0) {
 		$result = $this->retrieve(
 			'SELECT * FROM controlled_vocabs WHERE symbolic = ? AND assoc_type = ? AND assoc_id = ?',
 			array($symbolic, (int) $assocType, (int) $assocId)
@@ -278,7 +271,7 @@ class ControlledVocabDAO extends DAO {
 			}
 
 			// It doesn't exist; create a new one.
-			$controlledVocabs[] = $controlledVocab = $this->build($symbolic, $assocType, $assocId);
+			$controlledVocabs[] = $controlledVocab = $this->_build($symbolic, $assocType, $assocId);
 			foreach ($controlledVocabNode->getChildren() as $entryNode) {
 				$seq = $entryNode->getAttribute('seq');
 				if ($seq !== null) $seq = (float) $seq;
@@ -303,4 +296,4 @@ class ControlledVocabDAO extends DAO {
 	}
 }
 
-?>
+

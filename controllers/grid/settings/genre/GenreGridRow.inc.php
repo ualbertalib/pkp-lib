@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/settings/genre/GenreGridRow.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class GenreGridRow
  * @ingroup controllers_grid_settings_genre
@@ -16,22 +16,15 @@
 import('lib.pkp.classes.controllers.grid.GridRow');
 
 class GenreGridRow extends GridRow {
-	/**
-	 * Constructor
-	 */
-	function GenreGridRow() {
-		parent::GridRow();
-	}
 
 	//
 	// Overridden template methods
 	//
 	/**
-	 * @see GridRow::initialize()
-	 * @param $request PKPRequest
+	 * @copydoc GridRow::initialize()
 	 */
-	function initialize($request) {
-		parent::initialize($request);
+	function initialize($request, $template = null) {
+		parent::initialize($request, $template);
 
 		// Is this a new row or an existing row?
 		$rowId = $this->getId();
@@ -60,6 +53,7 @@ class GenreGridRow extends GridRow {
 				new LinkAction(
 					'deleteGenre',
 					new RemoteActionConfirmationModal(
+						$request->getSession(),
 						__('common.confirmDelete'),
 						__('grid.action.delete'),
 						$router->url($request, null, null, 'deleteGenre', null, $actionArgs), 'modal_delete'),
@@ -70,4 +64,4 @@ class GenreGridRow extends GridRow {
 	}
 }
 
-?>
+

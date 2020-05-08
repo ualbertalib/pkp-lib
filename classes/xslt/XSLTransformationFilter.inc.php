@@ -3,9 +3,9 @@
 /**
  * @file classes/xslt/XSLTransformationFilter.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class XSLTransformationFilter
  * @ingroup xslt
@@ -27,7 +27,7 @@ class XSLTransformationFilter extends PersistableFilter {
 	 * be an XML format. See the XMLTypeDescription class for
 	 * more details how to enable XML validation.
 	 */
-	function XSLTransformationFilter($filterGroup, $displayName = 'XSL Transformation') {
+	function __construct($filterGroup, $displayName = 'XSL Transformation') {
 		// Check that we only get xml input, the output type is arbitrary.
 		if (!substr($filterGroup->getInputType(), 0, 5) == 'xml::') fatalError('XSL filters need XML as input.');
 
@@ -39,7 +39,7 @@ class XSLTransformationFilter extends PersistableFilter {
 
 		$this->setDisplayName($displayName);
 
-		parent::PersistableFilter($filterGroup);
+		parent::__construct($filterGroup);
 	}
 
 
@@ -140,8 +140,8 @@ class XSLTransformationFilter extends PersistableFilter {
 
 		// Transform the input
 		$xslTransformer = new XSLTransformer();
-		$result =& $xslTransformer->transform($xml, $xmlType, $this->getXsl(), $this->getXslType(), $this->getResultType());
+		$result = $xslTransformer->transform($xml, $xmlType, $this->getXsl(), $this->getXslType(), $this->getResultType());
 		return $result;
 	}
 }
-?>
+

@@ -3,9 +3,9 @@
 /**
  * @file classes/validation/ValidatorORCID.inc.php
  *
- * Copyright (c) 2013 Simon Fraser University Library
- * Copyright (c) 2000-2013 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2013-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ValidatorORCID
  * @ingroup validation
@@ -14,55 +14,19 @@
  * @brief Validation check for ORCID iDs.
  */
 
-import('lib.pkp.classes.validation.ValidatorRegExp');
+import('lib.pkp.classes.validation.Validator');
+import('lib.pkp.classes.validation.ValidatorFactory');
 
-class ValidatorORCID extends ValidatorRegExp {
+class ValidatorORCID extends Validator {
 	/**
-	 * Constructor.
-	 */
-	function ValidatorORCID() {
-		parent::ValidatorRegExp(self::getRegexp());
-	}
-
-
-	//
-	// Implement abstract methods from Validator
-	//
-	/**
-	 * @see Validator::isValid()
-	 * @param $value mixed
-	 * @return boolean
+	 * @copydoc Validator::isValid()
 	 */
 	function isValid($value) {
-		if (!parent::isValid($value)) return false;
+		$validator = \ValidatorFactory::make(
+			['value' => $value],
+			['value' => ['required', 'orcid']]
+		);
 
-		// Test the check digit
-		// Based on the ORCID checksum at: 
-		// http://support.orcid.org/knowledgebase/articles/116780-structure-of-the-orcid-identifier
-		$matches = $this->getMatches();
-		$orcid = $matches[1] . $matches[2] . $matches[3] . $matches[4];
-
-		$total = 0;
-		for ($i=0; $i<15; $i++) {
-			$total = ($total + $orcid[$i]) * 2;
-		}
-		
-		$remainder = $total % 11;
-		$result = (12 - $remainder) % 11;
-		return ($orcid[15] == ($result==10 ? 'X' : $result));
-	}
-
-	//
-	// Public static methods
-	//
-	/**
-	 * Return the regex for an ORCID check. This can be called
-	 * statically.
-	 * @return string
-	 */
-	static function getRegexp() {
-		return '/^http:\/\/orcid.org\/(\d{4})-(\d{4})-(\d{4})-(\d{3}[0-9X])$/';
+		return $validator->passes();
 	}
 }
-
-?>

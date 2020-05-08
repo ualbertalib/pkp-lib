@@ -3,9 +3,9 @@
 /**
  * @file classes/controllers/grid/feature/PagingFeature.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PagingFeature
  * @ingroup controllers_grid_feature
@@ -14,29 +14,17 @@
  *
  */
 
-import('lib.pkp.classes.controllers.grid.feature.GridFeature');
+import('lib.pkp.classes.controllers.grid.feature.GeneralPagingFeature');
 
-class PagingFeature extends GridFeature{
-
-	/** @var ItemIterator */
-	private $_itemIterator;
+class PagingFeature extends GeneralPagingFeature {
 
 	/**
+	 * @see GridFeature::GridFeature()
 	 * Constructor.
+	 * @param $id string Feature identifier.
 	 */
-	function PagingFeature() {
-		parent::GridFeature('paging');
-	}
-
-	//
-	// Getters and setters.
-	//
-	/**
-	 * Get item iterator.
-	 * @return ItemIterator
-	 */
-	function getItemIterator() {
-		return $this->_itemIterator;
+	function __construct($id = 'paging') {
+		parent::__construct($id);
 	}
 
 
@@ -44,60 +32,24 @@ class PagingFeature extends GridFeature{
 	// Extended methods from GridFeature.
 	//
 	/**
-	 * @see GridFeature::getJSClass()
+	 * @copydoc GridFeature::getJSClass()
 	 */
 	function getJSClass() {
 		return '$.pkp.classes.features.PagingFeature';
 	}
 
-	/**
-	 * @see GridFeature::setOptions()
-	 * @param $request PKPRequest
-	 * @param $grid Grid
-	 */
-	function setOptions($request, $grid) {
-		// Get the default items per page setting value.
-		$rangeInfo = PKPHandler::getRangeInfo($request, $grid->getId());
-		$defaultItemsPerPage = $rangeInfo->getCount();
-
-		// Check for a component level items per page setting.
-		$componentItemsPerPage = $request->getUserVar($this->_getItemsPerPageParamName($grid->getId()));
-		if ($componentItemsPerPage) {
-			$currentItemsPerPage = $componentItemsPerPage;
-		} else {
-			$currentItemsPerPage = $defaultItemsPerPage;
-		}
-
-		$iterator = $this->getItemIterator();
-
-		$options = array(
-			'itemsPerPageParamName' => $this->_getItemsPerPageParamName($grid->getId()),
-			'defaultItemsPerPage' => $defaultItemsPerPage,
-			'currentItemsPerPage' => $currentItemsPerPage,
-			'itemsTotal' => $iterator->getCount(),
-			'pageParamName' => PKPHandler::getPageParamName($grid->getId()),
-			'currentPage' => $iterator->getPage()
-		);
-
-		$this->addOptions($options);
-
-		parent::setOptions($request, $grid);
-	}
 
 	/**
-	 * @see GridFeature::fetchUIElements()
-	 * @param $request PKPRequest
-	 * @param $grid Grid
+	 * @copydoc GridFeature::fetchUIElements()
 	 */
 	function fetchUIElements($request, $grid) {
-		$iterator = $this->getItemIterator();
 		$options = $this->getOptions();
-
 		$templateMgr = TemplateManager::getManager($request);
-		$templateMgr->assign('iterator', $iterator);
-		$templateMgr->assign('currentItemsPerPage', $options['currentItemsPerPage']);
-		$templateMgr->assign('grid', $grid);
-
+		$templateMgr->assign(array(
+			'iterator' => $this->getItemIterator(),
+			'currentItemsPerPage' => $options['currentItemsPerPage'],
+			'grid' => $grid,
+		));
 		return array('pagingMarkup' => $templateMgr->fetch('controllers/grid/feature/gridPaging.tpl'));
 	}
 
@@ -105,77 +57,8 @@ class PagingFeature extends GridFeature{
 	//
 	// Hooks implementation.
 	//
-	/*
-	 * @see GridFeature::gridInitialize()
-	 * The feature will know about the current filter
-	 * value so it can request grid refreshes keeping
-	 * the filter.
-	 * @param $args array
-	 */
-	function getGridDataElements($args) {
-		$filter = $args['filter'];
-
-		if (is_array($filter) && !empty($filter)) {
-			$this->addOptions(array('filter' => json_encode($filter)));
-		}
-	}
-
-
 	/**
-	 * @see GridFeature::setGridDataElements()
-	 * @param $args array
-	 */
-	function setGridDataElements($args) {
-		$grid =& $args['grid'];
-		$data =& $args['data'];
-
-		if (is_array($data)) {
-			import('lib.pkp.classes.core.ArrayItemIterator');
-			$request = Application::getRequest();
-			$rangeInfo = $grid->getGridRangeInfo($request, $grid->getId());
-			$itemIterator = new ArrayItemIterator($data, $rangeInfo->getPage(), $rangeInfo->getCount());
-			$this->_itemIterator = $itemIterator;
-			$data = $itemIterator->toArray();
-		} elseif (is_a($data, 'ItemIterator')) {
-			$this->_itemIterator = $data;
-		}
-	}
-
-	/**
-	 * @see GridFeature::getRequestArgs()
-	 * @param $args array
-	 */
-	function getRequestArgs($args) {
-		$grid = $args['grid'];
-		$requestArgs =& $args['requestArgs'];
-
-		// Add paging info so grid actions will not loose paging context.
-		// Only works if grid link actions use the getRequestArgs
-		// returned content.
-		$request = Application::getRequest();
-		$rangeInfo = $grid->getGridRangeInfo($request, $grid->getId());
-		$requestArgs[GridHandler::getPageParamName($grid->getId())] = $rangeInfo->getPage();
-		$requestArgs[$this->_getItemsPerPageParamName($grid->getId())] = $rangeInfo->getCount();
-	}
-
-	/**
-	 * @see GridFeature::getGridRangeInfo()
-	 * @param $args array
-	 */
-	function getGridRangeInfo($args) {
-		$request = $args['request'];
-		$grid = $args['grid'];
-		$rangeInfo = $args['rangeInfo'];
-
-		// Add grid level items per page setting, if any.
-		$itemsPerPage = $request->getUserVar($this->_getItemsPerPageParamName($grid->getId()));
-		if ($itemsPerPage) {
-			$rangeInfo->setCount($itemsPerPage);
-		}
-	}
-
-	/**
-	 * @see GridFeature::fetchRow()
+	 * @copydoc GridFeature::fetchRow()
 	 * Check if user really deleted a row. Handle following cases:
 	 * 1 - recently added requested row is on previous pages and its
 	 * addition changes the current requested page items;
@@ -187,7 +70,6 @@ class PagingFeature extends GridFeature{
 	 * 2 - fetch the last grid data row;
 	 * 3 - send a request to refresh the entire grid usign the previous
 	 * page.
-	 * @param $args array
 	 */
 	function fetchRow($args) {
 		$request = $args['request'];
@@ -266,19 +148,6 @@ class PagingFeature extends GridFeature{
 			$additionalAttributes)
 		);
 	}
-
-
-	//
-	// Private helper methods.
-	//
-	/**
-	 * Get the range info items per page parameter name.
-	 * @param $rangeName string
-	 * @return string
-	 */
-	private function _getItemsPerPageParamName($rangeName) {
-		return $rangeName . 'ItemsPerPage';
-	}
 }
 
-?>
+

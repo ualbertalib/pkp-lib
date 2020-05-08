@@ -3,9 +3,9 @@
 /**
  * @file plugins/metadata/openurl10/schema/Openurl10BaseSchema.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class Openurl10BaseSchema
  * @ingroup plugins_metadata_openurl10_schema
@@ -23,9 +23,9 @@ class Openurl10BaseSchema extends MetadataSchema {
 	 * Constructor
 	 * @param $name string the meta-data schema name
 	 */
-	function Openurl10BaseSchema($name, $classname) {
+	function __construct($name, $classname) {
 		// Configure the meta-data schema.
-		parent::MetadataSchema(
+		parent::__construct(
 			$name,
 			'openurl10',
 			$classname,
@@ -45,4 +45,4 @@ class Openurl10BaseSchema extends MetadataSchema {
 		$this->addProperty('isbn');
 	}
 }
-?>
+

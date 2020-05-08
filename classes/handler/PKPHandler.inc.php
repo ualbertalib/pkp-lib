@@ -3,9 +3,9 @@
 /**
  * @file classes/handler/PKPHandler.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @package core
  * @class PKPHandler
@@ -14,12 +14,10 @@
  *
  */
 
-// FIXME: remove these import statements - handler validators are deprecated.
-import('lib.pkp.classes.handler.validation.HandlerValidator');
-import('lib.pkp.classes.handler.validation.HandlerValidatorRoles');
-import('lib.pkp.classes.handler.validation.HandlerValidatorCustom');
-
 class PKPHandler {
+	/** @var string|null API token */
+	protected $_apiToken = null;
+
 	/**
 	 * @var string identifier of the controller instance - must be unique
 	 *  among all instances of a given controller type.
@@ -45,15 +43,25 @@ class PKPHandler {
 	/** @var AuthorizationDecisionManager authorization decision manager for this handler */
 	var $_authorizationDecisionManager;
 
+	/** @var boolean Whether to enforce site access restrictions. */
+	var $_enforceRestrictedSite = true;
+
+	/** @var boolean Whether role assignments have been checked. */
+	var $_roleAssignmentsChecked = false;
+
 	/**
 	 * Constructor
 	 */
-	function PKPHandler() {
+	function __construct() {
 	}
 
 	//
 	// Setters and Getters
 	//
+	function setEnforceRestrictedSite($enforceRestrictedSite) {
+		$this->_enforceRestrictedSite = $enforceRestrictedSite;
+	}
+
 	/**
 	 * Set the controller id
 	 * @param $id string
@@ -101,19 +109,6 @@ class PKPHandler {
 		$dispatcher = $this->getDispatcher();
 		if (isset($dispatcher)) $dispatcher->handle404();
 		else Dispatcher::handle404(); // For old-style handlers
-	}
-
-	/**
-	 * Add a validation check to the handler.
-	 *
-	 * NB: deprecated!
-	 *
-	 * @param $handlerValidator HandlerValidator
-	 */
-	function addCheck(&$handlerValidator) {
-		// FIXME: Add a deprecation warning once we've refactored
-		// all HandlerValidator occurrences.
-		$this->_checks[] =& $handlerValidator;
 	}
 
 	/**
@@ -207,6 +202,9 @@ class PKPHandler {
 				$operations
 			);
 		}
+
+		// Flag role assignments as needing checking.
+		$this->_roleAssignmentsChecked = false;
 	}
 
 	/**
@@ -235,6 +233,13 @@ class PKPHandler {
 	}
 
 	/**
+	 * Flag role assignment checking as completed.
+	 */
+	function markRoleAssignmentsChecked() {
+		$this->_roleAssignmentsChecked = true;
+	}
+
+	/**
 	 * Authorize this request.
 	 *
 	 * Routers will call this method automatically thereby enforcing
@@ -248,12 +253,11 @@ class PKPHandler {
 	 * @param $args array request arguments
 	 * @param $roleAssignments array the operation role assignment,
 	 *  see getRoleAssignment() for more details.
-	 * @param $enforceRestrictedSite boolean True iff site restrictions are to be enforced
 	 * @return boolean
 	 */
-	function authorize($request, &$args, $roleAssignments, $enforceRestrictedSite = true) {
+	function authorize($request, &$args, $roleAssignments) {
 		// Enforce restricted site access if required.
-		if ($enforceRestrictedSite) {
+		if ($this->_enforceRestrictedSite) {
 			import('lib.pkp.classes.security.authorization.RestrictedSiteAccessPolicy');
 			$this->addPolicy(new RestrictedSiteAccessPolicy($request), true);
 		}
@@ -267,7 +271,7 @@ class PKPHandler {
 		if (!defined('SESSION_DISABLE_INIT')) {
 			// Add user roles in authorized context.
 			$user = $request->getUser();
-			if (is_a($user, 'User')) {
+			if (is_a($user, 'User') || is_a($request->getRouter(), 'APIRouter')) {
 				import('lib.pkp.classes.security.authorization.UserRolesRequiredPolicy');
 				$this->addPolicy(new UserRolesRequiredPolicy($request), true);
 			}
@@ -293,7 +297,7 @@ class PKPHandler {
 
 		// Let the authorization decision manager take a decision.
 		$decision = $this->_authorizationDecisionManager->decide();
-		if ($decision == AUTHORIZATION_PERMIT) {
+		if ($decision == AUTHORIZATION_PERMIT && (empty($this->_roleAssignments) || $this->_roleAssignmentsChecked)) {
 			return true;
 		} else {
 			return false;
@@ -349,9 +353,8 @@ class PKPHandler {
 	 * authorization.
 	 *
 	 * @param $request PKPRequest
-	 * @param $args array
 	 */
-	function initialize($request, $args = null) {
+	function initialize($request) {
 		// Set the controller id to the requested
 		// page (page routing) or component name
 		// (component routing) by default.
@@ -362,8 +365,10 @@ class PKPHandler {
 			// and human readable component id.
 			// Example: "grid.citation.CitationGridHandler"
 			// becomes "grid-citation-citationgrid"
-			$componentId = str_replace('.', '-', String::strtolower(String::substr($componentId, 0, -7)));
+			$componentId = str_replace('.', '-', PKPString::strtolower(PKPString::substr($componentId, 0, -7)));
 			$this->setId($componentId);
+		} elseif (is_a($router, 'APIRouter')) {
+			$this->setId($router->getEntity());
 		} else {
 			assert(is_a($router, 'PKPPageRouter'));
 			$this->setId($router->getRequestedPage($request));
@@ -406,7 +411,7 @@ class PKPHandler {
 			}
 		}
 
-		if ($context) $count = $context->getSetting('itemsPerPage');
+		if ($context) $count = $context->getData('itemsPerPage');
 		if (!isset($count)) $count = Config::getVar('interface', 'items_per_page');
 
 		import('lib.pkp.classes.db.DBResultRange');
@@ -438,14 +443,18 @@ class PKPHandler {
 
 		AppLocale::requireComponents(
 			LOCALE_COMPONENT_PKP_COMMON,
-			LOCALE_COMPONENT_PKP_USER
+			LOCALE_COMPONENT_PKP_USER,
+			LOCALE_COMPONENT_APP_COMMON
 		);
-		if (defined('LOCALE_COMPONENT_APP_COMMON')) {
-			AppLocale::requireComponents(LOCALE_COMPONENT_APP_COMMON);
+
+		$userRoles = (array) $this->getAuthorizedContextObject(ASSOC_TYPE_USER_ROLES);
+		if (array_intersect(array(ROLE_ID_MANAGER), $userRoles)) {
+			AppLocale::requireComponents(LOCALE_COMPONENT_PKP_MANAGER);
 		}
 
 		$templateMgr = TemplateManager::getManager($request);
-		$templateMgr->assign('userRoles', $this->getAuthorizedContextObject(ASSOC_TYPE_USER_ROLES));
+		$templateMgr->assign('userRoles', $userRoles);
+
 		$accessibleWorkflowStages = $this->getAuthorizedContextObject(ASSOC_TYPE_ACCESSIBLE_WORKFLOW_STAGES);
 		if ($accessibleWorkflowStages) $templateMgr->assign('accessibleWorkflowStages', $accessibleWorkflowStages);
 	}
@@ -468,22 +477,31 @@ class PKPHandler {
 	}
 
 	/**
-	 * Get a list of pages that don't require login, even if the system does
-	 * FIXME: Delete this method when authorization re-factoring is complete.
-	 * @return array
-	 */
-	function getLoginExemptions() {
-		import('lib.pkp.classes.security.authorization.RestrictedSiteAccessPolicy');
-		return RestrictedSiteAccessPolicy::_getLoginExemptions();
-	}
-
-	/**
 	 * Get the iterator of working contexts.
 	 * @param $request PKPRequest
 	 * @return ItemIterator
 	 */
 	function getWorkingContexts($request) {
-		assert(false); // Must be implemented by subclasses
+		// For installation process
+		if (defined('SESSION_DISABLE_INIT')) return null;
+
+		$user = $request->getUser();
+		$contextDao = Application::getContextDAO();
+		return $contextDao->getAvailable($user?$user->getId():null);
+	}
+
+	/**
+	 * Return the context that is configured in site redirect setting.
+	 * @param $request Request
+	 * @return mixed Either Context or null
+	 */
+	function getSiteRedirectContext($request) {
+		$site = $request->getSite();
+		if ($site && ($contextId = $site->getRedirect())) {
+			$contextDao = Application::getContextDAO(); /* @var $contextDao ContextDAO */
+			return $contextDao->getById($contextId);
+		}
+		return null;
 	}
 
 	/**
@@ -493,7 +511,7 @@ class PKPHandler {
 	 * @return mixed Either Context or null
 	 */
 	function getFirstUserContext($user, $contexts) {
-		$userGroupDao = DAORegistry::getDAO('UserGroupDAO');
+		$userGroupDao = DAORegistry::getDAO('UserGroupDAO'); /* @var $userGroupDao UserGroupDAO */
 		$context = null;
 		foreach($contexts as $workingContext) {
 			$userIsEnrolled = $userGroupDao->userInAnyGroup($user->getId(), $workingContext->getId());
@@ -512,6 +530,23 @@ class PKPHandler {
 	function requireSSL() {
 		return true;
 	}
+
+	/**
+	 * Return API token string
+	 *
+	 * @return string|null
+	 */
+	public function getApiToken() {
+		return $this->_apiToken;
+	}
+
+	/**
+	 * Set API token string
+	 *
+	 */
+	public function setApiToken($apiToken) {
+		return $this->_apiToken = $apiToken;
+	}
 }
 
-?>
+

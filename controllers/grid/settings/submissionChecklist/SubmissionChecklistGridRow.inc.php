@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/settings/submissionChecklist/SubmissionChecklistGridRow.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubmissionChecklistGridRow
  * @ingroup controllers_grid_settings_submissionChecklist
@@ -16,22 +16,15 @@
 import('lib.pkp.classes.controllers.grid.GridRow');
 
 class SubmissionChecklistGridRow extends GridRow {
-	/**
-	 * Constructor
-	 */
-	function SubmissionChecklistGridRow() {
-		parent::GridRow();
-	}
 
 	//
 	// Overridden template methods
 	//
-	/*
-	 * Configure the grid row
-	 * @param $request PKPRequest
+	/**
+	 * @copydoc GridRow::initialize()
 	 */
-	function initialize($request) {
-		parent::initialize($request);
+	function initialize($request, $template = null) {
+		parent::initialize($request, $template);
 
 		// Is this a new row or an existing row?
 		$rowId = $this->getId();
@@ -60,6 +53,7 @@ class SubmissionChecklistGridRow extends GridRow {
 				new LinkAction(
 					'deleteSubmissionChecklist',
 					new RemoteActionConfirmationModal(
+						$request->getSession(),
 						__('common.confirmDelete'),
 						__('grid.action.delete'),
 						$router->url($request, null, null, 'deleteItem', null, $actionArgs),
@@ -71,4 +65,4 @@ class SubmissionChecklistGridRow extends GridRow {
 	}
 }
 
-?>
+

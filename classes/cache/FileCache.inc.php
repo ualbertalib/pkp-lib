@@ -8,9 +8,9 @@
 /**
  * @file classes/cache/FileCache.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class FileCache
  * @ingroup cache
@@ -35,8 +35,8 @@ class FileCache extends GenericCache {
 	/**
 	 * Instantiate a cache.
 	 */
-	function FileCache($context, $cacheId, $fallback, $path) {
-		parent::GenericCache($context, $cacheId, $fallback);
+	function __construct($context, $cacheId, $fallback, $path) {
+		parent::__construct($context, $cacheId, $fallback);
 
 		$this->filename = $path . DIRECTORY_SEPARATOR . "fc-$context-" . str_replace('/', '.', $cacheId) . '.php';
 
@@ -56,6 +56,7 @@ class FileCache extends GenericCache {
 	function flush() {
 		unset($this->cache);
 		$this->cache = null;
+		if (function_exists('opcache_invalidate')) opcache_invalidate($this->filename, true);
 		@unlink($this->filename);
 	}
 
@@ -85,7 +86,7 @@ class FileCache extends GenericCache {
 	function setEntireCache($contents) {
 		if (file_put_contents(
 			$this->filename,
-			'<?php return ' . var_export($contents, true) . '; ?>',
+			'<?php return ' . var_export($contents, true) . ';',
 			LOCK_EX
 		) !== false) {
 			$umask = Config::getVar('files', 'umask');
@@ -117,4 +118,4 @@ class FileCache extends GenericCache {
 	}
 }
 
-?>
+

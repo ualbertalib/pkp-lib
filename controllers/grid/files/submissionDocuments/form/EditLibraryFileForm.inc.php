@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/files/submissionDocuments/form/EditLibraryFileForm.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class EditLibraryFileForm
  * @ingroup controllers_grid_files_submissionDocuments_form
@@ -28,14 +28,14 @@ class EditLibraryFileForm extends LibraryFileForm {
 	 * @param $fileType int LIBRARY_FILE_TYPE_...
 	 * @param $fileId int optional
 	 */
-	function EditLibraryFileForm($contextId, $fileId, $submissionId) {
-		parent::LibraryFileForm('controllers/grid/files/submissionDocuments/form/editFileForm.tpl', $contextId);
+	function __construct($contextId, $fileId, $submissionId) {
+		parent::__construct('controllers/grid/files/submissionDocuments/form/editFileForm.tpl', $contextId);
 
 		$this->submissionId = $submissionId;
-		$libraryFileDao = DAORegistry::getDAO('LibraryFileDAO');
+		$libraryFileDao = DAORegistry::getDAO('LibraryFileDAO'); /* @var $libraryFileDao LibraryFileDAO */
 		$this->libraryFile = $libraryFileDao->getById($fileId);
 
-		if (!$this->libraryFile || $this->libraryFile->getContextId() !== $this->contextId || $this->libraryFile->getSubmissionId() !== $this->getSubmissionId()) {
+		if (!$this->libraryFile || $this->libraryFile->getContextId() != $this->contextId || $this->libraryFile->getSubmissionId() != $this->getSubmissionId()) {
 			fatalError('Invalid library file!');
 		}
 	}
@@ -52,14 +52,16 @@ class EditLibraryFileForm extends LibraryFileForm {
 	}
 
 	/**
-	 * Save name for library file
+	 * @copydoc Form::execute()
 	 */
-	function execute() {
+	function execute(...$functionArgs) {
 		$this->libraryFile->setName($this->getData('libraryFileName'), null); // Localized
 		$this->libraryFile->setType($this->getData('fileType'));
 
-		$libraryFileDao = DAORegistry::getDAO('LibraryFileDAO');
+		$libraryFileDao = DAORegistry::getDAO('LibraryFileDAO'); /* @var $libraryFileDao LibraryFileDAO */
 		$libraryFileDao->updateObject($this->libraryFile);
+
+		parent::execute(...$functionArgs);
 	}
 
 	/**
@@ -70,5 +72,3 @@ class EditLibraryFileForm extends LibraryFileForm {
 		return $this->submissionId;
 	}
 }
-
-?>

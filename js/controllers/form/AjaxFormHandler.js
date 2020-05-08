@@ -1,9 +1,9 @@
 /**
  * @file js/controllers/form/AjaxFormHandler.js
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class AjaxFormHandler
  * @ingroup js_controllers_form
@@ -28,6 +28,10 @@
 		options.submitHandler = this.submitForm;
 		this.parent($form, options);
 
+		if (typeof options.confirmText !== 'undefined') {
+			this.confirmText = options.confirmText;
+		}
+
 		this.bind('refreshForm', this.refreshFormHandler_);
 		this.publishEvent('containerReloadRequested');
 	};
@@ -44,6 +48,15 @@
 	 */
 	$.pkp.controllers.form.AjaxFormHandler.prototype.
 			disableControlsOnSubmit = true;
+
+
+	/**
+	 * A confirmation message to display before submitting the form
+	 * @protected
+	 * @type {string}
+	 */
+	$.pkp.controllers.form.AjaxFormHandler.prototype.
+			confirmText = '';
 
 
 	//
@@ -65,8 +78,10 @@
 
 		this.disableFormControls();
 
-		$.post($form.attr('action'), $form.serialize(),
-				this.callbackWrapper(this.handleResponse), 'json');
+		if (!this.confirmText.length || confirm(this.confirmText)) {
+			$.post($form.attr('action'), $form.serialize(),
+					this.callbackWrapper(this.handleResponse), 'json');
+		}
 	};
 
 
@@ -83,11 +98,7 @@
 			function(sourceElement, event, content) {
 
 		if (content) {
-			// Get the form that we're updating
-			var $element = this.getHtmlElement();
-
-			// Replace the form content
-			$element.replaceWith(content);
+			this.replaceWith(content);
 		}
 	};
 
@@ -133,24 +144,22 @@
 				}
 
 				// Redisplay the form.
-				$form = this.getHtmlElement();
-				$form.replaceWith(processedJsonData.content);
+				this.replaceWith(processedJsonData.content);
 			}
 		} else {
 			// data was false -- assume errors, re-enable form controls.
 			this.enableFormControls();
 		}
 
-		$(this.getHtmlElement()).find('.pkp_helpers_progressIndicator').hide();
-		this.getHtmlElement().find(':submit').button();
-
 		// Trigger the notify user event, passing this
 		// html element as data.
 		this.trigger('notifyUser', [this.getHtmlElement()]);
+
+		// Hide the form spinner.
+		this.hideSpinner();
 
 		return processedJsonData.status;
 	};
 
 
-/** @param {jQuery} $ jQuery closure. */
 }(jQuery));

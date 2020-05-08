@@ -1,9 +1,9 @@
 {**
  * controllers/notification/inPlaceNotification.tpl
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * Display in place notifications.
  *}
@@ -13,8 +13,8 @@
 		// Attach the form handler.
 		$('#{$notificationId|escape:javascript}').pkpHandler('$.pkp.controllers.NotificationHandler',
 		{ldelim}
-			{include file="core:controllers/notification/notificationOptions.tpl"}
+			{include file="controllers/notification/notificationOptions.tpl"}
 		{rdelim});
 	{rdelim});
 </script>
-<div id="{$notificationId|escape}" class="pkp_notification"></div>
+<div id="{$notificationId|escape}" class="pkp_notification {$notificationStyleClass}"></div>

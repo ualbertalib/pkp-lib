@@ -7,9 +7,9 @@
 /**
  * @file tests/PKPTestCase.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPTestCase
  * @ingroup tests
@@ -22,7 +22,9 @@
 // Include PHPUnit
 import('lib.pkp.tests.PKPTestHelper');
 
-abstract class PKPTestCase extends PHPUnit_Framework_TestCase {
+use PHPUnit\Framework\TestCase;
+
+abstract class PKPTestCase extends TestCase {
 	private
 		$daoBackup = array(),
 		$registryBackup = array(),
@@ -47,9 +49,9 @@ abstract class PKPTestCase extends PHPUnit_Framework_TestCase {
 	}
 
 	/**
-	 * @copydoc PHPUnit_Framework_TestCase::setUp()
+	 * @copydoc TestCase::setUp()
 	 */
-	protected function setUp() {
+	protected function setUp() : void {
 		$this->setBackupGlobals(true);
 
 		// Rather than using "include_once()", ADOdb uses
@@ -76,9 +78,9 @@ abstract class PKPTestCase extends PHPUnit_Framework_TestCase {
 	}
 
 	/**
-	 * @copydoc PHPUnit_Framework_TestCase::tearDown()
+	 * @copydoc TestCase::tearDown()
 	 */
-	protected function tearDown() {
+	protected function tearDown() : void {
 		// Restore registry keys.
 		foreach($this->getMockedRegistryKeys() as $mockedRegistryKey) {
 			Registry::set($mockedRegistryKey, $this->registryBackup[$mockedRegistryKey]);
@@ -91,9 +93,9 @@ abstract class PKPTestCase extends PHPUnit_Framework_TestCase {
 	}
 
 	/**
-	 * @copydoc PHPUnit_Framework_TestCase::getActualOutput()
+	 * @copydoc TestCase::getActualOutput()
 	 */
-	public function getActualOutput() {
+	public function getActualOutput() : string {
 		// We do not want to see output.
 		return '';
 	}
@@ -147,7 +149,7 @@ abstract class PKPTestCase extends PHPUnit_Framework_TestCase {
 
 		// Create a test request.
 		Registry::delete('request');
-		$application = PKPApplication::getApplication();
+		$application = Application::get();
 		$_SERVER['REQUEST_METHOD'] = 'GET';
 		$_SERVER['PATH_INFO'] = $path;
 		$request = $application->getRequest();
@@ -184,4 +186,4 @@ abstract class PKPTestCase extends PHPUnit_Framework_TestCase {
 		return './lib/pkp/tests/'.$configPath.'/config.'.$config.'.inc.php';
 	}
 }
-?>
+

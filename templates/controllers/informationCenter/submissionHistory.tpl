@@ -1,11 +1,14 @@
 {**
  * templates/controllers/informationCenter/submissionHistory.tpl
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
- * Display submission history in information center.
+ * Information Center submission history tab.
  *}
-{url|assign:eventLogGridUrl router=$smarty.const.ROUTE_COMPONENT component="grid.eventLog.SubmissionEventLogGridHandler" op="fetchGrid" params=$linkParams escape=false}
-{load_url_in_div id="eventLogGrid" url=$eventLogGridUrl}
+
+{help file="editorial-workflow" section="editorial-history" class="pkp_help_tab"}
+
+{capture assign=submissionHistoryGridUrl}{url params=$gridParameters router=$smarty.const.ROUTE_COMPONENT component="grid.eventLog.SubmissionEventLogGridHandler" op="fetchGrid" escape=false}{/capture}
+{load_url_in_div id="submissionHistoryGridContainer" url=$submissionHistoryGridUrl}

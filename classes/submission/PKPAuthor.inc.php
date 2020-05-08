@@ -3,9 +3,9 @@
 /**
  * @file classes/submission/PKPAuthor.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPAuthor
  * @ingroup submission
@@ -17,11 +17,54 @@
 import('lib.pkp.classes.identity.Identity');
 
 class PKPAuthor extends Identity {
+
 	/**
-	 * Constructor.
+	 * Get a piece of data for this object, localized to the current
+	 * locale if possible.
+	 * @param $key string
+	 * @param $preferredLocale string
+	 * @return mixed
 	 */
-	function PKPAuthor() {
-		parent::Identity();
+	function &getLocalizedData($key, $preferredLocale = null) {
+		if (is_null($preferredLocale)) $preferredLocale = AppLocale::getLocale();
+		$localePrecedence = array($preferredLocale);
+		// the submission locale is the default locale
+		if (!in_array($this->getSubmissionLocale(), $localePrecedence)) $localePrecedence[] = $this->getSubmissionLocale();
+		// for settings other than givenName, familyName and affiliation (that are required)
+		// consider also the application primary locale
+		if (!in_array(AppLocale::getPrimaryLocale(), $localePrecedence)) $localePrecedence[] = AppLocale::getPrimaryLocale();
+		foreach ($localePrecedence as $locale) {
+			if (empty($locale)) continue;
+			$value =& $this->getData($key, $locale);
+			if (!empty($value)) return $value;
+			unset($value);
+		}
+
+		// Fallback: Get the first available piece of data.
+		$data =& $this->getData($key, null);
+		foreach ((array) $data as $dataValue) {
+			if (!empty($dataValue)) return $dataValue;
+		}
+
+		// No data available; return null.
+		unset($data);
+		$data = null;
+		return $data;
+	}
+
+	/**
+	 * @copydoc Identity::getLocalizedFamilyName()
+	 */
+	function getLocalizedFamilyName($defaultLocale = null) {
+		return parent::getLocalizedFamilyName($this->getSubmissionLocale());
+	}
+
+	/**
+	 * @copydoc Identity::getFullName()
+	 */
+	function getFullName($preferred = true, $familyFirst = false, $defaultLocale =  null) {
+		if (!isset($defaultLocale)) $defaultLocale = $this->getSubmissionLocale();
+		return parent::getFullName($preferred, $familyFirst, $defaultLocale);
 	}
 
 	//
@@ -41,7 +84,23 @@ class PKPAuthor extends Identity {
 	 * @param $submissionId int
 	 */
 	function setSubmissionId($submissionId) {
-		return $this->setData('submissionId', $submissionId);
+		$this->setData('submissionId', $submissionId);
+	}
+
+	/**
+	 * Get submission locale.
+	 * @return string
+	 */
+	function getSubmissionLocale() {
+		return $this->getData('submissionLocale');
+	}
+
+	/**
+	 * Set submission locale.
+	 * @param $submissionLocale string
+	 */
+	function setSubmissionLocale($submissionLocale) {
+		return $this->setData('submissionLocale', $submissionLocale);
 	}
 
 	/**
@@ -108,7 +167,7 @@ class PKPAuthor extends Identity {
 	 * @param $primaryContact boolean
 	 */
 	function setPrimaryContact($primaryContact) {
-		return $this->setData('primaryContact', $primaryContact);
+		$this->setData('primaryContact', $primaryContact);
 	}
 
 	/**
@@ -116,7 +175,7 @@ class PKPAuthor extends Identity {
 	 * @return float
 	 */
 	function getSequence() {
-		return $this->getData('sequence');
+		return $this->getData('seq');
 	}
 
 	/**
@@ -124,7 +183,7 @@ class PKPAuthor extends Identity {
 	 * @param $sequence float
 	 */
 	function setSequence($sequence) {
-		return $this->setData('sequence', $sequence);
+		$this->setData('seq', $sequence);
 	}
 
 	/**
@@ -134,7 +193,7 @@ class PKPAuthor extends Identity {
 		//FIXME: should this be queried when fetching Author from DB? - see #5231.
 		static $userGroup; // Frequently we'll fetch the same one repeatedly
 		if (!$userGroup || $this->getUserGroupId() != $userGroup->getId()) {
-			$userGroupDao = DAORegistry::getDAO('UserGroupDAO');
+			$userGroupDao = DAORegistry::getDAO('UserGroupDAO'); /* @var $userGroupDao UserGroupDAO */
 			$userGroup = $userGroupDao->getById($this->getUserGroupId());
 		}
 		return $userGroup;
@@ -150,4 +209,4 @@ class PKPAuthor extends Identity {
 	}
 }
 
-?>
+

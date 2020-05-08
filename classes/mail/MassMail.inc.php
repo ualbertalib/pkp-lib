@@ -3,9 +3,9 @@
 /**
  * @file classes/mail/MassMail.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class MassMail
  * @ingroup mail
@@ -23,8 +23,8 @@ class MassMail extends MailTemplate {
 	/**
 	 * Constructor
 	 */
-	function MassMail($emailKey = null, $locale = null, $enableAttachments = null) {
-		parent::MailTemplate($emailKey, $locale, $enableAttachments);
+	function __construct($emailKey = null, $locale = null) {
+		parent::__construct($emailKey, $locale);
 		$this->callback = null;
 		$this->frequency = 10;
 	}
@@ -77,4 +77,4 @@ class MassMail extends MailTemplate {
 	}
 }
 
-?>
+

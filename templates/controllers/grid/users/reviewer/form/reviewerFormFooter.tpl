@@ -1,29 +1,28 @@
 {**
  * templates/controllers/grid/user/reviewer/form/reviewerFormFooter.tpl
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * The non-searching part of the add reviewer form
  *
  *}
-<script type="text/javascript">
-	$(function() {ldelim}
-		// Attach the form handler.
-		$('#reviewerFormFooter').pkpHandler('$.pkp.controllers.grid.users.reviewer.form.ReviewerFormFooterHandler');
-	{rdelim});
-</script>
-
 <div id="reviewerFormFooter" class="reviewerFormFooterContainer">
 	<!--  message template choice -->
-	{fbvFormSection title="stageParticipants.notify.chooseMessage" for="template" size=$fbvStyles.size.medium}
-		{fbvElement type="select" from=$templates translate=false id="template" defaultValue="" defaultLabel=""}
-	{/fbvFormSection}
+	{if $templates|@count == 1}
+		{foreach from=$templates item=template key=templateKey}
+			<input type="hidden" name="template" value="{$templateKey|escape}"/>
+		{/foreach}
+	{else}
+		{fbvFormSection title="stageParticipants.notify.chooseMessage" for="template" size=$fbvStyles.size.medium}
+			{fbvElement type="select" from=$templates translate=false id="template"}
+		{/fbvFormSection}
+	{/if}
 
 	<!--  Message to reviewer textarea -->
 	{fbvFormSection title="editor.review.personalMessageToReviewer" for="personalMessage"}
-		{fbvElement type="textarea" name="personalMessage" id="personalMessage" value=$personalMessage}
+		{fbvElement type="textarea" name="personalMessage" id="personalMessage" value=$personalMessage variables=$emailVariables rich=true rows=25}
 	{/fbvFormSection}
 
 	<!-- skip email checkbox -->
@@ -31,20 +30,26 @@
 		{fbvElement type="checkbox" id="skipEmail" name="skipEmail" label="editor.review.skipEmail"}
 	{/fbvFormSection}
 
-	<!--  Reviewer due dates (see http://jqueryui.com/demos/datepicker/) -->
 	{fbvFormSection title="editor.review.importantDates"}
-		{fbvElement type="text" id="responseDueDate" name="responseDueDate" label="submission.task.responseDueDate" value=$responseDueDate inline=true size=$fbvStyles.size.MEDIUM}
-		{fbvElement type="text" id="reviewDueDate" name="reviewDueDate" label="editor.review.reviewDueDate" value=$reviewDueDate inline=true size=$fbvStyles.size.MEDIUM}
+		{fbvElement type="text" id="responseDueDate" name="responseDueDate" label="submission.task.responseDueDate" value=$responseDueDate inline=true size=$fbvStyles.size.MEDIUM class="datepicker"}
+		{fbvElement type="text" id="reviewDueDate" name="reviewDueDate" label="editor.review.reviewDueDate" value=$reviewDueDate inline=true size=$fbvStyles.size.MEDIUM class="datepicker"}
 	{/fbvFormSection}
 
 	{include file="controllers/grid/users/reviewer/form/noFilesWarning.tpl"}
-	<div id="filesAccordion">
-		<h3>{translate key="editor.submissionReview.restrictFiles"}</h3>
-		<div>
-			<!-- Available review files -->
-			{url|assign:limitReviewFilesGridUrl router=$smarty.const.ROUTE_COMPONENT component="grid.files.review.LimitReviewFilesGridHandler" op="fetchGrid" submissionId=$submissionId stageId=$stageId reviewRoundId=$reviewRoundId escape=false}
-			{load_url_in_div id="limitReviewFilesGrid" url=$limitReviewFilesGridUrl}
-		</div>
+
+	{capture assign="extraContent"}
+		<!-- Available review files -->
+		{capture assign=limitReviewFilesGridUrl}{url router=$smarty.const.ROUTE_COMPONENT component="grid.files.review.LimitReviewFilesGridHandler" op="fetchGrid" submissionId=$submissionId stageId=$stageId reviewRoundId=$reviewRoundId escape=false}{/capture}
+		{load_url_in_div id="limitReviewFilesGrid" url=$limitReviewFilesGridUrl}
+	{/capture}
+	<div id="filesAccordian" class="section">
+		{include file="controllers/extrasOnDemand.tpl"
+			id="filesAccordianController"
+			widgetWrapper="#filesAccordian"
+			moreDetailsText="editor.submissionReview.restrictFiles"
+			lessDetailsText="editor.submissionReview.restrictFiles.hide"
+			extraContent=$extraContent
+		}
 	</div>
 
 	{fbvFormSection list=true title="editor.submissionReview.reviewType"}
@@ -59,9 +64,9 @@
 		{/foreach}
 	{/fbvFormSection}
 
-	{if count($reviewForms)>1}{* There will always be a "none" entry *}
+	{if count($reviewForms)>0}
 		{fbvFormSection title="submission.reviewForm"}
-			{fbvElement type="select" name="reviewFormId" id="reviewFormId" translate=false from=$reviewForms selected=$reviewFormId}
+			{fbvElement type="select" name="reviewFormId" id="reviewFormId" defaultLabel="manager.reviewForms.noneChosen"|translate defaultValue="0" translate=false from=$reviewForms selected=$reviewFormId}
 		{/fbvFormSection}
 	{/if}
 

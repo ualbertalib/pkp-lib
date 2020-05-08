@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/files/submissionDocuments/SubmissionDocumentsFilesGridHandler.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class LibraryFileGridHandler
  * @ingroup controllers_grid_files_submissionDocuments
@@ -20,9 +20,9 @@ class SubmissionDocumentsFilesGridHandler extends LibraryFileGridHandler {
 	/**
 	 * Constructor
 	 */
-	function SubmissionDocumentsFilesGridHandler() {
+	function __construct() {
 
-		parent::LibraryFileGridHandler(new SubmissionDocumentsFilesGridDataProvider());
+		parent::__construct(new SubmissionDocumentsFilesGridDataProvider());
 		$this->addRoleAssignment(
 			array(ROLE_ID_MANAGER, ROLE_ID_SUB_EDITOR, ROLE_ID_ASSISTANT, ROLE_ID_AUTHOR),
 			array(
@@ -37,19 +37,17 @@ class SubmissionDocumentsFilesGridHandler extends LibraryFileGridHandler {
 	//
 	// Overridden template methods
 	//
-
-	/*
+	/**
 	 * Configure the grid
-	 * @param $request PKPRequest
+	 * @see LibraryFileGridHandler::initialize
 	 */
-	function initialize($request) {
+	function initialize($request, $args = null) {
 		$this->setCanEdit(true); // this grid can always be edited.
-		parent::initialize($request);
+		parent::initialize($request, $args);
 
 		AppLocale::requireComponents(LOCALE_COMPONENT_APP_EDITOR, LOCALE_COMPONENT_PKP_EDITOR, LOCALE_COMPONENT_APP_MANAGER);
 
-		// Set instructions
-		$this->setInstructions('editor.submissionLibrary.description');
+		$this->setTitle(null);
 
 		$router = $request->getRouter();
 
@@ -102,7 +100,7 @@ class SubmissionDocumentsFilesGridHandler extends LibraryFileGridHandler {
 	 * Get the row handler - override the default row handler
 	 * @return LibraryFileGridRow
 	 */
-	function getRowInstance() {
+	protected function getRowInstance() {
 		$submission = $this->getAuthorizedContextObject(ASSOC_TYPE_SUBMISSION);
 		return new LibraryFileGridRow($this->canEdit(), $submission);
 	}
@@ -115,12 +113,14 @@ class SubmissionDocumentsFilesGridHandler extends LibraryFileGridHandler {
 	 * Load the (read only) context file library.
 	 * @param $args array
 	 * @param $request PKPRequest
-	 * @return string Serialized JSON object
+	 * @return JSONMessage JSON object
 	 */
 	function viewLibrary($args, $request) {
 		$templateMgr = TemplateManager::getManager($request);
-		$templateMgr->assign('canEdit', false);
-		return $templateMgr->fetchJson('controllers/tab/settings/library.tpl');
+		$templateMgr->assign('isModal', true);
+		$userRoles = $this->getAuthorizedContextObject(ASSOC_TYPE_USER_ROLES);
+		$templateMgr->assign('canEdit', !empty(array_intersect([ROLE_ID_MANAGER], $userRoles)));
+		return $templateMgr->fetchJson('controllers/modals/documentLibrary/publisherLibrary.tpl');
 	}
 
 	/**
@@ -146,5 +146,3 @@ class SubmissionDocumentsFilesGridHandler extends LibraryFileGridHandler {
 		return new EditLibraryFileForm($context->getId(), $fileId, $submission->getId());
 	}
 }
-
-?>

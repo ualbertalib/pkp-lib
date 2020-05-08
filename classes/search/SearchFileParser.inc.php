@@ -9,9 +9,9 @@
 /**
  * @file classes/search/SearchFileParser.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SearchFileParser
  * @ingroup search
@@ -32,7 +32,7 @@ class SearchFileParser {
 	 * Constructor.
 	 * @param $filePath string
 	 */
-	function SearchFileParser($filePath) {
+	function __construct($filePath) {
 		$this->filePath = $filePath;
 	}
 
@@ -97,9 +97,8 @@ class SearchFileParser {
 	 * @param $file [Article|Paper]File
 	 * @return SearchFileParser
 	 */
-	function &fromFile(&$file) {
-		$returner =& SearchFileParser::fromFileType($file->getFileType(), $file->getFilePath());
-		return $returner;
+	static function fromFile($file) {
+		return SearchFileParser::fromFileType($file->getFileType(), $file->getFilePath());
 	}
 
 	/**
@@ -107,7 +106,7 @@ class SearchFileParser {
 	 * @param $type string
 	 * @param $path string
 	 */
-	function &fromFileType($type, $path) {
+	static function fromFileType($type, $path) {
 		switch ($type) {
 			case 'text/plain':
 				$returner = new SearchFileParser($path);
@@ -125,4 +124,4 @@ class SearchFileParser {
 	}
 }
 
-?>
+

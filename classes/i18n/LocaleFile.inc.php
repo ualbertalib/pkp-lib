@@ -3,9 +3,9 @@
 /**
  * @file classes/i18n/LocaleFile.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class LocaleFile
  * @ingroup i18n
@@ -29,7 +29,7 @@ class LocaleFile {
 	 * @param $locale string Key for this locale file
 	 * @param $filename string Filename to this locale file
 	 */
-	function LocaleFile($locale, $filename) {
+	function __construct($locale, $filename) {
 		$this->locale = $locale;
 		$this->filename = $filename;
 	}
@@ -82,30 +82,32 @@ class LocaleFile {
 	 * @return string
 	 */
 	function translate($key, $params = array(), $locale = null) {
-		$key = trim($key);
-		if (empty($key)) {
-			return '';
-		}
-
-		$cache = $this->_getCache($this->locale);
-		$message = $cache->get($key);
-		if (!isset($message)) {
-			// Try to force loading the plugin locales.
-			$message = $this->_cacheMiss($cache, $key);
-		}
-
-		if (isset($message)) {
-			if (!empty($params)) {
-				// Substitute custom parameters
-				foreach ($params as $key => $value) {
-					$message = str_replace("{\$$key}", $value, $message);
-				}
+		if ($this->isValid()) {
+			$key = trim($key);
+			if (empty($key)) {
+				return '';
 			}
 
-			// if client encoding is set to iso-8859-1, transcode string from utf8 since we store all XML files in utf8
-			if (LOCALE_ENCODING == "iso-8859-1") $message = utf8_decode($message);
+			$cache = $this->_getCache($this->locale);
+			$message = $cache->get($key);
+			if (!isset($message)) {
+				// Try to force loading the plugin locales.
+				$message = $this->_cacheMiss($cache, $key);
+			}
 
-			return $message;
+			if (isset($message)) {
+				if (!empty($params)) {
+					// Substitute custom parameters
+					foreach ($params as $key => $value) {
+						$message = str_replace("{\$$key}", $value, $message);
+					}
+				}
+
+				// if client encoding is set to iso-8859-1, transcode string from utf8 since we store all XML files in utf8
+				if (LOCALE_ENCODING == "iso-8859-1") $message = utf8_decode($message);
+
+				return $message;
+			}
 		}
 		return null;
 	}
@@ -117,18 +119,29 @@ class LocaleFile {
 	 */
 	static function &load($filename) {
 		$localeData = array();
+		// This compatibility code for XML file fallback will eventually be removed.
+		// See https://github.com/pkp/pkp-lib/issues/5090.
+		if (file_exists($filename) && substr($filename, -3) == '.po') {
+			// Prefer a PO file, if one exists.
+			$translations = Gettext\Translations::fromPoFile($filename);
+			foreach ($translations as $translation) {
+				$localeData[$translation->getOriginal()] = $translation->getTranslation();
+			}
+		} else {
+			// Try a fallback to an old-style XML locale file.
+			$xmlFilename = preg_replace('/\.po$/', '.xml', $filename);
+			if ($xmlFilename && file_exists($xmlFilename)) {
+				$xmlDao = new XMLDAO();
+				$data = $xmlDao->parseStruct($filename, array('message'));
 
-		// Reload localization XML file
-		$xmlDao = new XMLDAO();
-		$data = $xmlDao->parseStruct($filename, array('message'));
-
-		// Build array with ($key => $string)
-		if (isset($data['message'])) {
-			foreach ($data['message'] as $messageData) {
-				$localeData[$messageData['attributes']['key']] = $messageData['value'];
+				// Build array with ($key => $string)
+				if (isset($data['message'])) {
+					foreach ($data['message'] as $messageData) {
+						$localeData[$messageData['attributes']['key']] = $messageData['value'];
+					}
+				}
 			}
 		}
-
 		return $localeData;
 	}
 
@@ -215,4 +228,4 @@ class LocaleFile {
 	}
 }
 
-?>
+

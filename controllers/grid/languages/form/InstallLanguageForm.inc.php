@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/languages/form/InstallLanguageForm.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class InstallLanguageForm
  * @ingroup controllers_grid_languages_form
@@ -21,8 +21,8 @@ class InstallLanguageForm extends Form {
 	/**
 	 * Constructor.
 	 */
-	function InstallLanguageForm($wizardMode = false) {
-		parent::Form('controllers/grid/languages/installLanguageForm.tpl');
+	function __construct() {
+		parent::__construct('controllers/grid/languages/installLanguageForm.tpl');
 	}
 
 	//
@@ -31,9 +31,10 @@ class InstallLanguageForm extends Form {
 	/**
 	 * @copydoc Form::initData()
 	 */
-	function initData($request) {
-		parent::initData($request);
+	function initData() {
+		parent::initData();
 
+		$request = Application::get()->getRequest();
 		$site = $request->getSite();
 		$this->setData('installedLocales', $site->getInstalledLocales());
 	}
@@ -41,17 +42,19 @@ class InstallLanguageForm extends Form {
 	/**
 	 * @copydoc Form::fetch()
 	 */
-	function fetch($request) {
+	function fetch($request, $template = null, $display = false) {
 		$site = $request->getSite();
 		$allLocales = AppLocale::getAllLocales();
 		$installedLocales = $this->getData('installedLocales');
 		$notInstalledLocales = array_diff(array_keys($allLocales), $installedLocales);
 
 		$templateMgr = TemplateManager::getManager($request);
-		$templateMgr->assign('allLocales', $allLocales);
-		$templateMgr->assign('notInstalledLocales', $notInstalledLocales);
+		$templateMgr->assign(array(
+			'allLocales' => $allLocales,
+			'notInstalledLocales' => $notInstalledLocales,
+		));
 
-		import('classes.i18n.LanguageAction');
+		import('lib.pkp.classes.i18n.LanguageAction');
 		$languageAction = new LanguageAction();
 		if ($languageAction->isDownloadAvailable()) {
 			$downloadableLocales = $languageAction->getDownloadableLocales();
@@ -65,19 +68,22 @@ class InstallLanguageForm extends Form {
 					$name . ' (' . $locale . ')');
 			}
 
-			$templateMgr->assign('downloadAvailable', true);
-			$templateMgr->assign('downloadableLocaleLinks', $downloadableLocaleLinks);
+			$templateMgr->assign(array(
+				'downloadAvailable' => true,
+				'downloadableLocaleLinks' => $downloadableLocaleLinks,
+			));
 		}
 
-		return parent::fetch($request);
+		return parent::fetch($request, $template, $display);
 	}
 
 	/**
 	 * @copydoc Form::readInputData()
 	 */
-	function readInputData($request) {
-		parent::readInputData($request);
+	function readInputData() {
+		parent::readInputData();
 
+		$request = Application::get()->getRequest();
 		$localesToInstall = $request->getUserVar('localesToInstall');
 		$this->setData('localesToInstall', $localesToInstall);
 	}
@@ -85,9 +91,12 @@ class InstallLanguageForm extends Form {
 	/**
 	 * @copydoc Form::execute()
 	 */
-	function execute($request) {
+	function execute(...$functionArgs) {
+		$request = Application::get()->getRequest();
 		$site = $request->getSite();
 		$localesToInstall = $this->getData('localesToInstall');
+
+		parent::execute(...$functionArgs);
 
 		if (isset($localesToInstall) && is_array($localesToInstall)) {
 			$installedLocales = $site->getInstalledLocales();
@@ -104,10 +113,8 @@ class InstallLanguageForm extends Form {
 
 			$site->setInstalledLocales($installedLocales);
 			$site->setSupportedLocales($supportedLocales);
-			$siteDao = DAORegistry::getDAO('SiteDAO');
+			$siteDao = DAORegistry::getDAO('SiteDAO'); /* @var $siteDao SiteDAO */
 			$siteDao->updateObject($site);
 		}
 	}
 }
-
-?>

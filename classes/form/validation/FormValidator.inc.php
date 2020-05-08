@@ -6,9 +6,9 @@
 /**
  * @file classes/form/validation/FormValidator.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class FormValidator
  * @ingroup form_validation
@@ -45,7 +45,7 @@ class FormValidator {
 	 * @param $message string the error message for validation failures (i18n key)
 	 * @param $validator Validator the validator used to validate this form field (optional)
 	 */
-	function FormValidator(&$form, $field, $type, $message, $validator = null) {
+	function __construct(&$form, $field, $type, $message, $validator = null) {
 		$this->_form =& $form;
 		$this->_field = $field;
 		$this->_type = $type;
@@ -159,4 +159,4 @@ class FormValidator {
 	}
 }
 
-?>
+

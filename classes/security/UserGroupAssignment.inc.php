@@ -3,9 +3,9 @@
 /**
  * @file classes/security/UserGroupAssignment.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class Role
  * @ingroup security
@@ -20,12 +20,6 @@ class UserGroupAssignment extends DataObject {
 	/** @var the UserGroup object associated with this assignment **/
 	var $userGroup;
 
-	/**
-	 * Constructor.
-	 */
-	function UserGroupAssignment() {
-		parent::DataObject();
-	}
 
 	//
 	// Get/set methods
@@ -46,7 +40,7 @@ class UserGroupAssignment extends DataObject {
 	 */
 	function setUserGroupId($userGroupId) {
 		$this->setData('userGroupId', $userGroupId);
-		$userGroupDao = DAORegistry::getDAO('UserGroupDAO');
+		$userGroupDao = DAORegistry::getDAO('UserGroupDAO'); /* @var $userGroupDao UserGroupDAO */
 		$this->userGroup = $userGroupDao->getById($userGroupId);
 		return ($this->userGroup)?true:false;
 	}
@@ -64,8 +58,8 @@ class UserGroupAssignment extends DataObject {
 	 * @param $userId int
 	 */
 	function setUserId($userId) {
-		return $this->setData('userId', $userId);
+		$this->setData('userId', $userId);
 	}
 }
 
-?>
+

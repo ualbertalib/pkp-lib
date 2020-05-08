@@ -3,9 +3,9 @@
 /**
  * @file classes/controllers/grid/GridCellProvider.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class GridCellProvider
  * @ingroup controllers_grid
@@ -21,7 +21,7 @@ class GridCellProvider {
 	/**
 	 * Constructor
 	 */
-	function GridCellProvider() {
+	function __construct() {
 	}
 
 	//
@@ -50,11 +50,13 @@ class GridCellProvider {
 		foreach ($templateVars as $varName => $varValue) {
 			$templateMgr->assign($varName, $varValue);
 		}
-		$templateMgr->assign('id', $cellId);
-		$templateMgr->assign('column', $column);
-		$templateMgr->assign('actions', $this->getCellActions($request, $row, $column));
-		$templateMgr->assign('flags', $column->getFlags());
-		$templateMgr->assign('formLocales', AppLocale::getSupportedFormLocales());
+		$templateMgr->assign(array(
+			'id' => $cellId,
+			'column' => $column,
+			'actions' => $this->getCellActions($request, $row, $column),
+			'flags' => $column->getFlags(),
+			'formLocales' => AppLocale::getSupportedFormLocales(),
+		));
 		$template = $column->getTemplate();
 		assert(!empty($template));
 		return $templateMgr->fetch($template);
@@ -95,4 +97,4 @@ class GridCellProvider {
 	}
 }
 
-?>
+

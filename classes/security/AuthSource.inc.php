@@ -3,9 +3,9 @@
 /**
  * @file classes/security/AuthSource.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class AuthSource
  * @ingroup security
@@ -15,15 +15,9 @@
  */
 
 
-import('classes.plugins.AuthPlugin');
+import('lib.pkp.classes.plugins.AuthPlugin');
 
 class AuthSource extends DataObject {
-	/**
-	 * Constructor.
-	 */
-	function AuthSource() {
-		parent::DataObject();
-	}
 
 	//
 	// Get/set methods
@@ -42,7 +36,7 @@ class AuthSource extends DataObject {
 	 * @param $authId int
 	 */
 	function setAuthId($authId) {
-		return $this->setData('authId', $authId);
+		$this->setData('authId', $authId);
 	}
 
 	/**
@@ -58,7 +52,7 @@ class AuthSource extends DataObject {
 	 * @param $title string
 	 */
 	function setTitle($title) {
-		return $this->setData('title', $title);
+		$this->setData('title', $title);
 	}
 
 	/**
@@ -74,7 +68,7 @@ class AuthSource extends DataObject {
 	 * @param $plugin string
 	 */
 	function setPlugin($plugin) {
-		return $this->setData('plugin', $plugin);
+		$this->setData('plugin', $plugin);
 	}
 
 	/**
@@ -90,7 +84,7 @@ class AuthSource extends DataObject {
 	 * @param $authDefault boolean
 	 */
 	function setDefault($authDefault) {
-		return $this->setData('authDefault', $authDefault);
+		$this->setData('authDefault', $authDefault);
 	}
 
 	/**
@@ -106,7 +100,7 @@ class AuthSource extends DataObject {
 	 * @param $settings array
 	 */
 	function setSettings($settings) {
-		return $this->setData('settings', $settings);
+		$this->setData('settings', $settings);
 	}
 
 	/**
@@ -123,8 +117,8 @@ class AuthSource extends DataObject {
 	 * @param $authPlugin AuthPlugin
 	 */
 	function setPluginClass($authPlugin) {
-		return $this->setData('authPlugin', $authPlugin);
+		$this->setData('authPlugin', $authPlugin);
 	}
 }
 
-?>
+

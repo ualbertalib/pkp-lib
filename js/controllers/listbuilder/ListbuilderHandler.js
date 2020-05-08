@@ -4,9 +4,9 @@
 /**
  * @file js/controllers/listbuilder/ListbuilderHandler.js
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ListbuilderHandler
  * @ingroup js_controllers_listbuilder
@@ -87,6 +87,15 @@
 			prototype.editItemCallingContext_ = null;
 
 
+	/**
+	 * Flag whether there's still available options to be selected or not.
+	 * @private
+	 * @type {boolean}
+	 */
+	$.pkp.controllers.listbuilder.ListbuilderHandler.
+			prototype.availableOptions_ = false;
+
+
 	//
 	// Protected methods
 	//
@@ -102,6 +111,7 @@
 		this.saveUrl_ = options.saveUrl;
 		this.saveFieldName_ = options.saveFieldName;
 		this.fetchOptionsUrl_ = options.fetchOptionsUrl;
+		this.availableOptions_ = options.availableOptions;
 
 		// Attach the button handlers
 		var $listbuilder = this.getHtmlElement();
@@ -110,7 +120,7 @@
 		// That and a syncronous ajax call triggered by those events
 		// handlers, was leading to an error in IE8 and it was freezing
 		// Firefox 13.0).
-		$listbuilder.find('span[class="options"] > a[id*="addItem"]').mousedown(
+		$listbuilder.find('.actions .pkp_linkaction_addItem').mousedown(
 				this.callbackWrapper(this.addItemHandler_));
 
 		// Attach the content manipulation handlers
@@ -279,16 +289,18 @@
 	$.pkp.controllers.listbuilder.ListbuilderHandler.prototype.addItemHandler_ =
 			function(callingContext, opt_event) {
 
-		// Make sure this event will be handled after any other next triggered one,
-		// like blur event that comes from inputs.
-		setTimeout(this.callbackWrapper(function() {
-			// Close any existing edits if necessary
-			this.closeEdits();
+		if (this.availableOptions_) {
+			// Make sure this event will be handled after any other next triggered one,
+			// like blur event that comes from inputs.
+			setTimeout(this.callbackWrapper(function() {
+				// Close any existing edits if necessary
+				this.closeEdits();
 
-			this.disableControls();
-			$.get(this.getFetchRowUrl(), {modify: true},
-					this.callbackWrapper(this.appendRowResponseHandler_, null), 'json');
-		}), 0);
+				this.disableControls();
+				$.get(this.getFetchRowUrl(), {modify: true},
+						this.callbackWrapper(this.appendRowResponseHandler_, null), 'json');
+			}), 0);
+		}
 
 		return false;
 	};
@@ -313,7 +325,7 @@
 		var $callingContext = $(callingContext),
 				$targetRow = $callingContext.closest('.gridRow'),
 				$deletions = $callingContext.closest('.pkp_controllers_listbuilder')
-					.find('.deletions'),
+						.find('.deletions'),
 				rowId = $targetRow.find('input[name="rowId"]').val();
 
 		// Append the row ID to the deletions list.
@@ -325,6 +337,8 @@
 		}
 
 		this.deleteElement(/** @type {jQueryObject} */ ($targetRow));
+
+		this.availableOptions_ = true;
 
 		return false;
 	};
@@ -480,6 +494,7 @@
 				// If only one element is available, select it.
 				if (optionsCount === 1 && $lastElement) {
 					$lastElement.attr('selected', 'selected');
+					this.availableOptions_ = false;
 				}
 
 				// If no options are available for this select menu,
@@ -490,6 +505,7 @@
 				}
 			}
 		}
+
 		this.enableControls();
 		return false;
 	};
@@ -765,7 +781,7 @@
 				.blur(this.callbackWrapper(this.inputBlurHandler_));
 
 		// Attach deletion handler
-		$context.find('.remove_item').click(
+		$context.find('.pkp_linkaction_delete').click(
 				this.callbackWrapper(this.deleteItemHandler_));
 	};
 
@@ -837,5 +853,4 @@
 	};
 
 
-/** @param {jQuery} $ jQuery closure. */
 }(jQuery));

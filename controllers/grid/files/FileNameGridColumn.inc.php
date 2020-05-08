@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/files/FileNameGridColumn.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class FileNameGridColumn
  * @ingroup controllers_grid_files
@@ -32,7 +32,7 @@ class FileNameGridColumn extends GridColumn {
 	 * @param $removeHistoryTab boolean (optional) Open the information center
 	 * without the history tab.
 	 */
-	function FileNameGridColumn($includeNotes = true, $stageId = null, $removeHistoryTab = false) {
+	function __construct($includeNotes = true, $stageId = null, $removeHistoryTab = false) {
 		$this->_includeNotes = $includeNotes;
 		$this->_stageId = $stageId;
 		$this->_removeHistoryTab = $removeHistoryTab;
@@ -40,8 +40,8 @@ class FileNameGridColumn extends GridColumn {
 		import('lib.pkp.classes.controllers.grid.ColumnBasedGridCellProvider');
 		$cellProvider = new ColumnBasedGridCellProvider();
 
-		parent::GridColumn('name', 'common.name', null, null, $cellProvider,
-			array('width' => 60, 'alignment' => COLUMN_ALIGNMENT_LEFT));
+		parent::__construct('name', 'common.name', null, null, $cellProvider,
+			array('width' => 70, 'alignment' => COLUMN_ALIGNMENT_LEFT, 'anyhtml' => true));
 	}
 
 
@@ -55,10 +55,12 @@ class FileNameGridColumn extends GridColumn {
 	 * @copydoc ColumnBasedGridCellProvider::getTemplateVarsFromRowColumn()
 	 */
 	function getTemplateVarsFromRow($row) {
-		// We do not need any template variables because
-		// the only content of this column's cell will be
-		// an action. See FileNameGridColumn::getCellActions().
-		return array('label' => '');
+		$submissionFileData = $row->getData();
+		$submissionFile = $submissionFileData['submissionFile'];
+		assert(is_a($submissionFile, 'SubmissionFile'));
+		$id = $submissionFile->getFileId() . '-' . $submissionFile->getRevision();
+		$fileExtension = strtolower($submissionFile->getExtension());
+		return array('label' => '<span class="file_extension ' . $fileExtension . '">' . $id . '</span>');
 	}
 
 
@@ -80,11 +82,6 @@ class FileNameGridColumn extends GridColumn {
 		import('lib.pkp.controllers.api.file.linkAction.DownloadFileLinkAction');
 		$cellActions[] = new DownloadFileLinkAction($request, $submissionFile, $this->_getStageId());
 
-		if ($this->_getIncludeNotes()) {
-			import('lib.pkp.controllers.informationCenter.linkAction.FileNotesLinkAction');
-			$user = $request->getUser();
-			$cellActions[] = new FileNotesLinkAction($request, $submissionFile, $user, $this->_getStageId(), $this->_removeHistoryTab);
-		}
 		return $cellActions;
 	}
 
@@ -107,4 +104,4 @@ class FileNameGridColumn extends GridColumn {
 	}
 }
 
-?>
+

@@ -3,9 +3,9 @@
 /**
  * @file classes/submission/Genre.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class Genre
  * @ingroup submission
@@ -16,16 +16,9 @@
 
 define('GENRE_CATEGORY_DOCUMENT', 1);
 define('GENRE_CATEGORY_ARTWORK', 2);
-
-define('GENRE_SORTABLE_DESIGNATION', '##');
+define('GENRE_CATEGORY_SUPPLEMENTARY', 3);
 
 class Genre extends DataObject {
-	/**
-	 * Constructor
-	 */
-	function Genre() {
-		parent::DataObject();
-	}
 
 	/**
 	 * Get ID of context.
@@ -40,7 +33,7 @@ class Genre extends DataObject {
 	 * @param $contextId int
 	 */
 	function setContextId($contextId) {
-		return $this->setData('contextId', $contextId);
+		$this->setData('contextId', $contextId);
 	}
 
 	/**
@@ -56,7 +49,7 @@ class Genre extends DataObject {
 	 * @param $sequence float
 	 */
 	function setSequence($sequence) {
-		return $this->setData('sequence', $sequence);
+		$this->setData('sequence', $sequence);
 	}
 
 	/**
@@ -72,7 +65,7 @@ class Genre extends DataObject {
 	 * @param $key string
 	 */
 	function setKey($key) {
-		return $this->setData('key', $key);
+		$this->setData('key', $key);
 	}
 
 	/**
@@ -88,7 +81,7 @@ class Genre extends DataObject {
 	 * @param $enabled boolean
 	 */
 	function setEnabled($enabled) {
-		return $this->setData('enabled', $enabled);
+		$this->setData('enabled', $enabled);
 	}
 
 	/**
@@ -118,38 +111,6 @@ class Genre extends DataObject {
 	}
 
 	/**
-	 * Set the designation of the genre
-	 * @param $abbrev string
-	 */
-	function setDesignation($abbrev) {
-		$this->setData('designation', $abbrev);
-	}
-
-	/**
-	 * Get the designation of the genre
-	 * @return string
-	 */
-	function getDesignation() {
-		return $this->getData('designation');
-	}
-
-	/**
-	 * Get sortable flag of the context type
-	 * @return bool
-	 */
-	function getSortable() {
-		return $this->getData('sortable');
-	}
-
-	/**
-	 * Set sortable flag of the context type
-	 * @param $sortable bool
-	 */
-	function setSortable($sortable) {
-		return $this->setData('sortable', $sortable);
-	}
-
-	/**
 	 * Get context file category (e.g. artwork or document)
 	 * @return int GENRE_CATEGORY_...
 	 */
@@ -162,7 +123,7 @@ class Genre extends DataObject {
 	 * @param $category int GENRE_CATEGORY_...
 	 */
 	function setCategory($category) {
-		return $this->setData('category', $category);
+		$this->setData('category', $category);
 	}
 
 	/**
@@ -178,8 +139,34 @@ class Genre extends DataObject {
 	 * @param $dependent bool
 	 */
 	function setDependent($dependent) {
-		return $this->setData('dependent', $dependent);
+		$this->setData('dependent', $dependent);
+	}
+
+	/**
+	 * Get supplementary flag
+	 * @return bool
+	 */
+	function getSupplementary() {
+		return $this->getData('supplementary');
+	}
+
+	/**
+	 * Set supplementary flag
+	 * @param $supplementary bool
+	 */
+	function setSupplementary($supplementary) {
+		$this->setData('supplementary', $supplementary);
+	}
+
+	/**
+	 * Is this a default genre.
+	 * @return bool
+	 */
+	function isDefault() {
+		$genreDao = DAORegistry::getDAO('GenreDAO'); /* @var $genreDao GenreDAO */
+		$defaultKeys = $genreDao->getDefaultKeys();
+		return in_array($this->getKey(), $defaultKeys);
 	}
 }
 
-?>
+

@@ -3,9 +3,9 @@
 /**
  * @file plugins/metadata/mods34/filter/Mods34SchemaSubmissionAdapter.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class Mods34SchemaSubmissionAdapter
  * @ingroup plugins_metadata_mods34_filter
@@ -25,8 +25,8 @@ class Mods34SchemaSubmissionAdapter extends MetadataDataObjectAdapter {
 	 * Constructor
 	 * @param $filterGroup FilterGroup
 	 */
-	function Mods34SchemaSubmissionAdapter($filterGroup) {
-		parent::MetadataDataObjectAdapter($filterGroup);
+	function __construct($filterGroup) {
+		parent::__construct($filterGroup);
 	}
 
 
@@ -35,30 +35,29 @@ class Mods34SchemaSubmissionAdapter extends MetadataDataObjectAdapter {
 	//
 	/**
 	 * @see MetadataDataObjectAdapter::injectMetadataIntoDataObject()
-	 * @param $mods34Description MetadataDescription
-	 * @param $submission Submission
-	 * @param $authorClassName string the application specific author class name
+	 * @param $metadataDescription MetadataDescription
+	 * @param $targetDataObject Submission
 	 */
-	function &injectMetadataIntoDataObject(&$mods34Description, &$submission, $authorClassName) {
-		assert(is_a($submission, 'Submission'));
-		assert($mods34Description->getMetadataSchemaName() == 'plugins.metadata.mods34.schema.Mods34Schema');
+	function &injectMetadataIntoDataObject(&$metadataDescription, &$targetDataObject) {
+		assert(is_a($targetDataObject, 'Submission'));
+		assert($metadataDescription->getMetadataSchemaName() == 'plugins.metadata.mods34.schema.Mods34Schema');
 
 		// Get the cataloging language.
-		$catalogingLanguage = $mods34Description->getStatement('recordInfo/languageOfCataloging/languageTerm[@authority="iso639-2b"]');
+		$catalogingLanguage = $metadataDescription->getStatement('recordInfo/languageOfCataloging/languageTerm[@authority="iso639-2b"]');
 		$catalogingLocale = AppLocale::getLocaleFrom3LetterIso($catalogingLanguage);
 		assert(!is_null($catalogingLocale));
 
 		// Title
-		$localizedTitles = $mods34Description->getStatementTranslations('titleInfo/title');
+		$localizedTitles = $metadataDescription->getStatementTranslations('titleInfo/title');
 		if (is_array($localizedTitles)) {
 			foreach($localizedTitles as $locale => $title) {
-				$submission->setTitle($title, $locale);
+				$targetDataObject->setTitle($title, $locale);
 			}
 		}
 
 		// Names: authors and sponsor
 		$foundSponsor = false;
-		$nameDescriptions =& $mods34Description->getStatement('name');
+		$nameDescriptions =& $metadataDescription->getStatement('name');
 		if (is_array($nameDescriptions)) {
 			foreach($nameDescriptions as $nameDescription) { /* @var $nameDescription MetadataDescription */
 				// Check that we find the expected name schema.
@@ -78,19 +77,18 @@ class Mods34SchemaSubmissionAdapter extends MetadataDataObjectAdapter {
 							// Only authors go into the submission.
 							if (in_array('aut', $nameRoles)) {
 								// Instantiate a new author object.
-								import($authorClassName);
-								$author = new Author();
+								$authorDao = DAORegistry::getDAO('AuthorDAO'); /* @var $authorDao AuthorDAO */
+								$author = $authorDao->newDataObject();
 
 								// Family Name
-								$author->setLastName($nameDescription->getStatement('namePart[@type="family"]'));
-
-								// Given Names
-								$givenNames = $nameDescription->getStatement('namePart[@type="given"]');
-								if (!empty($givenNames)) {
-									$givenNames = explode(' ', $givenNames, 2);
-									if (isset($givenNames[0])) $author->setFirstName($givenNames[0]);
-									if (isset($givenNames[1])) $author->setMiddleName($givenNames[1]);
+								$familyName = $nameDescription->getStatement('namePart[@type="family"]');
+								if (!empty($familyName)) {
+									$author->setFamilyName($familyName, $catalogingLocale);
 								}
+
+								// Given Name
+								$givenName = $nameDescription->getStatement('namePart[@type="given"]');
+								$author->setGivenName($givenName, $catalogingLocale);
 
 								// Affiliation
 								// NB: Our MODS mapping currently doesn't support translation for names.
@@ -114,7 +112,6 @@ class Mods34SchemaSubmissionAdapter extends MetadataDataObjectAdapter {
 								}
 
 								// Add the author to the submission.
-								$authorDao = DAORegistry::getDAO('AuthorDAO'); /* @var $authorDao AuthorDAO */
 								$authorDao->insertObject($author);
 								unset($author);
 							}
@@ -128,7 +125,7 @@ class Mods34SchemaSubmissionAdapter extends MetadataDataObjectAdapter {
 							// Only the first sponsor goes into the submission.
 							if (!$foundSponsor && in_array('spn', $nameRoles)) {
 								$foundSponsor = true;
-								$submission->setSponsor($nameDescription->getStatement('namePart'), $catalogingLocale);
+								$targetDataObject->setSponsor($nameDescription->getStatement('namePart'), $catalogingLocale);
 							}
 							break;
 					}
@@ -139,25 +136,25 @@ class Mods34SchemaSubmissionAdapter extends MetadataDataObjectAdapter {
 		}
 
 		// Creation date
-		$dateSubmitted = $mods34Description->getStatement('originInfo/dateCreated[@encoding="w3cdtf"]');
-		if ($dateSubmitted) $submission->setDateSubmitted($dateSubmitted);
+		$dateSubmitted = $metadataDescription->getStatement('originInfo/dateCreated[@encoding="w3cdtf"]');
+		if ($dateSubmitted) $targetDataObject->setDateSubmitted($dateSubmitted);
 
 		// Submission language
-		$submissionLanguage = $mods34Description->getStatement('language/languageTerm[@type="code" @authority="iso639-2b"]');
+		$submissionLanguage = $metadataDescription->getStatement('language/languageTerm[@type="code" @authority="iso639-2b"]');
 		$submissionLocale = AppLocale::get2LetterFrom3LetterIsoLanguage($submissionLanguage);
 		if ($submissionLocale) {
-			$submission->setLanguage($submissionLocale);
+			$targetDataObject->setLanguage($submissionLocale);
 		}
 
 		// Pages (extent)
-		$pages = $mods34Description->getStatement('physicalDescription/extent');
-		if ($pages) $submission->setPages($pages);
+		$pages = $metadataDescription->getStatement('physicalDescription/extent');
+		if ($pages) $targetDataObject->setPages($pages);
 
 		// Abstract
-		$localizedAbstracts = $mods34Description->getStatementTranslations('abstract');
+		$localizedAbstracts = $metadataDescription->getStatementTranslations('abstract');
 		if (is_array($localizedAbstracts)) {
 			foreach($localizedAbstracts as $locale => $abstract) {
-				$submission->setAbstract($abstract, $locale);
+				$targetDataObject->setAbstract($abstract, $locale);
 			}
 		}
 
@@ -166,45 +163,29 @@ class Mods34SchemaSubmissionAdapter extends MetadataDataObjectAdapter {
 		// distinguish them within a list of MODS topic elements. Can we use several subject
 		// statements with different authorities instead?
 
-		// Geographical coverage
-		$localizedCoverageGeos = $mods34Description->getStatementTranslations('subject/geographic');
-		if (is_array($localizedCoverageGeos)) {
-			foreach($localizedCoverageGeos as $locale => $localizedCoverageGeo) {
-				$submission->setCoverageGeo($localizedCoverageGeo, $locale);
-			}
-		}
-
-		// Chronological coverage
-		$localizedCoverageChrons = $mods34Description->getStatementTranslations('subject/temporal');
-		if (is_array($localizedCoverageChrons)) {
-			foreach($localizedCoverageChrons as $locale => $localizedCoverageChron) {
-				$submission->setCoverageChron($localizedCoverageChron, $locale);
-			}
-		}
+		// FIXME: We do not include coverage information at the moment.
 
 		// Record identifier
 		// NB: We currently don't override the submission id with the record identifier in MODS
 		// to make sure that MODS records can be transported between different installations.
 
 		// Handle unmapped fields.
-		$this->injectUnmappedDataObjectMetadataFields($mods34Description, $submission);
+		$this->injectUnmappedDataObjectMetadataFields($metadataDescription, $targetDataObject);
 
-		return $submission;
+		return $targetDataObject;
 	}
 
 	/**
 	 * @see MetadataDataObjectAdapter::extractMetadataFromDataObject()
 	 * @param $submission Submission
-	 * @param $authorMarcrelatorRole string the marcrelator role to be used
-	 *  for submission authors.
 	 * @return MetadataDescription
 	 */
-	function extractMetadataFromDataObject(&$submission, $authorMarcrelatorRole = 'aut') {
+	function extractMetadataFromDataObject(&$submission) {
 		assert(is_a($submission, 'Submission'));
 		$mods34Description = $this->instantiateMetadataDescription();
 
 		// Retrieve the primary locale.
-		$catalogingLocale = AppLocale::getPrimaryLocale();
+		$catalogingLocale = $submission->getLocale();
 		$catalogingLanguage = AppLocale::get3LetterIsoFromLocale($catalogingLocale);
 
 		// Establish the association between the meta-data description
@@ -227,22 +208,21 @@ class Mods34SchemaSubmissionAdapter extends MetadataDataObjectAdapter {
 			$authorDescription->addStatement('[@type]', $authorType);
 
 			// Family Name
-			$authorDescription->addStatement('namePart[@type="family"]', $author->getLastName());
+			$familyName = $author->getLocalizedFamilyName();
+			if (!empty($familyName)) {
+				$authorDescription->addStatement('namePart[@type="family"]', $familyName);
+			}
 
 			// Given Names
-			$firstName = (string)$author->getFirstName();
-			$middleName = (string)$author->getMiddleName();
-			$givenNames = trim($firstName.' '.$middleName);
-			if (!empty($givenNames)) {
-				$authorDescription->addStatement('namePart[@type="given"]', $givenNames);
-			}
+			$givenName = (string)$author->getLocalizedGivenName();
+			$authorDescription->addStatement('namePart[@type="given"]', $givenName);
 
 			// Affiliation
 			// NB: Our MODS mapping currently doesn't support translation for names.
 			// This can be added when required by data consumers. We therefore only use
 			// translations in the cataloging language.
-			$affiliation = $author->getAffiliation($catalogingLocale);
-			if ($affiliation) {
+			$affiliation = $author->getLocalizedAffiliation();
+			if (!empty($affiliation)) {
 				$authorDescription->addStatement('affiliation', $affiliation);
 			}
 
@@ -259,7 +239,7 @@ class Mods34SchemaSubmissionAdapter extends MetadataDataObjectAdapter {
 			}
 
 			// Role
-			$authorDescription->addStatement('role/roleTerm[@type="code" @authority="marcrelator"]', $authorMarcrelatorRole);
+			$authorDescription->addStatement('role/roleTerm[@type="code" @authority="marcrelator"]', 'aut');
 
 			// Add the author to the MODS schema.
 			$mods34Description->addStatement('name', $authorDescription);
@@ -270,8 +250,8 @@ class Mods34SchemaSubmissionAdapter extends MetadataDataObjectAdapter {
 		// NB: Our MODS mapping currently doesn't support translation for names.
 		// This can be added when required by data consumers. We therefore only use
 		// translations in the cataloging language.
-		$supportingAgency = $submission->getSponsor($catalogingLocale);
-		if ($supportingAgency) {
+		$supportingAgency = $submission->getLocalizedSponsor();
+		if (!empty($supportingAgency)) {
 			$supportingAgencyDescription = new MetadataDescription('lib.pkp.plugins.metadata.mods34.schema.Mods34NameSchema', ASSOC_TYPE_AUTHOR);
 			$sponsorNameType = 'corporate';
 			$supportingAgencyDescription->addStatement('[@type]', $sponsorNameType);
@@ -293,7 +273,9 @@ class Mods34SchemaSubmissionAdapter extends MetadataDataObjectAdapter {
 		}
 
 		// Submission language
-		$submissionLanguage = AppLocale::get3LetterFrom2LetterIsoLanguage($submission->getLanguage());
+		$language = $submission->getLanguage();
+		if ($language) $submissionLanguage = AppLocale::get3LetterFrom2LetterIsoLanguage($submission->getLanguage());
+		else $submissionLanguage = null;
 		if (!$submissionLanguage) {
 			// Assume the cataloging language by default.
 			$submissionLanguage = $catalogingLanguage;
@@ -311,21 +293,12 @@ class Mods34SchemaSubmissionAdapter extends MetadataDataObjectAdapter {
 		$localizedDisciplines = $submission->getDiscipline(null); // Localized
 		$this->addLocalizedStatements($mods34Description, 'subject/topic', $localizedDisciplines);
 
-		// Subject class
-		$localizedSubjectClasses = $submission->getSubjectClass(null); // Localized
-		$this->addLocalizedStatements($mods34Description, 'subject/topic', $localizedSubjectClasses);
-
 		// Subject
-		$localizedSubjects = $submission->getSubject(null); // Localized
-		$this->addLocalizedStatements($mods34Description, 'subject/topic', $localizedSubjects);
+		$submissionSubjectDao = DAORegistry::getDAO('SubmissionSubjectDAO'); /* @var $submissionSubjectDao SubmissionSubjectDAO */
+		$supportedLocales = array_keys(AppLocale::getSupportedFormLocales());
+		$this->addLocalizedStatements($mods34Description, 'subject/topic', (array) $submissionSubjectDao->getSubjects($submission->getCurrentPublication()->getId(), $supportedLocales));
 
-		// Geographical coverage
-		$localizedCoverageGeo = $submission->getCoverageGeo(null); // Localized
-		$this->addLocalizedStatements($mods34Description, 'subject/geographic', $localizedCoverageGeo);
-
-		// Chronological coverage
-		$localizedCoverageChron = $submission->getCoverageChron(null); // Localized
-		$this->addLocalizedStatements($mods34Description, 'subject/temporal', $localizedCoverageChron);
+		// FIXME: Coverage not included
 
 		// Record creation date
 		$recordCreationDate = date('Y-m-d');
@@ -373,4 +346,4 @@ class Mods34SchemaSubmissionAdapter extends MetadataDataObjectAdapter {
 		return ($unmappedFields[$translated]);
 	}
 }
-?>
+

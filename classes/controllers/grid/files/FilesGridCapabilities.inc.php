@@ -3,9 +3,9 @@
 /**
  * @file classes/controllers/grid/files/FilesGridCapabilities.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class FilesGridCapabilities
  * @ingroup classes_controllers_grid_files
@@ -20,6 +20,7 @@ define('FILE_GRID_DOWNLOAD_ALL',	0x00000002);
 define('FILE_GRID_DELETE',		0x00000004);
 define('FILE_GRID_VIEW_NOTES',		0x00000008);
 define('FILE_GRID_MANAGE',		0x00000010);
+define('FILE_GRID_EDIT',		0x00000020);
 
 class FilesGridCapabilities {
 
@@ -38,18 +39,21 @@ class FilesGridCapabilities {
 	/** @var boolean */
 	var $_canManage;
 
+	/** @var boolean */
+	var $_canEdit;
 
 	/**
 	 * Constructor
 	 * @param $capabilities integer A bit map with zero or more
 	 *  FILE_GRID_* capabilities set.
 	 */
-	function FilesGridCapabilities($capabilities) {
+	function __construct($capabilities = 0) {
 		$this->setCanAdd($capabilities & FILE_GRID_ADD);
 		$this->setCanDownloadAll($capabilities & FILE_GRID_DOWNLOAD_ALL);
 		$this->setCanDelete($capabilities & FILE_GRID_DELETE);
 		$this->setCanViewNotes($capabilities & FILE_GRID_VIEW_NOTES);
 		$this->setCanManage($capabilities & FILE_GRID_MANAGE);
+		$this->setCanEdit($capabilities & FILE_GRID_EDIT);
 	}
 
 
@@ -93,8 +97,8 @@ class FilesGridCapabilities {
 	 * @return boolean
 	 */
 	function canDownloadAll() {
-		$tarBinary = Config::getVar('cli', 'tar');
-		return $this->_canDownloadAll && !empty($tarBinary) && file_exists($tarBinary);
+		import('lib.pkp.classes.file.FileArchive');
+		return $this->_canDownloadAll && FileArchive::isFunctional();
 	}
 
 	/**
@@ -138,6 +142,22 @@ class FilesGridCapabilities {
 	}
 
 	/**
+	 * Whether the grid allows file metadata editing
+	 * @return boolean
+	 */
+	function canEdit() {
+		return $this->_canEdit;
+	}
+
+	/**
+	 * Set whether the grid allows file metadata editing
+	 * @return boolean
+	 */
+	function setCanEdit($canEdit) {
+		$this->_canEdit = $canEdit;
+	}
+
+	/**
 	 * Get the download all link action.
 	 * @param $request PKPRequest
 	 * @param $files array The files to be downloaded.
@@ -155,4 +175,4 @@ class FilesGridCapabilities {
 	}
 }
 
-?>
+

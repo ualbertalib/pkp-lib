@@ -3,9 +3,9 @@
 /**
  * @file classes/submission/SubmissionDisciplineDAO.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubmissionDisciplineDAO
  * @ingroup submission
@@ -20,20 +20,15 @@ import('lib.pkp.classes.controlledVocab.ControlledVocabDAO');
 define('CONTROLLED_VOCAB_SUBMISSION_DISCIPLINE', 'submissionDiscipline');
 
 class SubmissionDisciplineDAO extends ControlledVocabDAO {
-	/**
-	 * Constructor
-	 */
-	function submissionDisciplineDAO() {
-		parent::ControlledVocabDAO();
-	}
 
 	/**
-	 * Build/fetch a submission discipline controlled vocabulary.
-	 * @pararm $submissionId int
+	 * Build/fetch a publication's discipline controlled vocabulary.
+	 * @param $publicationId int
+	 * @param $assocType int DO NOT USE: For 2.x to 3.x migration pkp/pkp-lib#3572
 	 * @return ControlledVocabulary
 	 */
-	function build($submissionId) {
-		return parent::build(CONTROLLED_VOCAB_SUBMISSION_DISCIPLINE, ASSOC_TYPE_SUBMISSION, $submissionId);
+	function build($publicationId, $assocType = ASSOC_TYPE_PUBLICATION) {
+		return parent::_build(CONTROLLED_VOCAB_SUBMISSION_DISCIPLINE, $assocType, $publicationId);
 	}
 
 	/**
@@ -46,29 +41,29 @@ class SubmissionDisciplineDAO extends ControlledVocabDAO {
 
 	/**
 	 * Get disciplines for a submission.
-	 * @param $submissionId int
+	 * @param $publicationId int
 	 * @param $locales array
 	 * @return array
 	 */
-	function getDisciplines($submissionId, $locales) {
+	function getDisciplines($publicationId, $locales = []) {
+		$result = [];
 
-		$returner = array();
-
-		foreach ($locales as $locale) {
-
-			$returner[$locale] = array();
-			$disciplines = $this->build($submissionId);
-			$submissionDisciplineEntryDao = DAORegistry::getDAO('SubmissionDisciplineEntryDAO');
-			$submissionDisciplines = $submissionDisciplineEntryDao->getByControlledVocabId($disciplines->getId());
-
-			while ($discipline = $submissionDisciplines->next()) {
-				$discipline = $discipline->getDiscipline();
-				if (array_key_exists($locale, $discipline)) { // quiets PHP when there are no disciplines for a given locale
-					$returner[$locale][] = $discipline[$locale];
+		$disciplines = $this->build($publicationId);
+		$submissionDisciplineEntryDao = DAORegistry::getDAO('SubmissionDisciplineEntryDAO'); /* @var $submissionDisciplineEntryDao SubmissionDisciplineEntryDAO */
+		$submissionDisciplines = $submissionDisciplineEntryDao->getByControlledVocabId($disciplines->getId());
+		while ($disciplineEntry = $submissionDisciplines->next()) {
+			$discipline = $disciplineEntry->getDiscipline();
+			foreach ($discipline as $locale => $value) {
+				if (empty($locales) || in_array($locale, $locales)) {
+					if (!array_key_exists($locale, $result)) {
+						$result[$locale] = [];
+					}
+					$result[$locale][] = $value;
 				}
 			}
 		}
-		return $returner;
+
+		return $result;
 	}
 
 	/**
@@ -92,41 +87,17 @@ class SubmissionDisciplineDAO extends ControlledVocabDAO {
 	}
 
 	/**
-	 * Get an array of submissionIds that have a given discipline
-	 * @param $content string
-	 * @return array
-	 */
-	function getSubmissionIdsByDiscipline($discipline) {
-		$result = $this->retrieve(
-			'SELECT assoc_id
-			 FROM controlled_vocabs cv
-			 LEFT JOIN controlled_vocab_entries cve ON cv.controlled_vocab_id = cve.controlled_vocab_id
-			 INNER JOIN controlled_vocab_entry_settings cves ON cve.controlled_vocab_entry_id = cves.controlled_vocab_entry_id
-			 WHERE cves.setting_name = ? AND cves.setting_value = ?',
-			array(CONTROLLED_VOCAB_SUBMISSION_DISCIPLINE, $discipline)
-		);
-
-		$returner = array();
-		while (!$result->EOF) {
-			$row = $result->GetRowAssoc(false);
-			$returner[] = $row['assoc_id'];
-			$result->MoveNext();
-		}
-		$result->Close();
-		return $returner;
-	}
-
-	/**
 	 * Add an array of disciplines
 	 * @param $disciplines array
-	 * @param $submissionId int
+	 * @param $publicationId int
 	 * @param $deleteFirst boolean
+	 * @param $assocType int DO NOT USE: For 2.x to 3.x migration pkp/pkp-lib#3572
 	 * @return int
 	 */
-	function insertDisciplines($disciplines, $submissionId, $deleteFirst = true) {
-		$disciplineDao = DAORegistry::getDAO('SubmissionDisciplineDAO');
-		$submissionDisciplineEntryDao = DAORegistry::getDAO('SubmissionDisciplineEntryDAO');
-		$currentDisciplines = $this->build($submissionId);
+	function insertDisciplines($disciplines, $publicationId, $deleteFirst = true, $assocType = ASSOC_TYPE_PUBLICATION) {
+		$disciplineDao = DAORegistry::getDAO('SubmissionDisciplineDAO'); /* @var $disciplineDao SubmissionDisciplineDAO */
+		$submissionDisciplineEntryDao = DAORegistry::getDAO('SubmissionDisciplineEntryDAO'); /* @var $submissionDisciplineEntryDao SubmissionDisciplineEntryDAO */
+		$currentDisciplines = $this->build($publicationId, $assocType);
 
 		if ($deleteFirst) {
 			$existingEntries = $disciplineDao->enumerate($currentDisciplines->getId(), CONTROLLED_VOCAB_SUBMISSION_DISCIPLINE);
@@ -144,7 +115,7 @@ class SubmissionDisciplineDAO extends ControlledVocabDAO {
 					$i = 1;
 					foreach ($list as $discipline) {
 						$disciplineEntry = $submissionDisciplineEntryDao->newDataObject();
-						$disciplineEntry->setControlledVocabId($currentDisciplines->getID());
+						$disciplineEntry->setControlledVocabId($currentDisciplines->getId());
 						$disciplineEntry->setDiscipline(urldecode($discipline), $locale);
 						$disciplineEntry->setSequence($i);
 						$i++;
@@ -156,4 +127,4 @@ class SubmissionDisciplineDAO extends ControlledVocabDAO {
 	}
 }
 
-?>
+

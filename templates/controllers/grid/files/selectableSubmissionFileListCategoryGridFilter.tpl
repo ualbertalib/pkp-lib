@@ -1,9 +1,9 @@
 {**
- * controllers/grid/files/selectableSubmissionFileListCategoryGridFilter.tpl
+ * templates/controllers/grid/files/selectableSubmissionFileListCategoryGridFilter.tpl
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * Filter template for selectable submission file list category grid.
  *}
@@ -11,10 +11,11 @@
 	// Attach the form handler to the form.
 	$('#fileListFilterForm').pkpHandler('$.pkp.controllers.form.ToggleFormHandler');
 </script>
-<form class="pkp_form" id="fileListFilterForm" action="{url router=$smarty.const.ROUTE_COMPONENT op="fetchGrid"}" method="post">
-	{fbvFormArea id="allStagesFilterArea"}
+<form class="pkp_form filter" id="fileListFilterForm" action="{url router=$smarty.const.ROUTE_COMPONENT op="fetchGrid"}" method="post">
+	{csrf}
+	{fbvFormArea id="includeAllStagesArea"}
 		{fbvFormSection list="true"}
-			{fbvElement type="checkbox" id="allStages" checked=$filterSelectionData.allStages label="editor.submission.fileList.includeAllStages" size=$fbvStyles.size.LARGE}
+			{fbvElement type="checkbox" id="allStages" checked=$filterSelectionData.allStages label="editor.submission.fileList.includeAllStages"}
 		{/fbvFormSection}
 	{/fbvFormArea}
 </form>

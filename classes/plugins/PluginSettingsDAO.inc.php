@@ -3,9 +3,9 @@
 /**
  * @file classes/plugins/PluginSettingsDAO.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PluginSettingsDAO
  * @ingroup plugins
@@ -15,12 +15,6 @@
  */
 
 class PluginSettingsDAO extends DAO {
-	/**
-	 * Constructor
-	 */
-	function PluginSettingsDAO() {
-		parent::DAO();
-	}
 
 	/**
 	 * Get the cache for plugin settings.
@@ -61,6 +55,23 @@ class PluginSettingsDAO extends DAO {
 		// Retrieve the setting.
 		$cache = $this->_getCache($contextId, $pluginName);
 		return $cache->get($name);
+	}
+
+	/**
+	 * Does the plugin setting exist.
+	 * @param $contextId int Context ID
+	 * @param $pluginName string Plugin symbolic name
+	 * @param $name Setting name
+	 * @return boolean
+	 */
+	function settingExists($contextId, $pluginName, $name) {
+		$pluginName = strtolower_codesafe($pluginName);
+		$result = $this->retrieve(
+			'SELECT COUNT(*) FROM plugin_settings WHERE plugin_name = ? AND context_id = ? AND setting_name = ?', array($pluginName, (int) $contextId, $name)
+		);
+		$returner = $result->fields[0] ? true : false;
+		$result->Close();
+		return $returner;
 	}
 
 	/**
@@ -236,10 +247,7 @@ class PluginSettingsDAO extends DAO {
 		$xmlParser = new XMLParser();
 		$tree = $xmlParser->parse($filename);
 
-		if (!$tree) {
-			$xmlParser->destroy();
-			return false;
-		}
+		if (!$tree) return false;
 
 		// Check for existing settings and leave them if they are already in place.
 		$currentSettings = $this->getPluginSettings($contextId, $pluginName);
@@ -266,8 +274,6 @@ class PluginSettingsDAO extends DAO {
 				$this->updateSetting($contextId, $pluginName, $name, $value, $type);
 			}
 		}
-
-		$xmlParser->destroy();
 	}
 }
 
@@ -281,4 +287,4 @@ function _installer_plugin_regexp_callback($matches) {
 	return __($matches[1]);
 }
 
-?>
+

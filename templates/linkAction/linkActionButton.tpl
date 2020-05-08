@@ -1,9 +1,9 @@
 {**
  * linkActionButton.tpl
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * Template that renders a button for a link action.
  *
@@ -11,17 +11,6 @@
  *  action: The LinkAction we create a button for.
  *  buttonId: The id of the link.
  *  hoverTitle: Whether to show the title as hover text only.
+ *  anyhtml: True iff the link action text permits all HTML (i.e. escaping handled elsewhere).
  *}
-
-{if !$imageClass}
-	{assign var="imageClass" value="sprite"}
-{/if}
-<a href="javascript:$.noop();" id="{$buttonId|escape}"{strip}
-	{/strip}{if $action->getImage()}{strip}
-		{/strip} class="{$imageClass} {$action->getImage()|escape} pkp_controllers_linkAction"{strip}
-		{/strip} title="{$action->getHoverTitle()|escape}">{if $hoverTitle}&nbsp;{else}{$action->getTitle()|escape}{/if}{strip}
-	{/strip}{else}{strip}
-		{/strip} class="pkp_controllers_linkAction"{strip}
-		{/strip} title="{$action->getHoverTitle()|escape}">{if !$hoverTitle}{$action->getTitle()|strip_unsafe_html}{/if}{strip}
-	{/strip}{/if}{strip}
-{/strip}</a>
+<a href="#" id="{$buttonId|escape}" title="{$action->getHoverTitle()|escape}" class="pkp_controllers_linkAction pkp_linkaction_{$action->getId()} pkp_linkaction_icon_{$action->getImage()}">{if $anyhtml}{$action->getTitle()}{else}{$action->getTitle()|strip_unsafe_html}{/if}</a>

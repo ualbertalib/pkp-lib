@@ -3,9 +3,9 @@
 /**
  * @file classes/context/PKPSection.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPSection
  * @ingroup context
@@ -14,13 +14,6 @@
  */
 
 class PKPSection extends DataObject {
-
-	/**
-	 * Constructor.
-	 */
-	function PKPSection() {
-		parent::DataObject();
-	}
 
 	/**
 	 * Get ID of context.
@@ -35,7 +28,7 @@ class PKPSection extends DataObject {
 	 * @param $contextId int
 	 */
 	function setContextId($contextId) {
-		return $this->setData('contextId', $contextId);
+		$this->setData('contextId', $contextId);
 	}
 
 	/**
@@ -51,7 +44,7 @@ class PKPSection extends DataObject {
 	 * @param $sequence float
 	 */
 	function setSequence($sequence) {
-		return $this->setData('sequence', $sequence);
+		$this->setData('sequence', $sequence);
 	}
 
 	/**
@@ -77,7 +70,7 @@ class PKPSection extends DataObject {
 	 * @param $locale string
 	 */
 	function setTitle($title, $locale) {
-		return $this->setData('title', $title, $locale);
+		$this->setData('title', $title, $locale);
 	}
 
 	/**
@@ -93,7 +86,7 @@ class PKPSection extends DataObject {
 	 * @param $editorRestricted boolean
 	 */
 	function setEditorRestricted($editorRestricted) {
-		return $this->setData('editorRestricted', $editorRestricted);
+		$this->setData('editorRestricted', $editorRestricted);
 	}
 
 	/**
@@ -109,7 +102,7 @@ class PKPSection extends DataObject {
 	 * @param $reviewFormId int
 	 */
 	function setReviewFormId($reviewFormId) {
-		return $this->setData('reviewFormId', $reviewFormId);
+		$this->setData('reviewFormId', $reviewFormId);
 	}
 
 	/**
@@ -117,9 +110,35 @@ class PKPSection extends DataObject {
 	 * @return int
 	 */
 	function getViews() {
-		$application = Application::getApplication();
+		$application = Application::get();
 		return $application->getPrimaryMetricByAssoc(ASSOC_TYPE_SECTION, $this->getId());
+	}
+
+	/**
+	 * Get localized section policy.
+	 * @return string
+	 */
+	function getLocalizedPolicy() {
+		return $this->getLocalizedData('policy');
+	}
+
+	/**
+	 * Get policy.
+	 * @param $locale string
+	 * @return string
+	 */
+	function getPolicy($locale) {
+		return $this->getData('policy', $locale);
+	}
+
+	/**
+	 * Set policy.
+	 * @param $policy string
+	 * @param $locale string
+	 */
+	function setPolicy($policy, $locale) {
+		return $this->setData('policy', $policy, $locale);
 	}
 }
 
-?>
+

@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/plugins/form/UploadPluginForm.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class UploadPluginForm
  * @ingroup controllers_grid_plugins_form
@@ -29,8 +29,8 @@ class UploadPluginForm extends Form {
 	 * Constructor.
 	 * @param $function string PLUGIN_ACTION_...
 	 */
-	function UploadPluginForm($function) {
-		parent::Form('controllers/grid/plugins/form/uploadPluginForm.tpl');
+	function __construct($function) {
+		parent::__construct('controllers/grid/plugins/form/uploadPluginForm.tpl');
 
 		$this->_function = $function;
 
@@ -50,23 +50,28 @@ class UploadPluginForm extends Form {
 	/**
 	 * @copydoc Form::fetch()
 	 */
-	function fetch($request) {
+	function fetch($request, $template = null, $display = false) {
 		$templateMgr = TemplateManager::getManager($request);
-		$templateMgr->assign('function', $this->_function);
+		$templateMgr->assign(array(
+			'function' => $this->_function,
+			'category' => $request->getUserVar('category'),
+			'plugin' => $request->getUserVar('plugin'),
+		));
 
-		return parent::fetch($request);
+		return parent::fetch($request, $template, $display);
 	}
 
 	/**
 	 * @copydoc Form::execute()
 	 */
-	function execute($request) {
-		parent::execute($request);
+	function execute(...$functionArgs) {
+		parent::execute(...$functionArgs);
 
 		// Retrieve the temporary file.
+		$request = Application::get()->getRequest();
 		$user = $request->getUser();
 		$temporaryFileId = $this->getData('temporaryFileId');
-		$temporaryFileDao = DAORegistry::getDAO('TemporaryFileDAO');
+		$temporaryFileDao = DAORegistry::getDAO('TemporaryFileDAO'); /* @var $temporaryFileDao TemporaryFileDAO */
 		$temporaryFile = $temporaryFileDao->getTemporaryFile($temporaryFileId, $user->getId());
 
 		$pluginHelper = new PluginHelper();
@@ -83,9 +88,10 @@ class UploadPluginForm extends Form {
 						__('manager.plugins.installSuccessful', array('versionNumber' => $pluginVersion->getVersionString(false))))
 				);
 			} else if ($this->_function == PLUGIN_ACTION_UPGRADE) {
+				$plugin = PluginRegistry::getPlugin($request->getUserVar('category'), $request->getUserVar('plugin'));
 				$pluginVersion = $pluginHelper->upgradePlugin(
 					$request->getUserVar('category'),
-					$request->getUserVar('plugin'),
+					basename($plugin->getPluginPath()),
 					$pluginDir,
 					$errorMsg
 				);
@@ -93,7 +99,7 @@ class UploadPluginForm extends Form {
 					$notificationMgr->createTrivialNotification($user->getId(), NOTIFICATION_TYPE_SUCCESS, array('contents' => __('manager.plugins.upgradeSuccessful', array('versionString' => $pluginVersion->getVersionString(false)))));
 				}
 			}
-		} else {
+		} else if (!$errorMsg) {
 			$errorMsg = __('manager.plugins.invalidPluginArchive');
 		}
 
@@ -106,4 +112,4 @@ class UploadPluginForm extends Form {
 	}
 }
 
-?>
+

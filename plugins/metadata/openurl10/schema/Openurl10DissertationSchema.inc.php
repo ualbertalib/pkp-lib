@@ -3,9 +3,9 @@
 /**
  * @file plugins/metadata/openurl10/schema/Openurl10DissertationSchema.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class Openurl10DissertationSchema
  * @ingroup plugins_metadata_openurl10_schema
@@ -25,8 +25,8 @@ class Openurl10DissertationSchema extends Openurl10BaseSchema {
 	/**
 	 * Constructor
 	 */
-	function Openurl10DissertationSchema() {
-		parent::Openurl10BaseSchema(
+	function __construct() {
+		parent::__construct(
 			'openurl-1.0-dissertation',
 			'lib.pkp.plugins.metadata.openurl10.schema.Openurl10DissertationSchema'
 		);
@@ -40,4 +40,4 @@ class Openurl10DissertationSchema extends Openurl10BaseSchema {
 		$this->addProperty('degree');
 	}
 }
-?>
+

@@ -1,9 +1,9 @@
 /**
  * @file js/controllers/grid/CategoryGridHandler.js
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class CategoryGridHandler
  * @ingroup js_controllers_grid
@@ -135,6 +135,44 @@
 
 
 	/**
+         * Get the id prefix of the grid row inside a category.
+         * @return {string}
+         */
+	$.pkp.controllers.grid.CategoryGridHandler.prototype.getRowIdPrefix =
+			function() {
+		return this.getGridIdPrefix() + '-category-';
+	};
+
+
+	/**
+	 * Get the grid row by the passed data element id.
+	 * @param {number} rowDataId
+	 * @return {jQueryObject}
+	 */
+	$.pkp.controllers.grid.CategoryGridHandler.prototype.getRowByDataId =
+			function(rowDataId) {
+		this.parent('getRowByDataId', rowDataId);
+		return $('#' + this.getRowIdPrefix() + this.currentCategoryId_ +
+				'-row-' + rowDataId, this.getHtmlElement());
+	};
+
+
+	/**
+	 * Get the data element id of the passed grid row.
+	 * @param {jQueryObject} $gridRow The grid row JQuery object.
+	 * @return {string} The data element id of the passed grid row.
+	 */
+	$.pkp.controllers.grid.CategoryGridHandler.prototype.getRowDataId =
+			function($gridRow) {
+		var rowDataId;
+		rowDataId = $gridRow.attr('id').
+				slice(this.getRowIdPrefix().length);
+		rowDataId = rowDataId.match('-row-(.*)');
+		return /** @type {string} */ ($.trim(rowDataId[1]));
+	};
+
+
+	/**
 	 * Append a category to the end of the list.
 	 * @param {jQueryObject} $category Category to append.
 	 */
@@ -234,7 +272,7 @@
 
 		var fetchedAlready = false, elementIds,
 				// Hack to avoid closure compiler warnings on type difference
-				castElementId = /** @type {{parentElementId: number}} */ opt_elementId;
+				castElementId = /** @type {{parentElementId: number}} */ (opt_elementId);
 
 		if (opt_elementId !== undefined) {
 			// Check if we want to refresh a row inside a category.
@@ -299,6 +337,7 @@
 		if ($element.hasClass('category_grid_body')) {
 			// Need to delete the category empty placeholder.
 			$emptyPlaceholder = this.getCategoryEmptyPlaceholder($element);
+			this.unbindPartial($emptyPlaceholder);
 			$emptyPlaceholder.remove();
 		}
 
@@ -342,6 +381,7 @@
 		if ($newElement.hasClass('category_grid_body')) {
 			// Need to delete the category empty placeholder.
 			var $emptyPlaceholder = this.getCategoryEmptyPlaceholder($existingElement);
+			this.unbindPartial($emptyPlaceholder);
 			$emptyPlaceholder.remove();
 		}
 
@@ -368,5 +408,4 @@
 	};
 
 
-/** @param {jQuery} $ jQuery closure. */
 }(jQuery));

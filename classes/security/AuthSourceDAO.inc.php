@@ -3,9 +3,9 @@
 /**
  * @file classes/security/AuthSourceDAO.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class AuthSourceDAO
  * @ingroup security
@@ -23,9 +23,9 @@ class AuthSourceDAO extends DAO {
 	/**
 	 * Constructor.
 	 */
-	function AuthSourceDAO() {
-		parent::DAO();
-		$this->plugins =& PluginRegistry::loadCategory(AUTH_PLUGIN_CATEGORY);
+	function __construct() {
+		parent::__construct();
+		$this->plugins = PluginRegistry::loadCategory(AUTH_PLUGIN_CATEGORY);
 	}
 
 	/**
@@ -33,13 +33,13 @@ class AuthSourceDAO extends DAO {
 	 * @param $authId int
 	 * @return AuthPlugin
 	 */
-	function &getPlugin($authId) {
+	function getPlugin($authId) {
 		$plugin = null;
-		$auth =& $this->getSource($authId);
+		$auth = $this->getSource($authId);
 		if ($auth != null) {
-			$plugin =& $auth->getPluginClass();
+			$plugin = $auth->getPluginClass();
 			if ($plugin != null) {
-				$plugin =& $plugin->getInstance($auth->getSettings(), $auth->getAuthId());
+				$plugin = $plugin->getInstance($auth->getSettings(), $auth->getAuthId());
 			}
 		}
 		return $plugin;
@@ -49,13 +49,13 @@ class AuthSourceDAO extends DAO {
 	 * Get plugin instance for the default authentication source.
 	 * @return AuthPlugin
 	 */
-	function &getDefaultPlugin() {
+	function getDefaultPlugin() {
 		$plugin = null;
-		$auth =& $this->getDefaultSource();
+		$auth = $this->getDefaultSource();
 		if ($auth != null) {
-			$plugin =& $auth->getPluginClass();
+			$plugin = $auth->getPluginClass();
 			if ($plugin != null) {
-				$plugin =& $plugin->getInstance($auth->getSettings(), $auth->getAuthId());
+				$plugin = $plugin->getInstance($auth->getSettings(), $auth->getAuthId());
 			}
 		}
 		return $plugin;
@@ -66,7 +66,7 @@ class AuthSourceDAO extends DAO {
 	 * @param $authId int
 	 * @return AuthSource
 	 */
-	function &getSource($authId) {
+	function getSource($authId) {
 		$result = $this->retrieve(
 			'SELECT * FROM auth_sources WHERE auth_id = ?',
 			array((int) $authId)
@@ -74,7 +74,7 @@ class AuthSourceDAO extends DAO {
 
 		$returner = null;
 		if ($result->RecordCount() != 0) {
-			$returner =& $this->_returnAuthSourceFromRow($result->GetRowAssoc(false));
+			$returner = $this->_fromRow($result->GetRowAssoc(false));
 		}
 
 		$result->Close();
@@ -85,14 +85,14 @@ class AuthSourceDAO extends DAO {
 	 * Retrieve the default authentication source.
 	 * @return AuthSource
 	 */
-	function &getDefaultSource() {
+	function getDefaultSource() {
 		$result = $this->retrieve(
 			'SELECT * FROM auth_sources WHERE auth_default = 1'
 		);
 
 		$returner = null;
 		if ($result->RecordCount() != 0) {
-			$returner =& $this->_returnAuthSourceFromRow($result->GetRowAssoc(false));
+			$returner = $this->_fromRow($result->GetRowAssoc(false));
 		}
 
 		$result->Close();
@@ -112,7 +112,7 @@ class AuthSourceDAO extends DAO {
 	 * @param $row array
 	 * @return AuthSource
 	 */
-	function &_returnAuthSourceFromRow($row) {
+	function _fromRow($row) {
 		$auth = $this->newDataObject();
 		$auth->setAuthId($row['auth_id']);
 		$auth->setTitle($row['title']);
@@ -127,7 +127,7 @@ class AuthSourceDAO extends DAO {
 	 * Insert a new source.
 	 * @param $auth AuthSource
 	 */
-	function insertSource(&$auth) {
+	function insertObject($auth) {
 		if (!isset($this->plugins[$auth->getPlugin()])) return false;
 		if (!$auth->getTitle()) $auth->setTitle($this->plugins[$auth->getPlugin()]->getDisplayName());
 		$this->update(
@@ -150,7 +150,7 @@ class AuthSourceDAO extends DAO {
 	 * Update a source.
 	 * @param $auth AuthSource
 	 */
-	function updateObject(&$auth) {
+	function updateObject($auth) {
 		return $this->update(
 			'UPDATE auth_sources SET
 				title = ?,
@@ -192,16 +192,15 @@ class AuthSourceDAO extends DAO {
 	 * Retrieve a list of all auth sources for the site.
 	 * @return array AuthSource
 	 */
-	function &getSources($rangeInfo = null) {
+	function getSources($rangeInfo = null) {
 		$result = $this->retrieveRange(
 			'SELECT * FROM auth_sources ORDER BY auth_id',
 			false,
 			$rangeInfo
 		);
 
-		$returner = new DAOResultFactory($result, $this, '_returnAuthSourceFromRow');
-		return $returner;
+		return new DAOResultFactory($result, $this, '_fromRow');
 	}
 }
 
-?>
+

@@ -3,9 +3,9 @@
 /**
  * @file classes/mail/SubmissionMailTemplate.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubmissionMailTemplate
  * @ingroup mail
@@ -33,28 +33,31 @@ class SubmissionMailTemplate extends MailTemplate {
 	 * @param $submission Submission
 	 * @param $emailKey string optional
 	 * @param $locale string optional
-	 * @param $enableAttachments boolean optional
 	 * @param $context object optional
 	 * @param $includeSignature boolean optional
 	 * @see MailTemplate::MailTemplate()
 	 */
-	function SubmissionMailTemplate($submission, $emailKey = null, $locale = null, $enableAttachments = null, $context = null, $includeSignature = true) {
-		parent::MailTemplate($emailKey, $locale, $enableAttachments, $context, $includeSignature);
+	function __construct($submission, $emailKey = null, $locale = null, $context = null, $includeSignature = true) {
+		parent::__construct($emailKey, $locale, $context, $includeSignature);
 		$this->submission = $submission;
 	}
 
+	/**
+	 * Assign parameters to template
+	 * @param $paramArray array
+	 */
 	function assignParams($paramArray = array()) {
 		$submission = $this->submission;
-
-		$application = PKPApplication::getApplication();
-		$request = $application->getRequest();
-
-		$paramArray['submissionTitle'] = strip_tags($submission->getLocalizedTitle());
-		$paramArray['submissionId'] = $submission->getId();
-		$paramArray['submissionAbstract'] = String::html2text($submission->getLocalizedAbstract());
-		$paramArray['authorString'] = strip_tags($submission->getAuthorString());
-
-		parent::assignParams($paramArray);
+		$request = Application::get()->getRequest();
+		parent::assignParams(array_merge(
+			array(
+				'submissionTitle' => strip_tags($submission->getLocalizedFullTitle()),
+				'submissionId' => $submission->getId(),
+				'submissionAbstract' => PKPString::stripUnsafeHtml($submission->getLocalizedAbstract()),
+				'authorString' => strip_tags($submission->getAuthorString()),
+			),
+			$paramArray
+		));
 	}
 
 	/**
@@ -62,10 +65,8 @@ class SubmissionMailTemplate extends MailTemplate {
 	 * @param $request PKPRequest optional (used for logging purposes)
 	 */
 	function send($request = null) {
-		if (parent::send(false)) {
-			if (!isset($this->skip) || !$this->skip) $this->log($request);
-			$user = Request::getUser();
-			if ($this->attachmentsEnabled) $this->_clearAttachments($user->getId());
+		if (parent::send()) {
+			$this->log($request);
 			return true;
 		} else {
 			return false;
@@ -109,13 +110,12 @@ class SubmissionMailTemplate extends MailTemplate {
 	 * Save the email in the submission email log.
 	 */
 	function log($request = null) {
-		import('classes.log.SubmissionEmailLogEntry');
-		$entry = new SubmissionEmailLogEntry();
+		$logDao = DAORegistry::getDAO('SubmissionEmailLogDAO'); /* @var $logDao SubmissionEmailLogDAO */
+		$entry = $logDao->newDataObject();
 		$submission = $this->submission;
 
 		// Event data
 		$entry->setEventType($this->logEventType);
-		$entry->setAssocType(ASSOC_TYPE_SUBMISSION);
 		$entry->setAssocId($submission->getId());
 		$entry->setDateSent(Core::getCurrentDate());
 
@@ -123,7 +123,6 @@ class SubmissionMailTemplate extends MailTemplate {
 		if ($request) {
 			$user = $request->getUser();
 			$entry->setSenderId($user == null ? 0 : $user->getId());
-			$entry->setIPAddress($request->getRemoteAddr());
 		} else {
 			// No user supplied -- this is e.g. a cron-automated email
 			$entry->setSenderId(0);
@@ -138,20 +137,7 @@ class SubmissionMailTemplate extends MailTemplate {
 		$entry->setBccs($this->getBccString());
 
 		// Add log entry
-		$logDao = DAORegistry::getDAO('SubmissionEmailLogDAO');
 		$logEntryId = $logDao->insertObject($entry);
-
-		// Add attachments
-		import('lib.pkp.classes.file.SubmissionFileManager');
-		$submissionFileManager = new SubmissionFileManager($submission->getContextId(), $submission->getId());
-		foreach ($this->getAttachmentFiles() as $attachment) {
-			$submissionFileManager->temporaryFileToSubmissionFile(
-				$attachment,
-				SUBMISSION_FILE_ATTACHMENT,
-				ASSOC_TYPE_SUBMISSION_EMAIL_LOG_ENTRY,
-				$logEntryId
-			);
-		}
 	}
 
 	/**
@@ -193,13 +179,13 @@ class SubmissionMailTemplate extends MailTemplate {
 	protected function _addUsers($submissionId, $roleId, $stageId, $method) {
 		assert(in_array($method, array('addRecipient', 'addCc', 'addBcc')));
 
-		$userGroupDao = DAORegistry::getDAO('UserGroupDAO');
+		$userGroupDao = DAORegistry::getDAO('UserGroupDAO'); /* @var $userGroupDao UserGroupDAO */
 		$userGroups = $userGroupDao->getByRoleId($this->context->getId(), $roleId);
 
 		$returner = array();
 		// Cycle through all the userGroups for this role
 		while ($userGroup = $userGroups->next()) {
-			$userStageAssignmentDao = DAORegistry::getDAO('UserStageAssignmentDAO');
+			$userStageAssignmentDao = DAORegistry::getDAO('UserStageAssignmentDAO'); /* @var $userStageAssignmentDao UserStageAssignmentDAO */
 			// FIXME: #6692# Should this be getting users just for a specific user group?
 			$users = $userStageAssignmentDao->getUsersBySubmissionAndStageId($submissionId, $stageId, $userGroup->getId());
 			while ($user = $users->next()) {
@@ -211,4 +197,4 @@ class SubmissionMailTemplate extends MailTemplate {
 	}
 }
 
-?>
+

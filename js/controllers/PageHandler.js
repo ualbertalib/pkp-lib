@@ -1,9 +1,9 @@
 /**
  * @file js/controllers/PageHandler.js
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PageHandler
  * @ingroup js_controllers
@@ -104,7 +104,7 @@
 		// (Not using "has" due to potential escaping issues; see
 		// http://stackoverflow.com/questions/739695/jquery-selector-value-escaping
 		$grids = $('.pkp_controllers_grid', this.getHtmlElement())
-					.filter(function() {
+				.filter(function() {
 					var matches = 0;
 					$(this).find('a').each(function() {
 						if ($(this).attr('href') == linkUrl) {
@@ -126,5 +126,4 @@
 	};
 
 
-/** @param {jQuery} $ jQuery closure. */
 }(jQuery));

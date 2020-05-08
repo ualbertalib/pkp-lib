@@ -9,9 +9,9 @@
 /**
  * @file classes/plugins/Plugin.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class Plugin
  * @ingroup plugins
@@ -46,6 +46,7 @@
 
 // Define the well-known file name for filter configuration data.
 define('PLUGIN_FILTER_DATAFILE', 'filterConfig.xml');
+define('PLUGIN_TEMPLATE_RESOURCE_PREFIX', 'plugins');
 
 abstract class Plugin {
 	/** @var string Path name to files for this plugin */
@@ -60,7 +61,7 @@ abstract class Plugin {
 	/**
 	 * Constructor
 	 */
-	function Plugin() {
+	function __construct() {
 	}
 
 	/*
@@ -78,10 +79,15 @@ abstract class Plugin {
 	 *
 	 * @param $category String Name of category plugin was registered to
 	 * @param $path String The path the plugin was found in
+	 * @param $mainContextId integer To identify if the plugin is enabled
+	 *  we need a context. This context is usually taken from the
+	 *  request but sometimes there is no context in the request
+	 *  (e.g. when executing CLI commands). Then the main context
+	 *  can be given as an explicit ID.
 	 * @return boolean True iff plugin registered successfully; if false,
 	 * 	the plugin will not be executed.
 	 */
-	function register($category, $path) {
+	function register($category, $path, $mainContextId = null) {
 		$this->pluginPath = $path;
 		$this->pluginCategory = $category;
 		if ($this->getInstallSchemaFile()) {
@@ -95,18 +101,21 @@ abstract class Plugin {
 		}
 		if ($this->getInstallEmailTemplatesFile()) {
 			HookRegistry::register ('Installer::postInstall', array($this, 'installEmailTemplates'));
+			HookRegistry::register ('PKPLocale::installLocale', array($this, 'installLocale'));
 		}
 		if ($this->getInstallEmailTemplateDataFile()) {
 			HookRegistry::register ('Installer::postInstall', array($this, 'installEmailTemplateData'));
-			HookRegistry::register ('PKPLocale::installLocale', array($this, 'installLocale'));
 		}
 		if ($this->getInstallDataFile()) {
 			HookRegistry::register ('Installer::postInstall', array($this, 'installData'));
 		}
 		if ($this->getContextSpecificPluginSettingsFile()) {
-			HookRegistry::register ($this->_getContextSpecificInstallationHook(), array($this, 'installContextSpecificSettings'));
+			HookRegistry::register ('Context::add', array($this, 'installContextSpecificSettings'));
 		}
+
 		HookRegistry::register ('Installer::postInstall', array($this, 'installFilters'));
+
+		$this->_registerTemplateResource();
 		return true;
 	}
 
@@ -166,32 +175,13 @@ abstract class Plugin {
 	}
 
 	/**
-	 * Get a list of management actions in the form of a page => value pair.
-	 * The management actions from this list are passed to the manage() function
-	 * when called.
-	 *
-	 * @return array
-	 */
-	function getManagementVerbs() {
-		return array();
-	}
-
-	/**
 	 * Perform a management function.
-	 *
-	 * @param $verb string
 	 * @param $args array
-	 * @param $message string If a message is returned from this by-ref argument then
-	 *  it will be displayed as a notification if (and only if) the method returns
-	 *  false.
-	 * @param $messageParams array additional notification settings
-	 * @param $pluginModalContent array Reference to string that will receive new
-	 *  content for the plugin modal
-	 * @return boolean will redirect to the plugin category page if false, otherwise
-	 *  will remain on the same page
+	 * @param $request PKPRequest
+	 * @return JSONMessage A JSON-encoded response
 	 */
-	function manage($verb, $args, &$message, &$messageParams, &$pluginModalContent = null) {
-		return false;
+	function manage($args, $request) {
+		assert(false); // Unhandled case; this shouldn't happen.
 	}
 
 	/**
@@ -275,6 +265,8 @@ abstract class Plugin {
 	/**
 	 * Get the filename of the email template data for this plugin.
 	 * Subclasses using email templates should override this.
+	 * @deprecated Starting with OJS/OMP 3.2, localized content should be
+	 *  specified via getInstallEmailTemplatesFile(). (pkp/pkp-lib#5461)
 	 *
 	 * @return string
 	 */
@@ -323,16 +315,117 @@ abstract class Plugin {
 	}
 
 	/**
-	 * Return the canonical template path of this plug-in
-	 * @param $inCore Return the core template path if true.
+	 * Get the directory name of the plugin
+	 * @return String directory name
+	 */
+	function getDirName() {
+		return basename($this->pluginPath);
+	}
+
+	/**
+	 * Return the Resource Name for templates in this plugin, or if specified, the full resource locator
+	 * for a specific template.
+	 * @param $template Template path/filename, if desired
+	 * @param $inCore boolean True if a "core" template should be used.
 	 * @return string
 	 */
-	function getTemplatePath($inCore = false) {
-		$basePath = Core::getBaseDir();
+	public function getTemplateResource($template = null, $inCore = false) {
+		$pluginPath = $this->getPluginPath();
 		if ($inCore) {
-			$basePath = $basePath . DIRECTORY_SEPARATOR . PKP_LIB_PATH;
+			$pluginPath = PKP_LIB_PATH . DIRECTORY_SEPARATOR . $pluginPath;
 		}
-		return "file:$basePath" . DIRECTORY_SEPARATOR . $this->getPluginPath() . DIRECTORY_SEPARATOR;
+		$plugin = basename($pluginPath);
+		$category = basename(dirname($pluginPath));
+		// Slash characters (/) are not allowed in resource names, so use dashes (-) instead.
+		$resourceName = strtr(join('/', array(PLUGIN_TEMPLATE_RESOURCE_PREFIX, $pluginPath, $category, $plugin)),'/','-');
+		return $resourceName . ($template!==null?":$template":'');
+	}
+
+	/**
+	 * Return the canonical template path of this plug-in
+	 * @param $inCore Return the core template path if true.
+	 * @return string|null
+	 */
+	function getTemplatePath($inCore = false) {
+		$templatePath = ($inCore?PKP_LIB_PATH . DIRECTORY_SEPARATOR:'') . $this->getPluginPath() . DIRECTORY_SEPARATOR . 'templates';
+		if (is_dir($templatePath)) return $templatePath;
+		return null;
+	}
+
+	/**
+	 * Register this plugin's templates as a template resource
+	 * @param $inCore boolean True iff this is a core resource.
+	 */
+	protected function _registerTemplateResource($inCore = false) {
+		if ($templatePath = $this->getTemplatePath($inCore)) {
+			$templateMgr = TemplateManager::getManager();
+			$pluginTemplateResource = new PKPTemplateResource($templatePath);
+			$templateMgr->registerResource($this->getTemplateResource(null, $inCore), $pluginTemplateResource);
+		}
+	}
+
+	/**
+	 * Call this method when an enabled plugin is registered in order to override
+	 * template files. Any plugin which calls this method can
+	 * override template files by adding their own templates to:
+	 * <overridingPlugin>/templates/plugins/<category>/<originalPlugin>/templates/<path>.tpl
+	 *
+	 * @param $hookName string TemplateResource::getFilename
+	 * @param $args array [
+	 *		@option string File path to preferred template. Leave as-is to not
+	 *			override template.
+	 *		@option string Template file requested
+	 * ]
+	 * @return boolean
+	 */
+	public function _overridePluginTemplates($hookName, $args) {
+		$filePath =& $args[0];
+		$template = $args[1];
+		$checkFilePath = $filePath;
+
+		// If there's a templates/ prefix on the template, clean up the test path.
+		if (strpos($filePath, 'plugins/') === 0) $checkFilePath = 'templates/' . $checkFilePath;
+
+		// If there's a lib/pkp/ prefix on the template, test without it.
+		$libPkpPrefix = 'lib' . DIRECTORY_SEPARATOR . 'pkp' . DIRECTORY_SEPARATOR;
+		if (strpos($checkFilePath, $libPkpPrefix) === 0) $checkFilePath = substr($filePath, strlen($libPkpPrefix));
+
+		// Check if an overriding plugin exists in the plugin path.
+		if ($overriddenFilePath = $this->_findOverriddenTemplate($checkFilePath)) {
+			$filePath = $overriddenFilePath;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Recursive check for existing templates
+	 * @param $path string
+	 * @return string|null
+	 */
+	private function _findOverriddenTemplate($path) {
+		$fullPath = sprintf('%s/%s', $this->getPluginPath(), $path);
+
+		if (file_exists($fullPath)) {
+			return $fullPath;
+		}
+
+		// Backward compatibility for OJS prior to 3.1.2; changed path to templates for plugins.
+		if (($fullPath = preg_replace("/templates\/(?!.*templates\/)/", "", $fullPath)) && file_exists($fullPath)) {
+			if (Config::getVar('debug', 'deprecation_warnings')) {
+				trigger_error('Deprecated: The template at ' . $fullPath . ' has moved and will not be found in the future.');
+			}
+			return $fullPath;
+		}
+
+		// Recursive check for templates in ancestors of a current theme plugin
+		if (is_a($this, 'ThemePlugin')
+			&& $this->parent
+			&& $fullPath = $this->parent->_findOverriddenTemplate($path)) {
+			return $fullPath;
+		}
+
+		return null;
 	}
 
 	/**
@@ -355,67 +448,45 @@ abstract class Plugin {
 	}
 
 	/**
-	 * Convenience version of the generic getContextSpecificSetting() method.
-	 * @see Plugin::getContextSpecificSetting()
+	 * Retrieve a plugin setting within the given context
+	 *
 	 * @param $contextId int Context ID
 	 * @param $name string Setting name
 	 */
 	function getSetting($contextId, $name) {
-		return $this->getContextSpecificSetting(array($contextId), $name);
-	}
-
-	/**
-	 * Convenience version of the generic updateContextSpecificSetting() method.
-	 * @see Plugin::updateContextSpecificSetting()
-	 * @param $contextId int Context ID
-	 * @param $name string The name of the setting
-	 * @param $value mixed Setting value
-	 * @param $type string optional
-	 */
-	function updateSetting($contextId, $name, $value, $type = null) {
-		$this->updateContextSpecificSetting(array($contextId), $name, $value, $type);
-	}
-	/**
-	 * Retrieve a plugin setting within the given context
-	 *
-	 * @param $context array an array of context ids
-	 * @param $name the setting name
-	 */
-	function getContextSpecificSetting($context, $name) {
 		if (!defined('RUNNING_UPGRADE') && !Config::getVar('general', 'installed')) return null;
 
-		// Check that the context has the correct depth
-		$application = PKPApplication::getApplication();
-		assert(is_array($context) && $application->getContextDepth() == count($context));
-
 		// Construct the argument list and call the plug-in settings DAO
-		$arguments = $context;
-		$arguments[] = $this->getName();
-		$arguments[] = $name;
-		$pluginSettingsDao = DAORegistry::getDAO('PluginSettingsDAO');
+		$arguments = array(
+			$contextId,
+			$this->getName(),
+			$name,
+		);
+
+		$pluginSettingsDao = DAORegistry::getDAO('PluginSettingsDAO'); /* @var $pluginSettingsDao PluginSettingsDAO */
 		return call_user_func_array(array(&$pluginSettingsDao, 'getSetting'), $arguments);
 	}
 
 	/**
 	 * Update a plugin setting within the given context.
 	 *
-	 * @param $context array an array of context ids
-	 * @param $name the setting name
-	 * @param $value mixed
+	 * @param $contextId int Context ID
+	 * @param $name string The name of the setting
+	 * @param $value mixed Setting value
 	 * @param $type string optional
 	 */
-	function updateContextSpecificSetting($context, $name, $value, $type = null) {
-		// Check that the context has the correct depth
-		$application = PKPApplication::getApplication();
-		assert(is_array($context) && $application->getContextDepth() == count($context));
+	function updateSetting($contextId, $name, $value, $type = null) {
 
 		// Construct the argument list and call the plug-in settings DAO
-		$arguments = $context;
-		$arguments[] = $this->getName();
-		$arguments[] = $name;
-		$arguments[] = $value;
-		$arguments[] = $type;
-		$pluginSettingsDao = DAORegistry::getDAO('PluginSettingsDAO');
+		$arguments = array(
+			$contextId,
+			$this->getName(),
+			$name,
+			$value,
+			$type,
+		);
+
+		$pluginSettingsDao = DAORegistry::getDAO('PluginSettingsDAO'); /* @var $pluginSettingsDao PluginSettingsDAO */
 		call_user_func_array(array(&$pluginSettingsDao, 'updateSetting'), $arguments);
 	}
 
@@ -435,56 +506,28 @@ abstract class Plugin {
 	 * NB: These methods may change without notice in the future!
 	 */
 	/**
-	 * Generate the context for this plug-in's generic
-	 * settings. This is an array with the id of the main context
-	 * (e.g. journal, conference or press) as the first entry
-	 * and all remaining entries set to 0. If the calling
-	 * application doesn't support context then the this will
-	 * return an empty array (e.g. harvester).
-	 *
-	 * For site-wide plug-ins the context will be set to 0.
-	 *
-	 * @return array
-	 */
-	function getSettingMainContext() {
-		$application = PKPApplication::getApplication();
-		$contextDepth = $application->getContextDepth();
-
-		$settingContext = array();
-		if ($contextDepth > 0) {
-			if ($this->isSitePlugin()) {
-				$mainContext = null;
-			} else {
-				$request = $application->getRequest();
-				$router = $request->getRouter();
-				// Try to identify the main context (e.g. journal, conference, press),
-				// will be null if none found.
-				$mainContext = $router->getContext($request, 1);
-			}
-
-			// Create the context for the setting if found
-			if ($mainContext) $settingContext[] = $mainContext->getId();
-			$settingContext = array_pad($settingContext, $contextDepth, CONTEXT_ID_NONE);
-		}
-		return $settingContext;
-	}
-
-	/**
 	 * Get the filename for the locale data for this plugin.
 	 *
 	 * @param $locale string
-	 * @return string|array the locale file names (the scalar return value is supported for
-	 *  backwards compatibility only).
+	 * @return array The locale file names.
 	 */
 	function getLocaleFilename($locale) {
 		$masterLocale = MASTER_LOCALE;
-		$baseLocaleFilename = $this->getPluginPath() . "/locale/$locale/locale.xml";
-		$baseMasterLocaleFilename = $this->getPluginPath() . "/locale/$masterLocale/locale.xml";
+		$baseLocaleFilename = $this->getPluginPath() . "/locale/$locale/locale.po";
+		$baseMasterLocaleFilename = $this->getPluginPath() . "/locale/$masterLocale/locale.po";
 		$libPkpFilename = "lib/pkp/$baseLocaleFilename";
 		$masterLibPkpFilename = "lib/pkp/$baseMasterLocaleFilename";
 		$filenames = array();
 		if (file_exists($baseMasterLocaleFilename)) $filenames[] = $baseLocaleFilename;
 		if (file_exists($masterLibPkpFilename)) $filenames[] = $libPkpFilename;
+
+		// This compatibility code for XML file fallback will eventually be removed.
+		// See https://github.com/pkp/pkp-lib/issues/5090.
+		$baseMasterXmlLocaleFilename = preg_replace('/\.po$/', '.xml', $baseMasterLocaleFilename);
+		if (file_exists($baseMasterXmlLocaleFilename)) $filenames[] = preg_replace('/\.po$/', '.xml', $baseLocaleFilename);
+		$masterXmlLibPkpLocaleFilename = preg_replace('/\.po$/', '.xml', $baseMasterLocaleFilename);
+		if (file_exists($masterXmlLibPkpLocaleFilename)) $filenames[] = preg_replace('/\.po$/', '.xml', $libPkpFilename);
+
 		return $filenames;
 	}
 
@@ -527,7 +570,7 @@ abstract class Plugin {
 	 */
 	function installSiteSettings($hookName, $args) {
 		// All contexts are set to zero for site-wide plug-in settings
-		$application = PKPApplication::getApplication();
+		$application = Application::get();
 		$contextDepth = $application->getContextDepth();
 		if ($contextDepth >0) {
 			$arguments = array_fill(0, $contextDepth, 0);
@@ -536,7 +579,7 @@ abstract class Plugin {
 		}
 		$arguments[] = $this->getName();
 		$arguments[] = $this->getInstallSitePluginSettingsFile();
-		$pluginSettingsDao = DAORegistry::getDAO('PluginSettingsDAO');
+		$pluginSettingsDao = DAORegistry::getDAO('PluginSettingsDAO'); /* @var $pluginSettingsDao PluginSettingsDAO */
 		call_user_func_array(array(&$pluginSettingsDao, 'installSettings'), $arguments);
 
 		return false;
@@ -550,7 +593,7 @@ abstract class Plugin {
 	 */
 	function installControlledVocabs($hookName, $args) {
 		// All contexts are set to zero for site-wide plug-in settings
-		$controlledVocabDao = DAORegistry::getDAO('ControlledVocabDAO');
+		$controlledVocabDao = DAORegistry::getDAO('ControlledVocabDAO'); /* @var $controlledVocabDao ControlledVocabDAO */
 		foreach ($this->getInstallControlledVocabFiles() as $file) {
 			$controlledVocabDao->installXML($file);
 		}
@@ -565,33 +608,9 @@ abstract class Plugin {
 	 * @return boolean
 	 */
 	function installContextSpecificSettings($hookName, $args) {
-		// Only applications that have at least one context can
-		// install context specific settings.
-		$application = PKPApplication::getApplication();
-		$contextDepth = $application->getContextDepth();
-		if ($contextDepth > 0) {
-			$context =& $args[1];
-
-			// Make sure that this is really a new context
-			$isNewContext = isset($args[3]) ? $args[3] : true;
-			if (!$isNewContext) return false;
-
-			// Install context specific settings
-			$pluginSettingsDao = DAORegistry::getDAO('PluginSettingsDAO');
-			switch ($contextDepth) {
-				case 1:
-					$pluginSettingsDao->installSettings($context->getId(), $this->getName(), $this->getContextSpecificPluginSettingsFile());
-					break;
-
-				case 2:
-					$pluginSettingsDao->installSettings($context->getId(), 0, $this->getName(), $this->getContextSpecificPluginSettingsFile());
-					break;
-
-				default:
-					// No application can have a context depth > 2
-					assert(false);
-			}
-		}
+		$context = $args[0];
+		$pluginSettingsDao = DAORegistry::getDAO('PluginSettingsDAO'); /* @var $pluginSettingsDao PluginSettingsDAO */
+		$pluginSettingsDao->installSettings($context->getId(), $this->getName(), $this->getContextSpecificPluginSettingsFile());
 		return false;
 	}
 
@@ -606,12 +625,20 @@ abstract class Plugin {
 		$installer =& $args[0]; /* @var $installer Installer */
 		$result =& $args[1];
 
+		// Load email template data as required from the locale files.
 		$emailTemplateDao = DAORegistry::getDAO('EmailTemplateDAO'); /* @var $emailTemplateDao EmailTemplateDAO */
-		$sql = $emailTemplateDao->installEmailTemplates($this->getInstallEmailTemplatesFile(), true, null, true);
+		$emailTemplateLocales = [];
+		foreach ($installer->installedLocales as $locale) {
+			$emailFile = $this->getPluginPath() . "/locale/$locale/emails.po";
+			if (!file_exists($emailFile)) continue;
+			AppLocale::registerLocaleFile($locale, $emailFile);
+			$emailTemplateLocales[] = $locale;
+		}
+		$sql = $emailTemplateDao->installEmailTemplates($this->getInstallEmailTemplatesFile(), $emailTemplateLocales, true, null, true);
 
 		if ($sql === false) {
 			// The template file seems to be invalid.
-			$installer->setError(INSTALLER_ERROR_DB, str_replace('{$file}', $this->getInstallDataFile(), __('installer.installParseEmailTemplatesFileError')));
+			$installer->setError(INSTALLER_ERROR_DB, str_replace('{$file}', $this->getInstallEmailTemplatesFile(), __('installer.installParseEmailTemplatesFileError')));
 			$result = false;
 		} else {
 			// Are there any yet uninstalled email templates?
@@ -626,6 +653,7 @@ abstract class Plugin {
 
 	/**
 	 * Callback used to install email template data.
+	 * @deprecated Email template data should be installed via installEmailTemplates (pkp/pkp-lib#5461)
 	 *
 	 * @param $hookName string
 	 * @param $args array
@@ -635,11 +663,11 @@ abstract class Plugin {
 		$installer =& $args[0];
 		$result =& $args[1];
 
-		$emailTemplateDao = DAORegistry::getDAO('EmailTemplateDAO');
+		$emailTemplateDao = DAORegistry::getDAO('EmailTemplateDAO'); /* @var $emailTemplateDao EmailTemplateDAO */
 		foreach ($installer->installedLocales as $locale) {
 			$filename = str_replace('{$installedLocale}', $locale, $this->getInstallEmailTemplateDataFile());
 			if (!file_exists($filename)) continue;
-			$sql = $emailTemplateDao->installEmailTemplateData($filename, true);
+			$sql = $emailTemplateDao->installEmailTemplateData($filename, $locale, true);
 			if ($sql) {
 				$result = $installer->executeSQL($sql);
 			} else {
@@ -660,8 +688,17 @@ abstract class Plugin {
 	function installLocale($hookName, $args) {
 		$locale =& $args[0];
 		$filename = str_replace('{$installedLocale}', $locale, $this->getInstallEmailTemplateDataFile());
-		$emailTemplateDao = DAORegistry::getDAO('EmailTemplateDAO');
-		$emailTemplateDao->installEmailTemplateData($filename);
+		$emailTemplateDao = DAORegistry::getDAO('EmailTemplateDAO'); /* @var $emailTemplateDao EmailTemplateDAO */
+
+		// Since pkp/pkp-lib#5461, there are two ways to specify localized email data in plugins.
+		// Install locale data specified in the old form. (Deprecated!)
+		if ($this->getInstallEmailTemplateDataFile()) $emailTemplateDao->installEmailTemplateData($filename, $locale);
+
+		// Install locale data specified in the new form.
+		if (file_exists($emailFile = $this->getPluginPath() . "/locale/$locale/emails.po")) {
+			AppLocale::registerLocaleFile($locale, $emailFile);
+			$emailTemplateDao->installEmailTemplateLocaleData($this->getInstallEmailTemplatesFile(), [$locale]);
+		}
 		return false;
 	}
 
@@ -709,8 +746,6 @@ abstract class Plugin {
 		$result =& $args[1];
 
 		$schemaXMLParser = new adoSchema($installer->dbconn);
-		$dict =& $schemaXMLParser->dict;
-		$dict->SetCharSet($installer->dbconn->charSet);
 		$sql = $schemaXMLParser->parseSchema($this->getInstallSchemaFile());
 		if ($sql) {
 			$result = $installer->executeSQL($sql);
@@ -728,7 +763,7 @@ abstract class Plugin {
 	 * @param $smarty Smarty
 	 * @return string
 	 */
-	function smartyPluginUrl($params, &$smarty) {
+	function smartyPluginUrl($params, $smarty) {
 		$path = array($this->getCategory(), $this->getName());
 		if (is_array($params['path'])) {
 			$params['path'] = array_merge($path, $params['path']);
@@ -746,7 +781,7 @@ abstract class Plugin {
 	 * @return Version
 	 */
 	function getCurrentVersion() {
-		$versionDao = DAORegistry::getDAO('VersionDAO');
+		$versionDao = DAORegistry::getDAO('VersionDAO'); /* @var $versionDao VersionDAO */
 		$pluginPath = $this->getPluginPath();
 		$product = basename($pluginPath);
 		$category = basename(dirname($pluginPath));
@@ -774,30 +809,36 @@ abstract class Plugin {
 	 * Private helper methods
 	 */
 	/**
-	 * The application specific context installation hook.
-	 *
-	 * @return string
+	 * Get a list of link actions for plugin management.
+	 * @param request PKPRequest
+	 * @param $actionArgs array The list of action args to be included in request URLs.
+	 * @return array List of LinkActions
 	 */
-	function _getContextSpecificInstallationHook() {
-		$application = PKPApplication::getApplication();
-
-		if ($application->getContextDepth() == 0) return null;
-
-		$contextList = $application->getContextList();
-		return ucfirst(array_shift($contextList)).'SiteSettingsForm::execute';
+	function getActions($request, $actionArgs) {
+		return array();
 	}
 
 	/**
-	 * Get a link action to be used in plugin's grid row action for
-	 * the passed verb.
-	 *
-	 * @param $request Request
-	 * @param $verb array The verb name and locale key.
-	 * @return LinkAction or null
+	 * Determine whether the plugin can be enabled.
+	 * @return boolean
 	 */
-	function getManagementVerbLinkAction($request, $verb) {
-		return null;
+	function getCanEnable() {
+		return false;
+	}
+
+	/**
+	 * Determine whether the plugin can be disabled.
+	 * @return boolean
+	 */
+	function getCanDisable() {
+		return false;
+	}
+
+	/**
+	 * Determine whether the plugin is enabled.
+	 * @return boolean
+	 */
+	function getEnabled() {
+		return true;
 	}
 }
-
-?>

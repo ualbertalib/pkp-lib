@@ -3,9 +3,9 @@
 /**
  * @file classes/submission/SubmissionAgencyEntryDAO.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubmissionAgencyEntryDAO
  * @ingroup submission
@@ -18,12 +18,6 @@ import('lib.pkp.classes.submission.SubmissionAgency');
 import('lib.pkp.classes.controlledVocab.ControlledVocabEntryDAO');
 
 class SubmissionAgencyEntryDAO extends ControlledVocabEntryDAO {
-	/**
-	 * Constructor
-	 */
-	function SubmissionAgencyEntryDAO() {
-		parent::ControlledVocabEntryDAO();
-	}
 
 	/**
 	 * Construct a new data object corresponding to this DAO.
@@ -37,9 +31,11 @@ class SubmissionAgencyEntryDAO extends ControlledVocabEntryDAO {
 	 * Retrieve an iterator of controlled vocabulary entries matching a
 	 * particular controlled vocabulary ID.
 	 * @param $controlledVocabId int
+	 * @param $filter null (Not yet supported)
 	 * @return object DAOResultFactory containing matching CVE objects
 	 */
-	function getByControlledVocabId($controlledVocabId, $rangeInfo = null) {
+	function getByControlledVocabId($controlledVocabId, $rangeInfo = null, $filter = null) {
+		assert($filter == null); // Parent class supports this, but this class does not
 		$result = $this->retrieveRange(
 			'SELECT cve.* FROM controlled_vocab_entries cve WHERE cve.controlled_vocab_id = ? ORDER BY seq',
 			array((int) $controlledVocabId),
@@ -49,4 +45,4 @@ class SubmissionAgencyEntryDAO extends ControlledVocabEntryDAO {
 	}
 }
 
-?>
+

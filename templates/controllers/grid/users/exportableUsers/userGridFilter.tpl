@@ -1,9 +1,9 @@
 {**
- * controllers/grid/settings/user/userGridFilter.tpl
+ * templates/controllers/grid/settings/user/userGridFilter.tpl
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * Filter template for user grid.
  *}
@@ -15,14 +15,13 @@
 		{rdelim}
 	);
 </script>
-<form class="pkp_form" id="userSearchForm" action="{url router=$smarty.const.ROUTE_COMPONENT component="grid.settings.user.UserGridHandler" op="fetchGrid"}" method="post">
+<form class="pkp_form filter" id="userSearchForm" action="{url router=$smarty.const.ROUTE_COMPONENT component="grid.settings.user.UserGridHandler" op="fetchGrid"}" method="post">
+	{csrf}
 	{fbvFormArea id="userSearchFormArea"}
-		{fbvFormSection title="common.search" required="true" for="search"}
-			{fbvElement type="text" name="search" id="search" value=$filterSelectionData.search size=$fbvStyles.size.LARGE inline="true"}
+		{fbvFormSection title="common.search" for="search"}
+			{fbvElement type="search" name="search" id="search" value=$filterSelectionData.search size=$fbvStyles.size.LARGE inline="true"}
 			{fbvElement type="select" name="userGroup" id="userGroup" from=$filterData.userGroupOptions selected=$filterSelectionData.userGroup size=$fbvStyles.size.SMALL translate=false inline="true"}
 		{/fbvFormSection}
 		{fbvFormButtons hideCancel=true submitText="common.search"}
 	{/fbvFormArea}
 </form>
-<p><span class="formRequired">{translate key="common.requiredField"}</span></p>
-<div class="pkp_helpers_clear">&nbsp;</div>

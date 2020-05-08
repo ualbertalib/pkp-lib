@@ -3,9 +3,9 @@
 /**
  * @file classes/core/PKPRouter.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPRouter
  * @see PKPPageRouter
@@ -74,11 +74,13 @@ class PKPRouter {
 	var $_contextPaths = array();
 	/** @var integer contexts */
 	var $_contexts = array();
+	/** @var PKPHandler Handler class */
+	var $_handler;
 
 	/**
 	 * Constructor
 	 */
-	function PKPRouter() {
+	function __construct() {
 	}
 
 	/**
@@ -94,8 +96,8 @@ class PKPRouter {
 	 * set the application
 	 * @param $application PKPApplication
 	 */
-	function setApplication(&$application) {
-		$this->_application =& $application;
+	function setApplication($application) {
+		$this->_application = $application;
 
 		// Retrieve context depth and list
 		$this->_contextDepth = $application->getContextDepth();
@@ -118,6 +120,22 @@ class PKPRouter {
 	 */
 	function setDispatcher($dispatcher) {
 		$this->_dispatcher = $dispatcher;
+	}
+
+	/**
+	 * Set the handler object for later retrieval.
+	 * @param $handler PKPHandler
+	 */
+	function setHandler($handler) {
+		$this->_handler = $handler;
+	}
+
+	/**
+	 * Get the handler object.
+	 * @return PKPHandler
+	 */
+	function getHandler() {
+		return $this->_handler;
 	}
 
 	/**
@@ -202,16 +220,17 @@ class PKPRouter {
 	 * A Generic call to a context defining object (e.g. a Press, a Conference, or a SchedConf)
 	 * @param $request PKPRequest the request to be routed
 	 * @param $requestedContextLevel int (optional) the desired context level
+	 * @param $forceReload boolean (optional) Reset a context even if it's already been loaded
 	 * @return object
 	 */
-	function &getContext($request, $requestedContextLevel = 1) {
+	function &getContext($request, $requestedContextLevel = 1, $forceReload = false) {
 		// Handle context depth 0
 		if (!$this->_contextDepth) {
 			$nullVar = null;
 			return $nullVar;
 		}
 
-		if (!isset($this->_contexts[$requestedContextLevel])) {
+		if ($forceReload || !isset($this->_contexts[$requestedContextLevel])) {
 			// Retrieve the requested context path (this validates the context level and the path)
 			$path = $this->getRequestedContextPath($request, $requestedContextLevel);
 
@@ -385,6 +404,10 @@ class PKPRouter {
 
 		// Return the result of the operation to the client.
 		if (is_string($result)) echo $result;
+		elseif (is_a($result, 'JSONMessage')) {
+			header('Content-Type: application/json');
+			echo $result->getString();
+		}
 	}
 
 	/**
@@ -604,5 +627,3 @@ class PKPRouter {
 		return $this->_flippedContextList[$contextName] + 1;
 	}
 }
-
-?>

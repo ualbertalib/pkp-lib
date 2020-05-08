@@ -3,9 +3,9 @@
 /**
  * @file classes/validation/ValidatorControlledVocab.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2000-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ValidatorControlledVocab
  * @ingroup validation
@@ -26,9 +26,8 @@ class ValidatorControlledVocab extends Validator {
 	 * @param $assocType int
 	 * @param $assocId int
 	 */
-	function ValidatorControlledVocab($symbolic, $assocType, $assocId) {
-		parent::Validator();
-		$controlledVocabDao = DAORegistry::getDAO('ControlledVocabDAO');
+	function __construct($symbolic, $assocType, $assocId) {
+		$controlledVocabDao = DAORegistry::getDAO('ControlledVocabDAO'); /* @var $controlledVocabDao ControlledVocabDAO */
 		$controlledVocab = $controlledVocabDao->getBySymbolic($symbolic, $assocType, $assocId);
 		if ($controlledVocab) $this->_acceptedValues = array_keys($controlledVocab->enumerate());
 		else $this->_acceptedValues = array();
@@ -48,5 +47,3 @@ class ValidatorControlledVocab extends Validator {
 		return in_array($value, $this->_acceptedValues);
 	}
 }
-
-?>

@@ -3,9 +3,9 @@
 /**
  * @file controllers/modals/editorDecision/form/EditorDecisionForm.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class EditorDecisionForm
  * @ingroup controllers_modals_editorDecision_form
@@ -39,8 +39,8 @@ class EditorDecisionForm extends Form {
 	 * @param $template string The template to display
 	 * @param $reviewRound ReviewRound
 	 */
-	function EditorDecisionForm($submission, $decision, $stageId, $template, $reviewRound = null) {
-		parent::Form($template);
+	function __construct($submission, $decision, $stageId, $template, $reviewRound = null) {
+		parent::__construct($template);
 		$this->_submission = $submission;
 		$this->_stageId = $stageId;
 		$this->_reviewRound = $reviewRound;
@@ -48,6 +48,7 @@ class EditorDecisionForm extends Form {
 
 		// Validation checks for this form
 		$this->addCheck(new FormValidatorPost($this));
+		$this->addCheck(new FormValidatorCSRF($this));
 	}
 
 	//
@@ -98,9 +99,9 @@ class EditorDecisionForm extends Form {
 
 
 	/**
-	 * @see Form::fetch()
+	 * @copydoc Form::fetch()
 	 */
-	function fetch($request) {
+	function fetch($request, $template = null, $display = false) {
 		$submission = $this->getSubmission();
 
 		$reviewRound = $this->getReviewRound();
@@ -110,16 +111,15 @@ class EditorDecisionForm extends Form {
 
 		$this->setData('stageId', $this->getStageId());
 
-		// Set the submission.
 		$templateMgr = TemplateManager::getManager($request);
-		$templateMgr->assign('submissionId', $submission->getId());
-		$templateMgr->assign('submission', $submission);
+		$stageDecisions = (new EditorDecisionActionsManager())->getStageDecisions($request->getContext(), $this->getStageId());
+		$templateMgr->assign(array(
+			'decisionData' => $stageDecisions[$this->getDecision()],
+			'submissionId' => $submission->getId(),
+			'submission' => $submission,
+		));
 
-		// Set the decision related data.
-		$stageDecisions = EditorDecisionActionsManager::getStageDecisions($this->getStageId());
-		$templateMgr->assign('decisionData', $stageDecisions[$this->getDecision()]);
-
-		return parent::fetch($request);
+		return parent::fetch($request, $template, $display);
 	}
 
 
@@ -152,7 +152,7 @@ class EditorDecisionForm extends Form {
 		$reviewRound = $reviewRoundDao->build($submission->getId(), $stageId, $newRound, $status);
 
 		// Check for a notification already in place for the current review round.
-		$notificationDao = DAORegistry::getDAO('NotificationDAO');
+		$notificationDao = DAORegistry::getDAO('NotificationDAO'); /* @var $notificationDao NotificationDAO */
 		$notificationFactory = $notificationDao->getByAssoc(
 			ASSOC_TYPE_REVIEW_ROUND,
 			$reviewRound->getId(),
@@ -199,4 +199,4 @@ class EditorDecisionForm extends Form {
 	}
 }
 
-?>
+

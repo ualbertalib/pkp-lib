@@ -3,9 +3,9 @@
 /**
  * @file classes/install/form/InstallForm.inc.php
  *
- * Copyright (c) 2014 Simon Fraser University Library
- * Copyright (c) 2003-2014 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class InstallForm
  * @ingroup install
@@ -41,8 +41,8 @@ class InstallForm extends MaintenanceForm {
 	 * Constructor.
 	 * @param $request PKPRequest
 	 */
-	function InstallForm($request) {
-		parent::MaintenanceForm($request, 'install/install.tpl');
+	function __construct($request) {
+		parent::__construct($request, 'install/install.tpl');
 
 		// FIXME Move the below options to an external configuration file?
 		$this->supportedLocales = AppLocale::getAllLocales();
@@ -66,17 +66,11 @@ class InstallForm extends MaintenanceForm {
 			'utf8' => 'Unicode (UTF-8)'
 		);
 
-		$this->supportedEncryptionAlgorithms = array (
-			'md5' => 'MD5'
-		);
-		if (function_exists('sha1')) {
-			$this->supportedEncryptionAlgorithms['sha1'] = 'SHA1';
-		}
-
 		$this->supportedDatabaseDrivers = array (
 			// <adodb-driver> => array(<php-module>, <name>)
 			'mysql' => array('mysql', 'MySQL'),
-			'postgres' => array('pgsql', 'PostgreSQL'),
+			'mysqli' => array('mysqli', 'MySQLi'),
+			'postgres9' => array('pgsql', 'PostgreSQL'),
 			'oracle' => array('oci8', 'Oracle'),
 			'mssql' => array('mssql', 'MS SQL Server'),
 			'fbsql' => array('fbsql', 'FrontBase'),
@@ -88,46 +82,49 @@ class InstallForm extends MaintenanceForm {
 		);
 
 		// Validation checks for this form
+		$form = $this;
 		$this->addCheck(new FormValidatorInSet($this, 'locale', 'required', 'installer.form.localeRequired', array_keys($this->supportedLocales)));
 		$this->addCheck(new FormValidatorCustom($this, 'locale', 'required', 'installer.form.localeRequired', array('AppLocale', 'isLocaleValid')));
 		$this->addCheck(new FormValidatorInSet($this, 'clientCharset', 'required', 'installer.form.clientCharsetRequired', array_keys($this->supportedClientCharsets)));
 		$this->addCheck(new FormValidator($this, 'filesDir', 'required', 'installer.form.filesDirRequired'));
-		$this->addCheck(new FormValidatorInSet($this, 'encryption', 'required', 'installer.form.encryptionRequired', array_keys($this->supportedEncryptionAlgorithms)));
 		$this->addCheck(new FormValidator($this, 'adminUsername', 'required', 'installer.form.usernameRequired'));
-		$this->addCheck(new FormValidatorAlphaNum($this, 'adminUsername', 'required', 'installer.form.usernameAlphaNumeric'));
+		$this->addCheck(new FormValidatorUsername($this, 'adminUsername', 'required', 'installer.form.usernameAlphaNumeric'));
 		$this->addCheck(new FormValidator($this, 'adminPassword', 'required', 'installer.form.passwordRequired'));
-		$this->addCheck(new FormValidatorCustom($this, 'adminPassword', 'required', 'installer.form.passwordsDoNotMatch', create_function('$password,$form', 'return $password == $form->getData(\'adminPassword2\');'), array($this)));
+		$this->addCheck(new FormValidatorCustom($this, 'adminPassword', 'required', 'installer.form.passwordsDoNotMatch', function($password) use ($form) {
+			return $password == $form->getData('adminPassword2');
+		}));
 		$this->addCheck(new FormValidatorEmail($this, 'adminEmail', 'required', 'installer.form.emailRequired'));
 		$this->addCheck(new FormValidatorInSet($this, 'databaseDriver', 'required', 'installer.form.databaseDriverRequired', array_keys($this->supportedDatabaseDrivers)));
 		$this->addCheck(new FormValidator($this, 'databaseName', 'required', 'installer.form.databaseNameRequired'));
 	}
 
 	/**
-	 * Display the form.
+	 * @copydoc Form::display
 	 */
-	function display() {
-		$templateMgr = TemplateManager::getManager($this->_request);
-		$templateMgr->assign('localeOptions', $this->supportedLocales);
-		$templateMgr->assign('localesComplete', $this->localesComplete);
-		$templateMgr->assign('clientCharsetOptions', $this->supportedClientCharsets);
-		$templateMgr->assign('connectionCharsetOptions', $this->supportedConnectionCharsets);
-		$templateMgr->assign('databaseCharsetOptions', $this->supportedDatabaseCharsets);
-		$templateMgr->assign('encryptionOptions', $this->supportedEncryptionAlgorithms);
-		$templateMgr->assign('allowFileUploads', get_cfg_var('file_uploads') ? __('common.yes') : __('common.no'));
-		$templateMgr->assign('maxFileUploadSize', get_cfg_var('upload_max_filesize'));
-		$templateMgr->assign('databaseDriverOptions', $this->checkDBDrivers());
-		$templateMgr->assign('supportsMBString', String::hasMBString() ? __('common.yes') : __('common.no'));
-		$templateMgr->assign('phpIsSupportedVersion', version_compare(PHP_REQUIRED_VERSION, PHP_VERSION) != 1);
-		$templateMgr->assign('xslEnabled', Core::checkGeneralPHPModule('xsl'));
-		$templateMgr->assign('xslRequired', REQUIRES_XSL);
-		$templateMgr->assign('phpRequiredVersion', PHP_REQUIRED_VERSION);
-		$templateMgr->assign('phpVersion', PHP_VERSION);
+	function display($request = null, $template = null) {
+		import('lib.pkp.classes.xslt.XSLTransformer');
+		$templateMgr = TemplateManager::getManager($request);
+		$templateMgr->assign(array(
+			'localeOptions' => $this->supportedLocales,
+			'localesComplete' => $this->localesComplete,
+			'clientCharsetOptions' => $this->supportedClientCharsets,
+			'connectionCharsetOptions' => $this->supportedConnectionCharsets,
+			'allowFileUploads' => get_cfg_var('file_uploads') ? __('common.yes') : __('common.no'),
+			'maxFileUploadSize' => get_cfg_var('upload_max_filesize'),
+			'databaseDriverOptions' => $this->checkDBDrivers(),
+			'supportsMBString' => PKPString::hasMBString() ? __('common.yes') : __('common.no'),
+			'phpIsSupportedVersion' => version_compare(PHP_REQUIRED_VERSION, PHP_VERSION) != 1,
+			'xslEnabled' => XSLTransformer::checkSupport(),
+			'xslRequired' => REQUIRES_XSL,
+			'phpRequiredVersion' => PHP_REQUIRED_VERSION,
+			'phpVersion' => PHP_VERSION,
+		));
 
-		parent::display();
+		parent::display($request, $template);
 	}
 
 	/**
-	 * Initialize form data.
+	 * @copydoc MaintenanceForm::initData
 	 */
 	function initData() {
 		$docRoot = dirname($_SERVER['DOCUMENT_ROOT']);
@@ -143,9 +140,7 @@ class InstallForm extends MaintenanceForm {
 			'locale' => AppLocale::getLocale(),
 			'additionalLocales' => array(),
 			'clientCharset' => 'utf-8',
-			'connectionCharset' => '',
-			'databaseCharset' => '',
-			'encryption' => function_exists('sha1')?'sha1':'md5',
+			'connectionCharset' => 'utf8',
 			'filesDir' =>  $docRoot . 'files',
 			'databaseDriver' => 'mysql',
 			'databaseHost' => 'localhost',
@@ -154,6 +149,7 @@ class InstallForm extends MaintenanceForm {
 			'databaseName' => Application::getName(),
 			'createDatabase' => 1,
 			'oaiRepositoryId' => Application::getName() . '.' . $this->_request->getServerHost(),
+			'enableBeacon' => true,
 		);
 	}
 
@@ -166,9 +162,7 @@ class InstallForm extends MaintenanceForm {
 			'additionalLocales',
 			'clientCharset',
 			'connectionCharset',
-			'databaseCharset',
 			'filesDir',
-			'encryption',
 			'adminUsername',
 			'adminPassword',
 			'adminPassword2',
@@ -179,7 +173,8 @@ class InstallForm extends MaintenanceForm {
 			'databasePassword',
 			'databaseName',
 			'createDatabase',
-			'oaiRepositoryId'
+			'oaiRepositoryId',
+			'enableBeacon',
 		));
 
 		if ($this->getData('additionalLocales') == null || !is_array($this->getData('additionalLocales'))) {
@@ -189,8 +184,12 @@ class InstallForm extends MaintenanceForm {
 
 	/**
 	 * Perform installation.
+	 * @param ...$functionArgs Function arguments
+	 * @return mixed
 	 */
-	function execute() {
+	function execute(...$functionArgs) {
+		parent::execute(...$functionArgs);
+
 		$templateMgr = TemplateManager::getManager($this->_request);
 		$installer = new Install($this->_data);
 
@@ -234,4 +233,4 @@ class InstallForm extends MaintenanceForm {
 	}
 }
 
-?>
+
