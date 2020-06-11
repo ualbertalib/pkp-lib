@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2019-11-19T10:50:06+00:00\n"
-"PO-Revision-Date: 2020-04-21 15:38+0000\n"
+"PO-Revision-Date: 2020-06-04 18:39+0000\n"
 "Last-Translator: Viveka Svensson <viveka.svensson@lnu.se>\n"
 "Language-Team: Swedish <http://translate.pkp.sfu.ca/projects/pkp-lib/manager/"
 "sv/>\n"
@@ -1484,17 +1484,8 @@ msgstr "Länk till sidan som visar er integritetspolicy."
 msgid "manager.navigationMenus.privacyStatement.conditionalWarning"
 msgstr "Den här länken visas enbart om det finns en integritetspolicy inmatad under Inställningar > Arbetsflöde > Bidrag."
 
-msgid "manager.publication.reviewSetup.success"
-msgstr "Inställningarna för granskning har uppdaterats."
-
-msgid "manager.publication.reviewerGuidance.success"
-msgstr "Guide för granskare har uppdaterats."
-
 msgid "manager.publication.reviewerGuidance"
 msgstr "Guide för granskare"
-
-msgid "manager.publication.emailSetup.success"
-msgstr "E-postinställningarna har uppdaterats."
 
 msgid "manager.setup.metadata.coverage"
 msgstr "Täckning"
@@ -1617,6 +1608,8 @@ msgstr "Lägg till kategori"
 
 msgid "manager.setup.metadata.agencies.description"
 msgstr ""
+"Beskriver vilken forskningsfinansiär eller annat institutionellt stöd som "
+"har gjort forskningen möjlig."
 
 msgid "manager.setup.metadata.coverage.enable"
 msgstr "Gör det möjligt att lägga in metadata om täckning"
@@ -1749,12 +1742,11 @@ msgstr ""
 
 msgid "manager.setup.metadata.agencies.require"
 msgstr ""
-"Kräv att författaren anger någon forskningsfinansiär innan bidraget "
-"accepteras."
+"Kräv att författaren anger forskningsfinansiär(er) innan bidraget accepteras."
 
 msgid "manager.setup.metadata.agencies.request"
 msgstr ""
-"Be författaren att ange någon forskningsfinansiär vid inskickandet av bidrag."
+"Be författaren att ange forskningsfinansiär(er) vid inskickandet av bidrag."
 
 msgid "manager.setup.metadata.agencies.noRequest"
 msgstr ""
@@ -1783,14 +1775,12 @@ msgstr ""
 "universitetens fakulteter och lärda sällskap."
 
 msgid "manager.setup.metadata.type.noRequest"
-msgstr ""
-"Kräv inte metadata om materialtyper av författaren vid inskickande av bidrag."
+msgstr "Kräv inte metadatatyper av författaren vid inskickande av bidrag."
 
 msgid "manager.setup.metadata.type.description"
 msgstr ""
-"Materialtypen som beskriver det huvudsakliga innehållet i bidraget. "
-"Vanligtvis \"Text\", men kan också vara \"Dataset\", \"Bild\" eller någon av "
-"<a target=\"_blank\" href=\"http://dublincore.org/documents/"
+"Bidragets typ. Vanligtvis \"Text\", men kan också vara \"Dataset\", \"Bild\" "
+"eller någon av <a target=\"_blank\" href=\"http://dublincore.org/documents/"
 "dcmi-type-vocabulary/#section-7-dcmi-type-vocabulary\">Dublin Core types</a>."
 
 msgid "manager.setup.metadata.subjects.require"
@@ -1807,7 +1797,7 @@ msgstr "Gör det möjligt att lägga in metadata för ämne"
 
 msgid "manager.setup.metadata.subjects.description"
 msgstr ""
-"Ämnen kommer att bli nyckelord, nyckelfraser eller klassifikationskoder som "
+"Ämnesmetadata är nyckelord, nyckelfraser eller klassifikationskoder som "
 "beskriver innehållet i bidraget."
 
 msgid "manager.setup.metadata.source.description"
@@ -1843,7 +1833,7 @@ msgid "manager.setup.metadata.languages.noRequest"
 msgstr "Kräv inte att författaren ska ange språk vid inskickandet av bidrag."
 
 msgid "manager.setup.metadata.languages.enable"
-msgstr "Gör det möjligt att lägga in språkmetadata"
+msgstr "Gör det möjligt att lägga till metadata om språk"
 
 msgid "manager.setup.metadata.languages.description"
 msgstr ""
@@ -1885,9 +1875,6 @@ msgstr ""
 "datumintervall), eller jurisdiktion (såsom ett land eller administrativ "
 "enhet)."
 
-msgid "manager.setup.metadata.success"
-msgstr "Bidragets metadata har uppdaterats."
-
 msgid "settings.roles.permitMetadataEdit"
 msgstr "Tillåt redigering av bidragets metadata."
 
@@ -1906,14 +1893,8 @@ msgstr "Licensvillkor"
 msgid "manager.distribution.license.other"
 msgstr "Annan licens-URL"
 
-msgid "manager.distribution.license.success"
-msgstr "Licensdetaljerna har uppdaterats. "
-
 msgid "manager.setup.theme.notFound"
 msgstr "Det tema som du valde är inte installerat eller aktiverat."
-
-msgid "manager.setup.theme.success"
-msgstr "Temat har uppdaterats. <a href=\"{$url}\" target=\"_blank\">Visa nu</a>"
 
 msgid "manager.setup.reviewOptions.showBlindReviewLink"
 msgstr ""
@@ -1941,12 +1922,6 @@ msgstr "Filen som du laddade upp kan inte hittas. Försök att ladda upp igen."
 msgid "manager.setup.checklist"
 msgstr "Checklista"
 
-msgid "manager.setup.authorGuidelines.success"
-msgstr "Riktlinjerna för författare har uppdaterats."
-
-msgid "manager.setup.appearance.success"
-msgstr "Inställningarna för utseendet har uppdaterats."
-
 msgid "manager.emails.subjectWithValue"
 msgstr "Ämne: {$subject}"
 
@@ -1968,14 +1943,8 @@ msgstr "Du måste ange ett ID när en e-postmall läggs till."
 msgid "manager.emails.emailKey.description"
 msgstr "E-postnyckeln kan bara innehålla bokstäver, nummer eller understreck."
 
-msgid "manager.emails.editEmail.success"
-msgstr "E-postmallen har ändrats."
-
 msgid "manager.emails.customTemplate"
 msgstr "Specialmall"
-
-msgid "manager.emails.addEmail.success"
-msgstr "E-postmallen är tillagd."
 
 msgid "manager.emails.addEmail"
 msgstr "Lägg till mall"
@@ -1991,10 +1960,10 @@ msgstr "Bidraget är refuserat av redaktionen"
 
 msgid "manager.setup.metadata.type.request"
 msgstr ""
-"Be författaren att lägga in en URL för källan vid inskickandet av bidrag."
+"Be författaren att ange metadata om bidragets typ vid inskickandet av bidrag."
 
 msgid "manager.setup.metadata.type.enable"
-msgstr "Gör det möjligt att ange metadata för materialtyper"
+msgstr "Aktivera metadata om typ"
 
 msgid "manager.setup.metadata.source.require"
 msgstr ""
@@ -2016,8 +1985,18 @@ msgstr ""
 "Bidragets upphovsrättsvillkor som t ex Intellectual Property Rights (IPR), "
 "Copyright, och andra olika upphovsrättsvillkor."
 
-msgid "manager.setup.userAccess.success"
-msgstr "Detaljerna för användarnas tillgång till pressen har uppdaterats."
+msgid "stats.dateRange.thisYear"
+msgstr "Nuvarande år"
 
-msgid "manager.setup.contact.success"
-msgstr "Kontaktuppgifterna för den här pressen har uppdaterats."
+msgid "stats.countWithYearlyAverage"
+msgstr "{$count} ({$average}/år)"
+
+msgid "manager.representative.inUse"
+msgstr ""
+"Du kan inte ta bort representanten eftersom hen har lagts till i "
+"marknadsmetadatan för ett eller flera av bidragets publiceringsformat."
+
+msgid "manager.setup.metadata.type.require"
+msgstr ""
+"Kräv att författaren ska ange metadata om bidragets typ innan bidraget "
+"accepteras."

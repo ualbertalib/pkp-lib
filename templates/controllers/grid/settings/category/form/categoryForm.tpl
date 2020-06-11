@@ -74,6 +74,14 @@
 			{/fbvFormSection}
 		{/if}
 
+		{if count($availableSubeditors)}
+			{fbvFormSection list=true title="submissionGroup.assignedSubEditors"}
+				{foreach from=$availableSubeditors item="subEditor" key="id"}
+					{fbvElement type="checkbox" id="subEditors[]" value=$id checked=in_array($id, $assignedToCategory) label=$subEditor translate=false}
+				{/foreach}
+			{/fbvFormSection}
+		{/if}
+
 		<p><span class="formRequired">{translate key="common.requiredField"}</span></p>
 		{fbvFormButtons}
 

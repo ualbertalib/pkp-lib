@@ -3,10 +3,10 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2019-11-19T10:49:42+00:00\n"
-"PO-Revision-Date: 2020-02-10 18:31+0000\n"
+"PO-Revision-Date: 2020-06-04 18:39+0000\n"
 "Last-Translator: Niels Erik Frederiksen <nef@kb.dk>\n"
 "Language-Team: Danish <http://translate.pkp.sfu.ca/projects/pkp-lib/common/"
-"da/>\n"
+"da_DK/>\n"
 "Language: da_DK\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -413,6 +413,9 @@ msgstr "Type"
 msgid "common.uninitiated"
 msgstr "Ikke startet"
 
+msgid "common.unknownError"
+msgstr "En uventet fejl opstod. Genindlæs siden og prøv igen."
+
 msgid "common.untitled"
 msgstr "Ikke-navngivet"
 
@@ -700,9 +703,6 @@ msgstr "Indekstermer"
 
 msgid "search.matchAll"
 msgstr "Find alle kategorier"
-
-msgid "search.noKeywordError"
-msgstr "Du skal angive mindst ét søgeord."
 
 msgid "search.noResults"
 msgstr "Ingen resultater"
@@ -1394,12 +1394,6 @@ msgstr "Meddelelsestype redigeret."
 msgid "notification.removedAnnouncementType"
 msgstr "Meddelelsestype fjernet."
 
-msgid "notification.addedAnnouncement"
-msgstr "Meddelelse tilføjet."
-
-msgid "notification.editedAnnouncement"
-msgstr "Meddelelse redigeret."
-
 msgid "notification.removedAnnouncement"
 msgstr "Meddelelse fjernet."
 
@@ -1843,6 +1837,7 @@ msgstr "Der kan ikke foretages ændringer af denne deltager"
 msgid "stageParticipants.selectedUser"
 msgstr "Deltager"
 
+#, fuzzy
 msgid "stageParticipants.canChangeMetadata"
 msgstr "Tillad denne person at redigere publikationsoplysningerne."
 
@@ -1865,14 +1860,6 @@ msgid "form.csrfInvalid"
 msgstr ""
 "Formularen kunne ikke indsendes. Du er muligvis blevet logget ud. Genindlæs "
 "siden , og prøv igen."
-
-msgid "form.missingRequired"
-msgstr "Dette felt er påkrævet."
-
-msgid "form.errorUnknown"
-msgstr ""
-"Der opstod en uventet fejl. Du er muligvis blevet logget ud. Genindlæs "
-"siden, og prøv igen."
 
 msgid "form.errors"
 msgstr ""
@@ -1972,3 +1959,12 @@ msgstr ""
 
 msgid "common.override"
 msgstr "Underkend"
+
+msgid "navigation.skip.description"
+msgstr "Gå til indholdslinks"
+
+msgid "common.moreThanOnly"
+msgstr "Mere end"
+
+msgid "common.lessThanOnly"
+msgstr "Mindre end"

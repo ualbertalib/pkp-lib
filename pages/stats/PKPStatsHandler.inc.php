@@ -17,6 +17,10 @@ import('classes.handler.Handler');
 import('classes.statistics.StatisticsHelper');
 
 class PKPStatsHandler extends Handler {
+
+	/** @copydoc PKPHandler::_isBackendPage */
+	var $_isBackendPage = true;
+
 	/**
 	 * Constructor.
 	 */
@@ -24,7 +28,7 @@ class PKPStatsHandler extends Handler {
 		parent::__construct();
 		$this->addRoleAssignment(
 			[ROLE_ID_SITE_ADMIN, ROLE_ID_MANAGER],
-			array('editorial', 'publications', 'users')
+			['editorial', 'publications', 'users']
 		);
 	}
 
@@ -132,12 +136,12 @@ class PKPStatsHandler extends Handler {
 		foreach (Application::get()->getApplicationStages() as $stageId) {
 			$activeByStage[] = [
 				'name' => Application::get()->getWorkflowStageName($stageId),
-				'count' => Services::get('editorialStats')->countActiveByStages($stageId),
+				'count' => Services::get('editorialStats')->countActiveByStages($stageId, $args),
 				'color' => Application::get()->getWorkflowStageColor($stageId),
 			];
 		}
 
-		$statsComponent = new \PKP\components\PKPStatsEditorialContainer(
+		$statsComponent = new \PKP\components\PKPStatsEditorialPage(
 			$dispatcher->url($request, ROUTE_API, $context->getPath(), 'stats/editorial'),
 			[
 				'activeByStage' => $activeByStage,
@@ -188,7 +192,15 @@ class PKPStatsHandler extends Handler {
 			]
 		);
 
-		$templateMgr->assign('statsComponent', $statsComponent);
+		$templateMgr->setLocaleKeys([
+			'stats.descriptionForStat',
+			'stats.countWithYearlyAverage',
+		]);
+		$templateMgr->setState($statsComponent->getConfig());
+		$templateMgr->assign([
+			'pageComponent' => 'StatsEditorialPage',
+			'pageTitle' => __('stats.editorialActivity'),
+		]);
 
 		$templateMgr->display('stats/editorial.tpl');
 	}
@@ -218,14 +230,14 @@ class PKPStatsHandler extends Handler {
 		$count = 30;
 
 		$timeline = Services::get('stats')->getTimeline(STATISTICS_DIMENSION_DAY, [
-      'assocTypes' => ASSOC_TYPE_SUBMISSION,
-      'contextIds' => $context->getID(),
+			'assocTypes' => ASSOC_TYPE_SUBMISSION,
+			'contextIds' => $context->getId(),
 			'count' => $count,
 			'dateStart' => $dateStart,
-      'dateEnd' => $dateEnd,
+			'dateEnd' => $dateEnd,
 		]);
 
-		$statsComponent = new \PKP\components\PKPStatsPublicationContainer(
+		$statsComponent = new \PKP\components\PKPStatsPublicationPage(
 			$dispatcher->url($request, ROUTE_API, $context->getPath(), 'stats/publications'),
 			[
 				'timeline' => $timeline,
@@ -299,7 +311,12 @@ class PKPStatsHandler extends Handler {
 			]
 		);
 
-		$templateMgr->assign('statsComponent', $statsComponent);
+		$templateMgr->setState($statsComponent->getConfig());
+		$templateMgr->assign([
+			'pageComponent' => 'StatsPublicationsPage',
+			'pageTitle' => __('stats.publicationStats'),
+			'pageWidth' => PAGE_WIDTH_WIDE,
+		]);
 
 		$templateMgr->display('stats/publications.tpl');
 	}
@@ -320,7 +337,10 @@ class PKPStatsHandler extends Handler {
 
 		$templateMgr = TemplateManager::getManager($request);
 		$this->setupTemplate($request);
-		$templateMgr->assign('userStats', Services::get('user')->getRolesOverview(['contextId' => $context->getId()]));
+		$templateMgr->assign([
+			'pageTitle' => __('stats.userStatistics'),
+			'userStats' => Services::get('user')->getRolesOverview(['contextId' => $context->getId()]),
+		]);
 		$templateMgr->display('stats/users.tpl');
 	}
 

@@ -3,10 +3,10 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2019-11-19T10:49:43+00:00\n"
-"PO-Revision-Date: 2020-02-23 12:36+0000\n"
+"PO-Revision-Date: 2020-06-04 18:39+0000\n"
 "Last-Translator: Niels Erik Frederiksen <nef@kb.dk>\n"
 "Language-Team: Danish <http://translate.pkp.sfu.ca/projects/pkp-lib/"
-"submission/da/>\n"
+"submission/da_DK/>\n"
 "Language: da_DK\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -1781,9 +1781,6 @@ msgstr "Er du sikker på, at du ikke ønsker, at dette skal publiceres?"
 msgid "publication.unpublish"
 msgstr "Træk tilbage"
 
-msgid "publication.titleAbstract.success"
-msgstr "Titlen og resuméet er blevet opdateret."
-
 msgid "publication.titleAbstract"
 msgstr "Titel & Resumé"
 
@@ -1807,26 +1804,14 @@ msgstr ""
 msgid "publication.required.declined"
 msgstr "En afvist indsendelse kan ikke offentliggøres."
 
-msgid "publication.publish.success"
-msgstr "Publikationsstatus er blevet ændret."
-
 msgid "publication.publish.requirements"
 msgstr "Følgende krav skal være opfyldt, før dette kan offentliggøres."
 
 msgid "publication.publish"
 msgstr "Publicér"
 
-msgid "publication.publicationLicense.success"
-msgstr "Oplysninger om copyright og licens er blevet opdateret."
-
 msgid "publication.publicationLicense"
 msgstr "Tilladelser & offentliggørelse"
-
-msgid "publication.publicationIdentifiers.success"
-msgstr "Identifikatorerne er blevet opdateret."
-
-msgid "publication.metadata.success"
-msgstr "Metadata er blevet opdateret."
 
 msgid "publication.invalidSubmission"
 msgstr "Indsendelsen til denne publikation kunne ikke findes."
@@ -1871,9 +1856,6 @@ msgstr ""
 msgid "publication.contributors"
 msgstr "Bidragydere"
 
-msgid "publication.citations.success"
-msgstr "Referencerne er blevet opdateret."
-
 msgid "submission.publication"
 msgstr "Publikation"
 
@@ -1894,30 +1876,29 @@ msgstr ""
 msgid "submission.query.leaveQuery"
 msgstr "Forlad drøftelse"
 
-#, fuzzy
 msgid "submission.license.cc.by-sa3.footer"
 msgstr ""
-"<a rel=\"license\" href=\"https://creativecommons.org/licenses/by-sa/3.0/\"><"
-"img alt=\"Creative Commons License\" src=\"//i.creativecommons.org/l/by-sa/3."
-"0/88x31.png\" /></a><p>Dette arbejde er licenseret under en <a rel=\""
+"<a rel=\"license\" href=\"https://creativecommons.org/licenses/by-sa/3.0/\">"
+"\n"
+"<img alt=\"Creative Commons License\" src=\"//i.creativecommons.org/l/by-sa/"
+"3.0/88x31.png\" /></a><p>Dette arbejde er licenseret under en <a rel=\""
 "license\" href=\"https://creativecommons.org/licenses/by-sa/3.0/\">Creative "
 "Commons Attribution-ShareAlike 3.0 Unported License</a>.</p>"
 
-#, fuzzy
 msgid "submission.license.cc.by3.footer"
 msgstr ""
-"<a rel=\"license\" href=\"https://creativecommons.org/licenses/by/3.0/\"><"
-"img alt=\"Creative Commons License\" src=\"//i.creativecommons.org/l/by/3.0/"
+"<a rel=\"license\" href=\"https://creativecommons.org/licenses/by/3.0/\">\n"
+"<img alt=\"Creative Commons License\" src=\"//i.creativecommons.org/l/by/3.0/"
 "88x31.png\" /></a><p>Dette arbejde er licenseret under en <a rel=\"license\" "
 "href=\"https://creativecommons.org/licenses/by/3.0/\">Creative Commons "
 "Attribution 3.0 Unported License</a>.</p>"
 
-#, fuzzy
 msgid "submission.license.cc.by-nd3.footer"
 msgstr ""
-"<a rel=\"license\" href=\"https://creativecommons.org/licenses/by-nd/3.0/\"><"
-"img alt=\"Creative Commons License\" src=\"//i.creativecommons.org/l/by-nd/3."
-"0/88x31.png\" /></a><p>Dette arbejde er licenseret under en <a rel=\""
+"<a rel=\"license\" href=\"https://creativecommons.org/licenses/by-nd/3.0/\">"
+"\n"
+"<img alt=\"Creative Commons License\" src=\"//i.creativecommons.org/l/by-nd/"
+"3.0/88x31.png\" /></a><p>Dette arbejde er licenseret under en <a rel=\""
 "license\" href=\"https://creativecommons.org/licenses/by-nd/3.0/\">Creative "
 "Commons Attribution-NoDerivatives 3.0 Unported License</a>.</p>"
 
@@ -1931,12 +1912,12 @@ msgstr ""
 "Creative Commons Attribution-NonCommercial-ShareAlike 3.0 International "
 "License</a>.</p>"
 
-#, fuzzy
 msgid "submission.license.cc.by-nc3.footer"
 msgstr ""
-"<a rel=\"license\" href=\"https://creativecommons.org/licenses/by-nc/3.0/\"><"
-"img alt=\"Creative Commons License\" src=\"//i.creativecommons.org/l/by-nc/3."
-"0/88x31.png\" /></a><p>Dette arbejde er licenseret under en <a rel=\""
+"<a rel=\"license\" href=\"https://creativecommons.org/licenses/by-nc/3.0/\">"
+"\n"
+"<img alt=\"Creative Commons License\" src=\"//i.creativecommons.org/l/by-nc/"
+"3.0/88x31.png\" /></a><p>Dette arbejde er licenseret under en <a rel=\""
 "license\" href=\"https://creativecommons.org/licenses/by-nc/3.0/\">Creative "
 "Commons Attribution-NonCommercial 3.0 Unported License</a>.</p>"
 
@@ -1981,9 +1962,6 @@ msgstr "Redigér opgave"
 
 msgid "submission.status.scheduled"
 msgstr "Planlagt"
-
-msgid "submissions.inactive"
-msgstr "Inaktiv i {$days} dage"
 
 msgid "submission.outdatedVersion"
 msgstr ""
@@ -2065,3 +2043,24 @@ msgstr ""
 "Udgiver-ID'et kan bruges til at registrere ID'et fra en ekstern database. "
 "For eksempel kan elementer, der eksporteres til deponering hos PubMed, "
 "indeholde udgiver-ID. Dette bør ikke bruges til DOI'er."
+
+msgid "submission.list.daysSinceLastActivity"
+msgstr "Dage siden seneste aktivitet"
+
+msgid "submission.list.activity"
+msgstr "Aktivitet"
+
+msgid "notification.type.editorDecisionNewRound"
+msgstr "En ny runde af anmeldelser blev indledt."
+
+msgid "editor.submission.decision.newRound"
+msgstr "Ny bedømmelsesrunde"
+
+msgid "submission.downloads"
+msgstr "Downloads"
+
+msgid "submission.additionalFiles"
+msgstr "Yderligere filer"
+
+msgid "submission.representationOfTitle"
+msgstr "{$representation} af {$title}"

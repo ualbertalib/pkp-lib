@@ -3,8 +3,8 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2019-11-19T10:50:05+00:00\n"
-"PO-Revision-Date: 2020-04-10 09:37+0000\n"
-"Last-Translator: Viveka Svensson <viveka.svensson@lnu.se>\n"
+"PO-Revision-Date: 2020-06-04 18:39+0000\n"
+"Last-Translator: Magnus Annemark <magnus.annemark@ub.lu.se>\n"
 "Language-Team: Swedish <http://translate.pkp.sfu.ca/projects/pkp-lib/common/"
 "sv/>\n"
 "Language: sv_SE\n"
@@ -736,6 +736,9 @@ msgstr "Component"
 msgid "common.uninitiated"
 msgstr "Ej påbörjad"
 
+msgid "common.unknownError"
+msgstr "Ett oväntat fel uppstod. Ladda om sidan och försök igen."
+
 msgid "common.unread"
 msgstr "Oläst"
 
@@ -1243,12 +1246,6 @@ msgstr "Meddelandetyp redigerad."
 msgid "notification.removedAnnouncementType"
 msgstr "Meddelandetyp borttagen."
 
-msgid "notification.addedAnnouncement"
-msgstr "Meddelande tillagt."
-
-msgid "notification.editedAnnouncement"
-msgstr "Meddelande redigerat."
-
 msgid "notification.removedAnnouncement"
 msgstr "Meddelande borttaget."
 
@@ -1368,9 +1365,6 @@ msgstr "Alla fält för ämnesord"
 
 msgid "search.matchAll"
 msgstr "Matcha i alla kategorier"
-
-msgid "search.noKeywordError"
-msgstr "Du måste ange minst ett sökord."
 
 msgid "search.noResults"
 msgstr "Inga träffar"
@@ -1658,11 +1652,6 @@ msgstr "Behörigheter"
 msgid "form.multilingualLabel"
 msgstr "{$label} på {$localeName}"
 
-msgid "form.errorUnknown"
-msgstr ""
-"Ett oväntat fel inträffade. Du kan ha loggats ut ur systemet. Ladda om "
-"webbsidan och försök igen."
-
 msgid "form.errors"
 msgstr ""
 "Formuläret kunde inte sparas eftersom {$count} fel hittades. Korrigera dessa "
@@ -1849,10 +1838,13 @@ msgid "common.noTemporaryFile"
 msgstr "Filen kunde inte hittas. Försök att ladda upp den igen."
 
 msgid "common.noItemsFound"
-msgstr "Inga objekt kunde identifieras."
+msgstr "Inga objekt hittades."
 
 msgid "common.altTextInstructions"
 msgstr ""
 "Beskriv bilden för besökare som använder en textbaserad webbläsare eller som "
 "använder tillgänglighetsverktyg. Till exempel: \"Vår redaktör håller ett tal "
-"på PKP-konferensen\"."
+"på PKP-konferensen.\""
+
+msgid "form.requireId"
+msgstr "Du måste ange ett giltigt ID."

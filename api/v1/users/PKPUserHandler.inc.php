@@ -73,6 +73,8 @@ class PKPUserHandler extends APIHandler {
 		}
 
 		$params = $this->_processAllowedParams($slimRequest->getQueryParams(), [
+			'assignedToCategory',
+			'assignedToSection',
 			'assignedToSubmission',
 			'assignedToSubmissionStage',
 			'count',
@@ -240,7 +242,8 @@ class PKPUserHandler extends APIHandler {
 					}
 					$returnParams[$param] = array_map('intval', $val);
 					break;
-
+				case 'assignedToCategory':
+				case 'assignedToSection':
 				case 'assignedToSubmissionStage':
 				case 'assignedToSubmission':
 				case 'reviewerRating':
@@ -257,10 +260,12 @@ class PKPUserHandler extends APIHandler {
 				case 'reviewsActive':
 				case 'daysSinceLastAssignment':
 				case 'averageCompletion':
-					if (strpos($val, '-') !== false) {
+					if (is_array($val)) {
+						$val = array_map('intval', $val);
+					} elseif (strpos($val, '-') !== false) {
 						$val = array_map('intval', explode('-', $val));
 					} else {
-						$val = (int) $val;
+						$val = [(int) $val];
 					}
 					$returnParams[$param] = $val;
 					break;

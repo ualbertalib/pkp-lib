@@ -65,11 +65,19 @@ class CategoryForm extends Form {
 	// Getters and Setters
 	//
 	/**
-	 * Get the user group id.
+	 * Get the category id.
 	 * @return int categoryId
 	 */
 	function getCategoryId() {
 		return $this->_categoryId;
+	}
+
+	/**
+	 * Set the category ID for this section.
+	 * @param $categoryId int
+	 */
+	function setCategoryId($categoryId) {
+		$this->_categoryId = $categoryId;
 	}
 
 	/**
@@ -136,7 +144,7 @@ class CategoryForm extends Form {
 	 * @see Form::readInputData()
 	 */
 	function readInputData() {
-		$this->readUserVars(array('name', 'parentId', 'path', 'description', 'temporaryFileId', 'sortOption'));
+		$this->readUserVars(array('name', 'parentId', 'path', 'description', 'temporaryFileId', 'sortOption', 'subEditors'));
 
 		// For path duplicate checking; excuse the current path.
 		if ($categoryId = $this->getCategoryId()) {
@@ -180,6 +188,28 @@ class CategoryForm extends Form {
 		$submissionDao = DAORegistry::getDAO('SubmissionDAO'); /* @var $submissionDao SubmissionDAO */
 		$templateMgr->assign('sortOptions', $submissionDao->getSortSelectOptions());
 
+		// Sub Editors
+		$usersIterator = Services::get('user')->getMany([
+			'contextId' => $context->getId(),
+			'roleIds' => ROLE_ID_SUB_EDITOR,
+		]);
+		$availableSubeditors = [];
+		foreach ($usersIterator as $user) {
+			$availableSubeditors[(int) $user->getId()] = $user->getFullName();
+		}
+		$assignedToCategory = [];
+		if ($this->getCategoryId()) {
+			$assignedToCategory = Services::get('user')->getIds([
+				'contextId' => $context->getId(),
+				'roleIds' => ROLE_ID_SUB_EDITOR,
+				'assignedToCategory' => (int) $this->getCategoryId(),
+			]);
+		}
+		$templateMgr->assign([
+			'availableSubeditors' => $availableSubeditors,
+			'assignedToCategory' => $assignedToCategory,
+		]);
+
 		return parent::fetch($request, $template, $display);
 	}
 
@@ -207,11 +237,24 @@ class CategoryForm extends Form {
 
 		// Update or insert the category object
 		if ($categoryId == null) {
-			$category->setId($categoryDao->insertObject($category));
+			$this->setCategoryId($categoryDao->insertObject($category));
 		} else {
 			$category->setSequence(REALLY_BIG_NUMBER);
 			$categoryDao->updateObject($category);
 			$categoryDao->resequenceCategories($this->getContextId());
+		}
+
+		// Update category editors
+		$subEditorsDao = DAORegistry::getDAO('SubEditorsDAO'); /* @var $subEditorsDao SubEditorsDAO */
+		$subEditorsDao->deleteBySubmissionGroupId($category->getId(), ASSOC_TYPE_CATEGORY, $category->getContextId());
+		$subEditors = $this->getData('subEditors');
+		if (!empty($subEditors)) {
+			$roleDao = DAORegistry::getDAO('RoleDAO'); /* @var $roleDao RoleDAO */
+			foreach ($subEditors as $subEditor) {
+				if ($roleDao->userHasRole($category->getContextId(), $subEditor, ROLE_ID_SUB_EDITOR)) {
+					$subEditorsDao->insertEditor($category->getContextId(), $category->getId(), $subEditor, ASSOC_TYPE_CATEGORY);
+				}
+			}
 		}
 
 		// Handle the image upload if there was one.
@@ -293,5 +336,4 @@ class CategoryForm extends Form {
 		return $category;
 	}
 }
-
 

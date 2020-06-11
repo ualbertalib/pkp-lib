@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2019-11-19T10:49:40+00:00\n"
-"PO-Revision-Date: 2020-04-08 19:37+0000\n"
+"PO-Revision-Date: 2020-06-04 18:39+0000\n"
 "Last-Translator: Michal Jelínek <jelinek@synetix.cz>\n"
 "Language-Team: Czech <http://translate.pkp.sfu.ca/projects/pkp-lib/common/cs/"
 ">\n"
@@ -779,9 +779,6 @@ msgstr "Výrazy indexu"
 msgid "search.matchAll"
 msgstr "Zahrnout všechny kategorie"
 
-msgid "search.noKeywordError"
-msgstr "Musíte vložit alespoň jedno slovo pro vyhledávání."
-
 msgid "search.noResults"
 msgstr "Žádné výsledky"
 
@@ -1295,12 +1292,6 @@ msgstr "Upraven typ oznámení."
 msgid "notification.removedAnnouncementType"
 msgstr "Odebrán typ oznámení."
 
-msgid "notification.addedAnnouncement"
-msgstr "Přidáno oznámení."
-
-msgid "notification.editedAnnouncement"
-msgstr "Upraveno oznámení."
-
 msgid "notification.removedAnnouncement"
 msgstr "Odebráno oznámení."
 
@@ -1584,6 +1575,7 @@ msgstr "Veřejný přístup"
 msgid "stageParticipants.selectedUser"
 msgstr "Účastník"
 
+#, fuzzy
 msgid "stageParticipants.canChangeMetadata"
 msgstr "Povolit této osobě upravovat podrobnosti vydání."
 
@@ -1958,3 +1950,12 @@ msgstr "Přeskočit na oznámení"
 
 msgid "stageParticipants.noOptionsToHandle"
 msgstr "U tohoto účastníka nelze provádět žádné změny"
+
+msgid "navigation.skip.description"
+msgstr "Přejít na odkazy na obsah"
+
+msgid "common.moreThanOnly"
+msgstr "Více než"
+
+msgid "common.lessThanOnly"
+msgstr "Méně než"

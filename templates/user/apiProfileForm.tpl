@@ -24,7 +24,7 @@
 	{include file="controllers/notification/inPlaceNotification.tpl" notificationId="apiProfileNotification"}
 
 	{fbvFormSection list=true}
-		{fbvElement id=apiKeyEnabled type="checkbox" label="user.apiKeyEnabled" checked=$apiKeyEnabled|compare:true:true:false value=1}
+		{fbvElement id=apiKeyEnabled type="checkbox" label="user.apiKeyEnabled" checked=$apiKeyEnabled value=1}
 		{fbvElement id=generateApiKey type="checkbox" label="user.apiKey.generate" value=1}
 	{/fbvFormSection}
 	<p>{translate key="user.apiKey.generateWarning"}</p>
@@ -34,10 +34,10 @@
 		{fbvElement id=apiKey type="text" label="user.apiKey" readonly="true" value=$apiKey size=$fbvStyles.size.MEDIUM}
 	{/fbvFormSection}
 
-	{fbvFormButtons hideCancel=true submitText="common.save"}
-
 	<p>
 		{capture assign="privacyUrl"}{url router=$smarty.const.ROUTE_PAGE page="about" op="privacy"}{/capture}
 		{translate key="user.privacyLink" privacyUrl=$privacyUrl}
 	</p>
+
+	{fbvFormButtons hideCancel=true submitText="common.save"}
 </form>
